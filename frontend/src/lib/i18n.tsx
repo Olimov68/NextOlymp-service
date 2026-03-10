@@ -99,11 +99,6 @@ const translations: Record<Lang, Record<string, string>> = {
     "profile.save": "Saqlash",
     "profile.saved": "Muvaffaqiyatli saqlandi!",
 
-    // Testimonials
-    "testimonials.badge": "Fikrlar",
-    "testimonials.title": "Ishtirokchilar fikrlari",
-    "testimonials.desc": "NextOly platformasi haqida o'quvchilarimizning fikrlari",
-
     // Team
     "team.title": "Bizning Jamoa",
     "team.desc": "NextOly platformasi ortidagi jamoamiz bilan tanishing",
@@ -121,6 +116,16 @@ const translations: Record<Lang, Record<string, string>> = {
     "features.title": "Nima uchun NextOly?",
     "features.desc": "Platformamiz zamonaviy texnologiyalar asosida qurilgan bo'lib, xavfsizlik, tezkorlik va qulaylikni ta'minlaydi.",
 
+    // How it works
+    "howit.badge": "Qanday ishlaydi?",
+    "howit.title": "3 oddiy qadam",
+    "howit.desc": "NextOly platformasida olimpiadaga qatnashish juda oson",
+
+    // Testimonials
+    "testimonials.badge": "Fikrlar",
+    "testimonials.title": "Ishtirokchilar fikrlari",
+    "testimonials.desc": "NextOly platformasi haqida o'quvchilarimizning fikrlari",
+
     // Footer
     "footer.desc": "Xalqaro akademik olimpiadalarni tashkil etish va ularda ishtirok etish uchun professional platforma.",
     "footer.platform": "Platforma",
@@ -136,21 +141,6 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.select_grade": "Sinfni tanlang",
     "auth.grade_suffix": "sinf",
     "auth.show_password": "Parolni ko'rsatish",
-
-    // Features
-    "features.badge": "Platforma imkoniyatlari",
-    "features.title": "Nima uchun NextOly?",
-    "features.desc": "Zamonaviy texnologiyalar asosida qurilgan xavfsiz va qulay platforma",
-
-    // How it works
-    "howit.badge": "Qanday ishlaydi?",
-    "howit.title": "3 oddiy qadam",
-    "howit.desc": "NextOly platformasida olimpiadaga qatnashish juda oson",
-
-    // Testimonials
-    "testimonials.badge": "Ishtirokchilar fikri",
-    "testimonials.title": "Ishtirokchilar nima deyishadi?",
-    "testimonials.desc": "Platformamiz foydalanuvchilarining haqiqiy fikrlari",
 
     // Results extra
     "results.no_results": "Natijalar topilmadi",
@@ -250,11 +240,6 @@ const translations: Record<Lang, Record<string, string>> = {
     "profile.save": "Сохранить",
     "profile.saved": "Успешно сохранено!",
 
-    // Testimonials
-    "testimonials.badge": "Отзывы",
-    "testimonials.title": "Отзывы участников",
-    "testimonials.desc": "Что говорят наши ученики о платформе NextOly",
-
     "team.title": "Наша Команда",
     "team.desc": "Познакомьтесь с командой, стоящей за платформой NextOly",
 
@@ -270,6 +255,16 @@ const translations: Record<Lang, Record<string, string>> = {
     "features.title": "Почему NextOly?",
     "features.desc": "Наша платформа построена на современных технологиях, обеспечивая безопасность, скорость и удобство.",
 
+    // How it works
+    "howit.badge": "Как это работает?",
+    "howit.title": "3 простых шага",
+    "howit.desc": "Участвовать в олимпиаде на платформе NextOly очень просто",
+
+    // Testimonials
+    "testimonials.badge": "Отзывы",
+    "testimonials.title": "Отзывы участников",
+    "testimonials.desc": "Что говорят наши ученики о платформе NextOly",
+
     "footer.desc": "Профессиональная платформа для организации и участия в международных академических олимпиадах.",
     "footer.platform": "Платформа",
     "footer.info": "Информация",
@@ -283,18 +278,6 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.select_grade": "Выберите класс",
     "auth.grade_suffix": "класс",
     "auth.show_password": "Показать пароль",
-
-    "features.badge": "Возможности платформы",
-    "features.title": "Почему NextOly?",
-    "features.desc": "Безопасная и удобная платформа, построенная на современных технологиях",
-
-    "howit.badge": "Как это работает?",
-    "howit.title": "3 простых шага",
-    "howit.desc": "Участвовать в олимпиаде на платформе NextOly очень просто",
-
-    "testimonials.badge": "Отзывы участников",
-    "testimonials.title": "Что говорят участники?",
-    "testimonials.desc": "Реальные отзывы пользователей нашей платформы",
 
     "results.no_results": "Результаты не найдены",
 
@@ -392,11 +375,6 @@ const translations: Record<Lang, Record<string, string>> = {
     "profile.save": "Save",
     "profile.saved": "Successfully saved!",
 
-    // Testimonials
-    "testimonials.badge": "Testimonials",
-    "testimonials.title": "What Our Students Say",
-    "testimonials.desc": "Hear from students who have participated through the NextOly platform",
-
     "team.title": "Our Team",
     "team.desc": "Meet the team behind the NextOly platform",
 
@@ -412,6 +390,16 @@ const translations: Record<Lang, Record<string, string>> = {
     "features.title": "Why NextOly?",
     "features.desc": "Our platform is built on modern technologies, ensuring security, speed, and convenience.",
 
+    // How it works
+    "howit.badge": "How It Works?",
+    "howit.title": "3 Simple Steps",
+    "howit.desc": "Participating in an olympiad on the NextOly platform is very easy",
+
+    // Testimonials
+    "testimonials.badge": "Testimonials",
+    "testimonials.title": "What Our Students Say",
+    "testimonials.desc": "Hear from students who have participated through the NextOly platform",
+
     "footer.desc": "A professional platform for organizing and participating in international academic olympiads.",
     "footer.platform": "Platform",
     "footer.info": "Information",
@@ -425,18 +413,6 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.select_grade": "Select grade",
     "auth.grade_suffix": "grade",
     "auth.show_password": "Show password",
-
-    "features.badge": "Platform Features",
-    "features.title": "Why NextOly?",
-    "features.desc": "A secure and convenient platform built on modern technologies",
-
-    "howit.badge": "How It Works?",
-    "howit.title": "3 Simple Steps",
-    "howit.desc": "Participating in an olympiad on the NextOly platform is very easy",
-
-    "testimonials.badge": "Testimonials",
-    "testimonials.title": "What Participants Say?",
-    "testimonials.desc": "Real feedback from our platform users",
 
     "results.no_results": "No results found",
 
