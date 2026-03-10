@@ -13,6 +13,20 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
+router.get("/:id", async (req: Request, res: Response) => {
+  try {
+    const announcement = await prisma.announcement.findUnique({
+      where: { id: parseInt(req.params.id) },
+    });
+    if (!announcement) {
+      return res.status(404).json({ error: "Announcement not found" });
+    }
+    res.json(announcement);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get announcement" });
+  }
+});
+
 router.post("/", authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { title, description } = req.body;

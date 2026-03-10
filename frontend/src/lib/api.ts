@@ -93,6 +93,7 @@ export const fetchStats = () => api.get<Stats>("/api/stats").then((r) => r.data)
 export const fetchOlympiads = () => api.get<Olympiad[]>("/api/olympiads").then((r) => r.data);
 export const fetchOlympiad = (id: number) => api.get<Olympiad>(`/api/olympiads/${id}`).then((r) => r.data);
 export const fetchAnnouncements = () => api.get<Announcement[]>("/api/announcements").then((r) => r.data);
+export const fetchAnnouncementItem = (id: number) => api.get<Announcement>(`/api/announcements/${id}`).then((r) => r.data);
 export const fetchNews = () => api.get<NewsItem[]>("/api/news").then((r) => r.data);
 export const fetchNewsItem = (id: number) => api.get<NewsItem>(`/api/news/${id}`).then((r) => r.data);
 export const fetchResults = (subject?: string) =>

@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAnnouncements } from "@/lib/api";
+import { fetchAnnouncementItem } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -14,12 +14,11 @@ export default function AnnouncementDetailPage() {
   const id = Number(params.id);
   const { t, lang } = useI18n();
 
-  const { data: announcements, isLoading, error } = useQuery({
-    queryKey: ["announcements"],
-    queryFn: fetchAnnouncements,
+  const { data: announcement, isLoading, error } = useQuery({
+    queryKey: ["announcement", id],
+    queryFn: () => fetchAnnouncementItem(id),
+    enabled: !!id,
   });
-
-  const announcement = announcements?.find((a) => a.id === id);
   const localeMap: Record<string, string> = { uz: "uz-UZ", ru: "ru-RU", en: "en-US" };
 
   return (
