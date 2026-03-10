@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchResults } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
@@ -14,13 +15,14 @@ const subjects = [
 ];
 
 const medalColors: Record<string, string> = {
-  Gold: "bg-yellow-100 text-yellow-700",
-  Silver: "bg-gray-100 text-gray-700",
-  Bronze: "bg-orange-100 text-orange-700",
+  Gold: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30",
+  Silver: "bg-gray-400/20 text-gray-300 border border-gray-400/30",
+  Bronze: "bg-orange-500/20 text-orange-300 border border-orange-500/30",
 };
 
 export function ResultsSection() {
   const [activeSubject, setActiveSubject] = useState("mathematics");
+  const { t } = useI18n();
 
   const { data: results, isLoading } = useQuery({
     queryKey: ["results", activeSubject],
@@ -28,15 +30,15 @@ export function ResultsSection() {
   });
 
   return (
-    <section id="results" className="py-20">
+    <section id="results" className="py-20 bg-gradient-to-b from-blue-950 to-indigo-950">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm text-amber-700 mb-4">
-            🏅 Results
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-300 mb-4">
+            {t("nav.results")}
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Natijalar</h2>
-          <p className="text-gray-600 max-w-md mx-auto">
-            {"Olimpiada natijalari va g'oliblar"}
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t("results.title")}</h2>
+          <p className="text-blue-200/50 max-w-md mx-auto">
+            {t("results.desc")}
           </p>
         </div>
 
@@ -45,10 +47,10 @@ export function ResultsSection() {
             <button
               key={s.key}
               onClick={() => setActiveSubject(s.key)}
-              className={`rounded-full px-6 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-full px-6 py-2 text-sm font-medium transition-all ${
                 activeSubject === s.key
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-600 border hover:bg-gray-50"
+                  ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25"
+                  : "bg-white/5 text-blue-200/70 border border-white/10 hover:bg-white/10 hover:text-white"
               }`}
             >
               {s.label}
@@ -56,38 +58,38 @@ export function ResultsSection() {
           ))}
         </div>
 
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-2xl overflow-hidden">
           {isLoading ? (
-            <div className="p-8 text-center text-gray-400">Yuklanmoqda...</div>
+            <div className="p-8 text-center text-blue-200/50">{t("common.loading")}</div>
           ) : !results?.length ? (
-            <div className="p-8 text-center text-gray-400">Natijalar topilmadi</div>
+            <div className="p-8 text-center text-blue-200/50">{t("results.no_results") || "Natijalar topilmadi"}</div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="w-16 text-center">#</TableHead>
-                  <TableHead>Ism</TableHead>
-                  <TableHead>Mamlakat</TableHead>
-                  <TableHead className="text-center">Ball</TableHead>
-                  <TableHead className="text-center">Medal</TableHead>
+                <TableRow className="bg-white/5 border-b border-white/10">
+                  <TableHead className="w-16 text-center text-blue-200/70">{t("results.rank")}</TableHead>
+                  <TableHead className="text-blue-200/70">{t("results.name")}</TableHead>
+                  <TableHead className="text-blue-200/70">{t("results.country")}</TableHead>
+                  <TableHead className="text-center text-blue-200/70">{t("results.score")}</TableHead>
+                  <TableHead className="text-center text-blue-200/70">{t("results.medal")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {results.slice(0, 10).map((r) => (
-                  <TableRow key={`${r.rank}-${r.name}`}>
-                    <TableCell className="text-center font-bold text-gray-500">{r.rank}</TableCell>
-                    <TableCell className="font-medium">{r.name}</TableCell>
+                  <TableRow key={`${r.rank}-${r.name}`} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <TableCell className="text-center font-bold text-blue-200/50">{r.rank}</TableCell>
+                    <TableCell className="font-medium text-white">{r.name}</TableCell>
                     <TableCell>
-                      <span className="text-sm text-gray-600">{r.country}</span>
+                      <span className="text-sm text-blue-200/50">{r.country}</span>
                     </TableCell>
-                    <TableCell className="text-center font-semibold">{r.score}</TableCell>
+                    <TableCell className="text-center font-semibold text-white">{r.score}</TableCell>
                     <TableCell className="text-center">
                       {r.medal ? (
-                        <Badge className={`${medalColors[r.medal] || "bg-gray-100 text-gray-600"} hover:opacity-90`}>
+                        <Badge className={`${medalColors[r.medal] || "bg-white/10 text-blue-200/50"} hover:opacity-90`}>
                           {r.medal}
                         </Badge>
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-blue-200/30">&mdash;</span>
                       )}
                     </TableCell>
                   </TableRow>

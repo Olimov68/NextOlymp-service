@@ -99,6 +99,34 @@ const translations: Record<Lang, Record<string, string>> = {
     "profile.save": "Saqlash",
     "profile.saved": "Muvaffaqiyatli saqlandi!",
 
+    // Team
+    "team.title": "Bizning Jamoa",
+    "team.desc": "NextOly platformasi ortidagi jamoamiz bilan tanishing",
+
+    // About
+    "about.badge": "Biz haqimizda",
+    "about.title": "Biz haqimizda",
+    "about.p1": "NextOly — bu xalqaro akademik olimpiadalarni onlayn formatda tashkil etish va o'tkazish uchun yaratilgan zamonaviy platforma.",
+    "about.p2": "Biz 2023-yilda O'zbekistonda tashkil topgan bo'lib, bugungi kunga qadar 20 dan ortiq mamlakatda faoliyat yuritmoqdamiz. Platformamiz orqali 75,000 dan ortiq o'quvchi turli fan olimpiadalarida ishtirok etgan.",
+    "about.p3": "Bizning maqsadimiz — har bir iqtidorli o'quvchiga geografik joylashuvidan qat'i nazar, xalqaro darajadagi olimpiadalarda qatnashish imkoniyatini yaratish.",
+    "about.p4": "Platforma matematik, fizika, kimyo, biologiya va informatika fanlariga ixtisoslashgan bo'lib, kelgusida yangi fanlar ham qo'shilishi rejalashtirilgan.",
+
+    // Footer
+    "footer.desc": "Xalqaro akademik olimpiadalarni tashkil etish va ularda ishtirok etish uchun professional platforma.",
+    "footer.platform": "Platforma",
+    "footer.info": "Ma'lumot",
+    "footer.contact": "Bog'lanish",
+    "footer.rights": "Barcha huquqlar himoyalangan.",
+
+    // Auth extra
+    "auth.fill_all": "Barcha maydonlarni to'ldiring",
+    "auth.join_platform": "NextOly platformasiga qo'shiling",
+    "auth.select_region": "Viloyatni tanlang",
+    "auth.select_district": "Tumanni tanlang",
+    "auth.select_grade": "Sinfni tanlang",
+    "auth.grade_suffix": "sinf",
+    "auth.show_password": "Parolni ko'rsatish",
+
     // Common
     "common.loading": "Yuklanmoqda...",
     "common.error": "Xatolik yuz berdi",
@@ -194,6 +222,30 @@ const translations: Record<Lang, Record<string, string>> = {
     "profile.save": "Сохранить",
     "profile.saved": "Успешно сохранено!",
 
+    "team.title": "Наша Команда",
+    "team.desc": "Познакомьтесь с командой, стоящей за платформой NextOly",
+
+    "about.badge": "О нас",
+    "about.title": "О нас",
+    "about.p1": "NextOly — это современная платформа для организации и проведения международных академических олимпиад в онлайн-формате.",
+    "about.p2": "Мы были основаны в 2023 году в Узбекистане и на сегодняшний день работаем более чем в 20 странах. Через нашу платформу более 75 000 учеников приняли участие в различных предметных олимпиадах.",
+    "about.p3": "Наша цель — дать возможность каждому талантливому ученику участвовать в олимпиадах международного уровня, независимо от географического расположения.",
+    "about.p4": "Платформа специализируется на математике, физике, химии, биологии и информатике, в будущем планируется добавление новых предметов.",
+
+    "footer.desc": "Профессиональная платформа для организации и участия в международных академических олимпиадах.",
+    "footer.platform": "Платформа",
+    "footer.info": "Информация",
+    "footer.contact": "Контакты",
+    "footer.rights": "Все права защищены.",
+
+    "auth.fill_all": "Заполните все поля",
+    "auth.join_platform": "Присоединяйтесь к платформе NextOly",
+    "auth.select_region": "Выберите область",
+    "auth.select_district": "Выберите район",
+    "auth.select_grade": "Выберите класс",
+    "auth.grade_suffix": "класс",
+    "auth.show_password": "Показать пароль",
+
     "common.loading": "Загрузка...",
     "common.error": "Произошла ошибка",
     "common.save": "Сохранить",
@@ -287,6 +339,30 @@ const translations: Record<Lang, Record<string, string>> = {
     "profile.title": "My Profile",
     "profile.save": "Save",
     "profile.saved": "Successfully saved!",
+
+    "team.title": "Our Team",
+    "team.desc": "Meet the team behind the NextOly platform",
+
+    "about.badge": "About Us",
+    "about.title": "About Us",
+    "about.p1": "NextOly is a modern platform designed to organize and conduct international academic olympiads in an online format.",
+    "about.p2": "Founded in 2023 in Uzbekistan, we now operate in more than 20 countries. Over 75,000 students have participated in various subject olympiads through our platform.",
+    "about.p3": "Our goal is to give every talented student the opportunity to participate in international-level olympiads, regardless of geographical location.",
+    "about.p4": "The platform specializes in mathematics, physics, chemistry, biology, and computer science, with plans to add new subjects in the future.",
+
+    "footer.desc": "A professional platform for organizing and participating in international academic olympiads.",
+    "footer.platform": "Platform",
+    "footer.info": "Information",
+    "footer.contact": "Contact",
+    "footer.rights": "All rights reserved.",
+
+    "auth.fill_all": "Please fill in all fields",
+    "auth.join_platform": "Join the NextOly platform",
+    "auth.select_region": "Select region",
+    "auth.select_district": "Select district",
+    "auth.select_grade": "Select grade",
+    "auth.grade_suffix": "grade",
+    "auth.show_password": "Show password",
 
     "common.loading": "Loading...",
     "common.error": "An error occurred",
