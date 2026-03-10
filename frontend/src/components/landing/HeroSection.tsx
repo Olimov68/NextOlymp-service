@@ -14,7 +14,47 @@ function formatNumber(n: number): string {
 
 export function HeroSection() {
   const { data: stats } = useQuery({ queryKey: ["stats"], queryFn: fetchStats });
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+
+  const heroTitle: Record<string, React.ReactNode> = {
+    uz: (
+      <>
+        Xalqaro fan olimpiadalarini{" "}
+        <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+          zamonaviy platformada
+        </span>{" "}
+        topshiring
+      </>
+    ),
+    ru: (
+      <>
+        Сдавайте международные олимпиады на{" "}
+        <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+          современной платформе
+        </span>
+      </>
+    ),
+    en: (
+      <>
+        Take international olympiads on a{" "}
+        <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+          modern platform
+        </span>
+      </>
+    ),
+  };
+
+  const heroTagline: Record<string, string> = {
+    uz: "NextOly — xavfsiz, adolatli va professional online imtihon platformasi",
+    ru: "NextOly — безопасная, справедливая и профессиональная платформа онлайн-экзаменов",
+    en: "NextOly — a secure, fair and professional online exam platform",
+  };
+
+  const medalsLabel: Record<string, string> = {
+    uz: "Hali berilmagan",
+    ru: "Пока не выданы",
+    en: "Not yet awarded",
+  };
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950 text-white">
@@ -30,11 +70,10 @@ export function HeroSection() {
               {t("hero.badge")}
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-              NextOly —{" "}
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">International Online Olympiad</span>
+              {heroTitle[lang] || heroTitle.uz}
             </h1>
             <p className="text-lg text-blue-100/70 mb-8 max-w-lg">
-              {t("hero.desc")}
+              {heroTagline[lang] || heroTagline.uz}
             </p>
             <div className="flex flex-wrap gap-4">
               <Link href="/register">
@@ -44,7 +83,7 @@ export function HeroSection() {
                 </Button>
               </Link>
               <a href="#olympiads">
-                <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 backdrop-blur-sm">
+                <Button size="lg" variant="outline" className="border-blue-400/40 text-blue-200 hover:bg-blue-500/20 hover:text-white hover:border-blue-400/60 backdrop-blur-sm bg-white/5">
                   {t("hero.view_olympiads")}
                 </Button>
               </a>
@@ -70,7 +109,7 @@ export function HeroSection() {
                   <div className="text-xs text-blue-300/60">{t("stats.students")}</div>
                 </div>
                 <div className="rounded-xl bg-white/5 p-3">
-                  <div className="text-2xl font-bold">{stats ? formatNumber(stats.medals) : "..."}</div>
+                  <div className="text-2xl font-bold">{stats && stats.medals > 0 ? formatNumber(stats.medals) : "—"}</div>
                   <div className="text-xs text-blue-300/60">{t("stats.medals")}</div>
                 </div>
               </div>
@@ -99,17 +138,21 @@ export function HeroSection() {
         {/* Stats bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16">
           {[
-            { icon: Globe, label: t("stats.countries"), value: stats?.countries },
-            { icon: Users, label: t("stats.students"), value: stats?.students },
-            { icon: Medal, label: t("stats.medals"), value: stats?.medals },
-            { icon: Heart, label: t("stats.volunteers"), value: stats?.volunteers },
+            { icon: Globe, label: t("stats.countries"), value: stats?.countries, show: true },
+            { icon: Users, label: t("stats.students"), value: stats?.students, show: true },
+            { icon: Medal, label: t("stats.medals"), value: stats?.medals, show: true },
+            { icon: Heart, label: t("stats.volunteers"), value: stats?.volunteers, show: true },
           ].map((item) => (
             <div key={item.label} className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 text-center">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
                 <item.icon className="h-6 w-6 text-blue-400" />
               </div>
               <div className="text-2xl md:text-3xl font-bold text-white">
-                {item.value != null ? item.value.toLocaleString() + "+" : "..."}
+                {item.value != null
+                  ? item.value > 0
+                    ? item.value.toLocaleString() + "+"
+                    : medalsLabel[lang] || medalsLabel.uz
+                  : "..."}
               </div>
               <div className="text-sm text-blue-300/60 mt-1">{item.label}</div>
             </div>

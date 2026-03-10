@@ -5,16 +5,19 @@ import { fetchNews } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Calendar } from "lucide-react";
+import Link from "next/link";
 
 export function NewsSection() {
   const { data: news, isLoading } = useQuery({
     queryKey: ["news"],
     queryFn: fetchNews,
   });
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   if (isLoading) return null;
   if (!news?.length) return null;
+
+  const localeMap = { uz: "uz-UZ", ru: "ru-RU", en: "en-US" };
 
   return (
     <section id="news" className="relative py-20 overflow-hidden">
@@ -31,26 +34,28 @@ export function NewsSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {news.map((n) => (
-            <Card key={n.id} className="group hover:-translate-y-1 transition-all duration-300 border border-white/10 bg-white/5 backdrop-blur-sm shadow-none rounded-2xl overflow-hidden hover:bg-white/10 hover:border-green-400/20">
-              {n.image && (
-                <div className="h-48 bg-gradient-to-br from-blue-500/10 to-indigo-500/10" />
-              )}
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 text-xs text-blue-300/40 mb-3">
-                  <Calendar className="h-3 w-3" />
-                  {new Date(n.createdAt).toLocaleDateString("uz-UZ", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </div>
-                <h3 className="font-semibold text-white mb-2">{n.title}</h3>
-                <p className="text-sm text-blue-200/50 line-clamp-3">{n.description}</p>
-                <button className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors">
-                  {t("news.read_more")} <ArrowRight className="h-3 w-3" />
-                </button>
-              </CardContent>
-            </Card>
+            <Link key={n.id} href={`/news/${n.id}`}>
+              <Card className="group hover:-translate-y-1 transition-all duration-300 border border-white/10 bg-white/5 backdrop-blur-sm shadow-none rounded-2xl overflow-hidden hover:bg-white/10 hover:border-green-400/20 cursor-pointer h-full">
+                {n.image && (
+                  <div className="h-48 bg-gradient-to-br from-blue-500/10 to-indigo-500/10" />
+                )}
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 text-xs text-blue-300/40 mb-3">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(n.createdAt).toLocaleDateString(localeMap[lang] || "uz-UZ", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
+                  <h3 className="font-semibold text-white mb-2">{n.title}</h3>
+                  <p className="text-sm text-blue-200/50 line-clamp-3">{n.description}</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-400 group-hover:text-blue-300 transition-colors">
+                    {t("news.read_more")} <ArrowRight className="h-3 w-3" />
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </div>

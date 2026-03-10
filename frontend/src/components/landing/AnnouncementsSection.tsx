@@ -4,17 +4,20 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAnnouncements } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
-import { Megaphone } from "lucide-react";
+import { Megaphone, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export function AnnouncementsSection() {
   const { data: announcements, isLoading } = useQuery({
     queryKey: ["announcements"],
     queryFn: fetchAnnouncements,
   });
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   if (isLoading) return null;
   if (!announcements?.length) return null;
+
+  const localeMap = { uz: "uz-UZ", ru: "ru-RU", en: "en-US" };
 
   return (
     <section id="announcements" className="relative py-20 overflow-hidden">
@@ -31,22 +34,29 @@ export function AnnouncementsSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {announcements.map((a) => (
-            <Card key={a.id} className="group hover:-translate-y-1 transition-all duration-300 border border-white/10 bg-white/5 backdrop-blur-sm shadow-none rounded-2xl hover:bg-white/10 hover:border-blue-400/20">
-              <CardContent className="p-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-400/20 mb-4">
-                  <Megaphone className="h-5 w-5 text-blue-400" />
-                </div>
-                <h3 className="font-semibold text-white mb-2">{a.title}</h3>
-                <p className="text-sm text-blue-200/50 line-clamp-3">{a.description}</p>
-                <div className="mt-4 text-xs text-blue-300/30">
-                  {new Date(a.createdAt).toLocaleDateString("uz-UZ", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+            <Link key={a.id} href={`/announcements/${a.id}`}>
+              <Card className="group hover:-translate-y-1 transition-all duration-300 border border-white/10 bg-white/5 backdrop-blur-sm shadow-none rounded-2xl hover:bg-white/10 hover:border-blue-400/20 cursor-pointer h-full">
+                <CardContent className="p-6">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-400/20 mb-4">
+                    <Megaphone className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <h3 className="font-semibold text-white mb-2">{a.title}</h3>
+                  <p className="text-sm text-blue-200/50 line-clamp-3">{a.description}</p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-xs text-blue-300/30">
+                      {new Date(a.createdAt).toLocaleDateString(localeMap[lang] || "uz-UZ", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-blue-400 group-hover:text-blue-300 transition-colors">
+                      {t("news.read_more")} <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </div>
