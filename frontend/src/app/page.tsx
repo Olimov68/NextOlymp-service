@@ -1,3 +1,4 @@
+import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HeroSection } from "@/components/landing/HeroSection";
@@ -18,6 +19,7 @@ import { AboutSection } from "@/components/landing/AboutSection";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950">
+      <AnnouncementBar />
       <Header />
       <main>
         <HeroSection />

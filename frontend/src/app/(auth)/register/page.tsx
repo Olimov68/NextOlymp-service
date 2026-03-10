@@ -53,7 +53,9 @@ export default function RegisterPage() {
 
   const update = (field: string, value: string) => {
     if (field === "region") {
-      setForm((f) => ({ ...f, region: value, district: "" }));
+      setForm((f) => ({ ...f, region: value, district: "", city: "" }));
+    } else if (field === "district") {
+      setForm((f) => ({ ...f, district: value, city: value }));
     } else {
       setForm((f) => ({ ...f, [field]: value }));
     }
