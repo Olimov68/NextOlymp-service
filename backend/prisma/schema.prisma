@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  username  String   @unique
+  email     String   @unique
+  password  String
+  region    String   @default("")
+  district  String   @default("")
+  city      String   @default("")
+  grade     String   @default("")
+  country   String   @default("")
+  role      String   @default("user")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  results   Result[]
+
+  @@map("users")
+}
+
+model Olympiad {
+  id          Int        @id @default(autoincrement())
+  title       String
+  subject     String
+  description String     @default("")
+  price       Int        @default(0)
+  status      String     @default("upcoming")
+  startDate   DateTime?  @map("start_date")
+  endDate     DateTime?  @map("end_date")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  results     Result[]
+  questions   Question[]
+
+  @@map("olympiads")
+}
+
+model Question {
+  id         Int      @id @default(autoincrement())
+  olympiadId Int      @map("olympiad_id")
+  text       String
+  image      String   @default("")
+  options    Json     @default("[]")
+  correctIdx Int      @default(0) @map("correct_idx")
+  points     Int      @default(1)
+  orderNum   Int      @default(0) @map("order_num")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  olympiad Olympiad @relation(fields: [olympiadId], references: [id], onDelete: Cascade)
+
+  @@map("questions")
+}
+
+model Result {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  olympiadId Int      @map("olympiad_id")
+  subject    String
+  score      Int
+  medal      String   @default("")
+  country    String   @default("")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  olympiad Olympiad @relation(fields: [olympiadId], references: [id], onDelete: Cascade)
+
+  @@map("results")
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("announcements")
+}
+
+model News {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  image       String   @default("")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("news")
+}
+
+model Stats {
+  id         Int @id @default(autoincrement())
+  countries  Int @default(0)
+  students   Int @default(0)
+  medals     Int @default(0)
+  volunteers Int @default(0)
+
+  @@map("stats")
+}
