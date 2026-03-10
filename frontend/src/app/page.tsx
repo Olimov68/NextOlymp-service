@@ -19,8 +19,10 @@ import { AboutSection } from "@/components/landing/AboutSection";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950">
-      <AnnouncementBar />
-      <Header />
+      <div className="sticky top-0 z-50">
+        <AnnouncementBar />
+        <Header />
+      </div>
       <main>
         <HeroSection />
         <OlympiadsSection />

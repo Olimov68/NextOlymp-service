@@ -14,7 +14,7 @@ export function AnnouncementBar() {
   const text = messages[lang] || messages.uz;
 
   return (
-    <div className="relative w-full overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 py-2 z-[60]">
+    <div className="w-full overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 py-2">
       <div className="flex items-center whitespace-nowrap animate-marquee">
         {[0, 1, 2].map((i) => (
           <span key={i} className="inline-flex items-center gap-2 mx-12 text-sm font-medium text-white/90">
