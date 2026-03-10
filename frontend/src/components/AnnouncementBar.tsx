@@ -4,9 +4,9 @@ import { useI18n } from "@/lib/i18n";
 import { MessageCircle } from "lucide-react";
 
 const messages: Record<string, string> = {
-  uz: "Bu sayt hozirda test holatida ishlayapti. Agar biron bir muammoga duch kelsangiz, admin bilan bog'laning: @khiso_admin | @bakhodirovich_ao",
-  ru: "Этот сайт работает в тестовом режиме. Если вы столкнулись с проблемой, свяжитесь с админом: @khiso_admin | @bakhodirovich_ao",
-  en: "This site is currently in test mode. If you encounter any issues, please contact the admin: @khiso_admin | @bakhodirovich_ao",
+  uz: "Bu sayt hozirda test holatida ishlayapti. Agar biron bir muammoga duch kelsangiz, admin bilan bog'laning: @bakhodirovich_ao",
+  ru: "Этот сайт работает в тестовом режиме. Если вы столкнулись с проблемой, свяжитесь с админом: @bakhodirovich_ao",
+  en: "This site is currently in test mode. If you encounter any issues, please contact the admin: @bakhodirovich_ao",
 };
 
 export function AnnouncementBar() {
