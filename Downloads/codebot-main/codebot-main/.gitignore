@@ -1,0 +1,30 @@
+bot.exe
+bot
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+*.exe~
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+/vendor/
+
+# OS
+.DS_Store
+Thumbs.db
