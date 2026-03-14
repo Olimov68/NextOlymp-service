@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getUsers, getUser, blockUser, unblockUser, deleteUser } from "@/lib/superadmin-api";
+import { normalizeList } from "@/lib/normalizeList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Trash2, ShieldOff, Shield, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { regions } from "@/lib/regions";
 
 interface User {
   id: number;
@@ -45,10 +47,10 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await getUsers({ page, limit, search, status: statusFilter || undefined, region: regionFilter || undefined });
-      const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      const res = await getUsers({ page, page_size: limit, search, status: statusFilter || undefined, region: regionFilter || undefined });
+      const list = normalizeList(res);
       setUsers(list);
-      setTotal(res.pagination?.total || res.data?.total || 0);
+      setTotal(res.pagination?.total || res?.data?.total || 0);
     } catch {
       setUsers([]);
     }
@@ -90,11 +92,7 @@ export default function UsersPage() {
 
   const totalPages = Math.ceil(total / limit);
 
-  const regions = [
-    "Toshkent", "Toshkent viloyati", "Samarqand", "Buxoro", "Andijon",
-    "Farg'ona", "Namangan", "Qashqadaryo", "Surxondaryo", "Xorazm",
-    "Navoiy", "Jizzax", "Sirdaryo", "Qoraqalpog'iston"
-  ];
+  // regions imported from @/lib/regions
 
   return (
     <div className="space-y-6">

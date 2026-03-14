@@ -43,31 +43,33 @@ type UpdateOlympiadRequest struct {
 // --- MockTest DTOs ---
 
 type CreateMockTestRequest struct {
-	Title          string   `json:"title" binding:"required,min=3,max=300"`
-	Description    string   `json:"description"`
-	Subject        string   `json:"subject" binding:"required"`
-	Grade          int      `json:"grade"`
-	Language       string   `json:"language" binding:"required"`
-	DurationMins   int      `json:"duration_minutes" binding:"required,min=1"`
-	TotalQuestions int      `json:"total_questions"`
-	ScoringType    string   `json:"scoring_type"`
-	Status         string   `json:"status"`
-	IsPaid         bool     `json:"is_paid"`
-	Price          *float64 `json:"price"`
+	Title              string   `json:"title" binding:"required,min=3,max=300"`
+	Description        string   `json:"description"`
+	Subject            string   `json:"subject" binding:"required"`
+	Grade              int      `json:"grade"`
+	Language           string   `json:"language" binding:"required"`
+	DurationMins       int      `json:"duration_minutes" binding:"required,min=1"`
+	TotalQuestions     int      `json:"total_questions"`
+	ScoringType        string   `json:"scoring_type"`          // simple | rasch
+	ScalingFormulaType string   `json:"scaling_formula_type"`  // none | prop_93_65 | prop_63_65
+	Status             string   `json:"status"`
+	IsPaid             bool     `json:"is_paid"`
+	Price              *float64 `json:"price"`
 }
 
 type UpdateMockTestRequest struct {
-	Title          *string  `json:"title"`
-	Description    *string  `json:"description"`
-	Subject        *string  `json:"subject"`
-	Grade          *int     `json:"grade"`
-	Language       *string  `json:"language"`
-	DurationMins   *int     `json:"duration_minutes"`
-	TotalQuestions *int     `json:"total_questions"`
-	ScoringType    *string  `json:"scoring_type"`
-	Status         *string  `json:"status"`
-	IsPaid         *bool    `json:"is_paid"`
-	Price          *float64 `json:"price"`
+	Title              *string  `json:"title"`
+	Description        *string  `json:"description"`
+	Subject            *string  `json:"subject"`
+	Grade              *int     `json:"grade"`
+	Language           *string  `json:"language"`
+	DurationMins       *int     `json:"duration_minutes"`
+	TotalQuestions     *int     `json:"total_questions"`
+	ScoringType        *string  `json:"scoring_type"`          // simple | rasch
+	ScalingFormulaType *string  `json:"scaling_formula_type"`  // none | prop_93_65 | prop_63_65
+	Status             *string  `json:"status"`
+	IsPaid             *bool    `json:"is_paid"`
+	Price              *float64 `json:"price"`
 }
 
 type TestListParams struct {
@@ -96,19 +98,20 @@ type OlympiadResponse struct {
 }
 
 type MockTestResponse struct {
-	ID             uint      `json:"id"`
-	Title          string    `json:"title"`
-	Slug           string    `json:"slug"`
-	Subject        string    `json:"subject"`
-	Grade          int       `json:"grade"`
-	Language       string    `json:"language"`
-	DurationMins   int       `json:"duration_minutes"`
-	TotalQuestions int       `json:"total_questions"`
-	ScoringType    string    `json:"scoring_type"`
-	Status         string    `json:"status"`
-	IsPaid         bool      `json:"is_paid"`
-	Price          *float64  `json:"price,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID                 uint      `json:"id"`
+	Title              string    `json:"title"`
+	Slug               string    `json:"slug"`
+	Subject            string    `json:"subject"`
+	Grade              int       `json:"grade"`
+	Language           string    `json:"language"`
+	DurationMins       int       `json:"duration_minutes"`
+	TotalQuestions     int       `json:"total_questions"`
+	ScoringType        string    `json:"scoring_type"`
+	ScalingFormulaType string    `json:"scaling_formula_type"`
+	Status             string    `json:"status"`
+	IsPaid             bool      `json:"is_paid"`
+	Price              *float64  `json:"price,omitempty"`
+	CreatedAt          time.Time `json:"created_at"`
 }
 
 func ToOlympiadResponse(o *models.Olympiad) OlympiadResponse {
@@ -125,6 +128,7 @@ func ToMockTestResponse(m *models.MockTest) MockTestResponse {
 		ID: m.ID, Title: m.Title, Slug: m.Slug, Subject: m.Subject,
 		Grade: m.Grade, Language: m.Language, DurationMins: m.DurationMins,
 		TotalQuestions: m.TotalQuestions, ScoringType: m.ScoringType,
+		ScalingFormulaType: m.ScalingFormulaType,
 		Status: string(m.Status), IsPaid: m.IsPaid, Price: m.Price, CreatedAt: m.CreatedAt,
 	}
 }

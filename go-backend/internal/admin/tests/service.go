@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/nextolympservice/go-backend/internal/models"
+	"github.com/nextolympservice/go-backend/internal/shared/assessment"
 	"gorm.io/gorm"
 )
 
@@ -199,25 +200,36 @@ func (s *Service) CreateMockTest(req *CreateMockTestRequest, createdByID uint) (
 	if req.Status != "" {
 		status = models.MockTestStatus(req.Status)
 	}
-	scoringType := "standard"
+	scoringType := "simple"
 	if req.ScoringType != "" {
+		if !assessment.IsValidScoringType(req.ScoringType) {
+			return nil, errors.New("scoring_type faqat 'simple' yoki 'rasch' bo'lishi mumkin")
+		}
 		scoringType = req.ScoringType
+	}
+	scalingFormulaType := "none"
+	if req.ScalingFormulaType != "" {
+		if !assessment.IsValidScalingFormula(req.ScalingFormulaType) {
+			return nil, errors.New("scaling_formula_type faqat 'none', 'prop_93_65' yoki 'prop_63_65' bo'lishi mumkin")
+		}
+		scalingFormulaType = req.ScalingFormulaType
 	}
 
 	m := &models.MockTest{
-		Title:          req.Title,
-		Slug:           slugify(req.Title),
-		Description:    req.Description,
-		Subject:        req.Subject,
-		Grade:          req.Grade,
-		Language:       req.Language,
-		DurationMins:   req.DurationMins,
-		TotalQuestions: req.TotalQuestions,
-		ScoringType:    scoringType,
-		Status:         status,
-		IsPaid:         req.IsPaid,
-		Price:          req.Price,
-		CreatedByID:    &createdByID,
+		Title:              req.Title,
+		Slug:               slugify(req.Title),
+		Description:        req.Description,
+		Subject:            req.Subject,
+		Grade:              req.Grade,
+		Language:            req.Language,
+		DurationMins:       req.DurationMins,
+		TotalQuestions:     req.TotalQuestions,
+		ScoringType:        scoringType,
+		ScalingFormulaType: scalingFormulaType,
+		Status:             status,
+		IsPaid:             req.IsPaid,
+		Price:              req.Price,
+		CreatedByID:        &createdByID,
 	}
 
 	if err := s.repo.CreateMockTest(m); err != nil {
@@ -265,7 +277,16 @@ func (s *Service) UpdateMockTest(id uint, req *UpdateMockTestRequest) (*MockTest
 		fields["total_questions"] = *req.TotalQuestions
 	}
 	if req.ScoringType != nil {
+		if !assessment.IsValidScoringType(*req.ScoringType) {
+			return nil, errors.New("scoring_type faqat 'simple' yoki 'rasch' bo'lishi mumkin")
+		}
 		fields["scoring_type"] = *req.ScoringType
+	}
+	if req.ScalingFormulaType != nil {
+		if !assessment.IsValidScalingFormula(*req.ScalingFormulaType) {
+			return nil, errors.New("scaling_formula_type faqat 'none', 'prop_93_65' yoki 'prop_63_65' bo'lishi mumkin")
+		}
+		fields["scaling_formula_type"] = *req.ScalingFormulaType
 	}
 	if req.Status != nil {
 		fields["status"] = *req.Status

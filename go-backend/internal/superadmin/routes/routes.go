@@ -16,6 +16,7 @@ import (
 	saolympiads "github.com/nextolympservice/go-backend/internal/superadmin/olympiads"
 	sapayments "github.com/nextolympservice/go-backend/internal/superadmin/payments"
 	saperms "github.com/nextolympservice/go-backend/internal/superadmin/permissions"
+	sapromos "github.com/nextolympservice/go-backend/internal/superadmin/promocodes"
 	saquestions "github.com/nextolympservice/go-backend/internal/superadmin/questions"
 	saresults "github.com/nextolympservice/go-backend/internal/superadmin/results"
 	sasecurity "github.com/nextolympservice/go-backend/internal/superadmin/security"
@@ -43,6 +44,7 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 	securityHandler := sasecurity.NewHandler(db)
 	auditHandler := saaudit.NewHandler(db)
 	settingsHandler := sasettings.NewHandler(db)
+	promosHandler := sapromos.NewHandler(db)
 
 	// Superadmin group
 	sa := api.Group("/superadmin")
@@ -151,7 +153,7 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 			fG.PUT("/:id/reply", feedbackHandler.Reply)
 		}
 
-		// Payments management
+		// Payments management (promo-codes ham shu ichida)
 		pG := sa.Group("/payments")
 		{
 			pG.GET("", paymentsHandler.List)
@@ -161,6 +163,19 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 			pG.POST("/:id/approve", paymentsHandler.Approve)
 			pG.POST("/:id/refund", paymentsHandler.Refund)
 			pG.POST("/manual", paymentsHandler.CreateManual)
+
+			// Promo codes — To'lovlar bo'limi ichida
+			pcG := pG.Group("/promo-codes")
+			{
+				pcG.GET("", promosHandler.List)
+				pcG.POST("", promosHandler.Create)
+				pcG.GET("/stats", promosHandler.Stats)
+				pcG.GET("/:id", promosHandler.GetByID)
+				pcG.PUT("/:id", promosHandler.Update)
+				pcG.DELETE("/:id", promosHandler.Delete)
+				pcG.PATCH("/:id/toggle", promosHandler.ToggleStatus)
+				pcG.GET("/:id/usages", promosHandler.GetUsages)
+			}
 		}
 
 		// Permissions management

@@ -120,6 +120,152 @@ func (h *Handler) Delete(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Bildirishnoma o'chirildi", nil)
 }
 
+// --- Bildirishnoma sozlamalari ---
+
+// NotificationPreferenceResponse — sozlamalar javobi
+type NotificationPreferenceResponse struct {
+	Olympiads    bool `json:"olympiads"`
+	Payments     bool `json:"payments"`
+	News         bool `json:"news"`
+	MockTests    bool `json:"mock_tests"`
+	Results      bool `json:"results"`
+	Certificates bool `json:"certificates"`
+	Leaderboard  bool `json:"leaderboard"`
+	Promotions   bool `json:"promotions"`
+}
+
+// UpdatePreferenceRequest — sozlamalarni yangilash
+type UpdatePreferenceRequest struct {
+	Olympiads    *bool `json:"olympiads"`
+	Payments     *bool `json:"payments"`
+	News         *bool `json:"news"`
+	MockTests    *bool `json:"mock_tests"`
+	Results      *bool `json:"results"`
+	Certificates *bool `json:"certificates"`
+	Leaderboard  *bool `json:"leaderboard"`
+	Promotions   *bool `json:"promotions"`
+}
+
+// GetPreferences — foydalanuvchi bildirishnoma sozlamalarini olish
+func (h *Handler) GetPreferences(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	var pref models.NotificationPreference
+	err := h.db.Where("user_id = ?", userID).First(&pref).Error
+	if err != nil {
+		// Default sozlamalar (hammasi yoniq)
+		response.Success(c, http.StatusOK, "Bildirishnoma sozlamalari", NotificationPreferenceResponse{
+			Olympiads:    true,
+			Payments:     true,
+			News:         true,
+			MockTests:    true,
+			Results:      true,
+			Certificates: true,
+			Leaderboard:  true,
+			Promotions:   true,
+		})
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Bildirishnoma sozlamalari", NotificationPreferenceResponse{
+		Olympiads:    pref.Olympiads,
+		Payments:     pref.Payments,
+		News:         pref.News,
+		MockTests:    pref.MockTests,
+		Results:      pref.Results,
+		Certificates: pref.Certificates,
+		Leaderboard:  pref.Leaderboard,
+		Promotions:   pref.Promotions,
+	})
+}
+
+// UpdatePreferences — bildirishnoma sozlamalarini yangilash
+func (h *Handler) UpdatePreferences(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	var req UpdatePreferenceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, err)
+		return
+	}
+
+	var pref models.NotificationPreference
+	err := h.db.Where("user_id = ?", userID).First(&pref).Error
+	if err != nil {
+		// Yangi yaratish (default hammasi true)
+		pref = models.NotificationPreference{
+			UserID:       userID,
+			Olympiads:    true,
+			Payments:     true,
+			News:         true,
+			MockTests:    true,
+			Results:      true,
+			Certificates: true,
+			Leaderboard:  true,
+			Promotions:   true,
+		}
+	}
+
+	// Faqat kelgan fieldlarni yangilash
+	if req.Olympiads != nil {
+		pref.Olympiads = *req.Olympiads
+	}
+	if req.Payments != nil {
+		pref.Payments = *req.Payments
+	}
+	if req.News != nil {
+		pref.News = *req.News
+	}
+	if req.MockTests != nil {
+		pref.MockTests = *req.MockTests
+	}
+	if req.Results != nil {
+		pref.Results = *req.Results
+	}
+	if req.Certificates != nil {
+		pref.Certificates = *req.Certificates
+	}
+	if req.Leaderboard != nil {
+		pref.Leaderboard = *req.Leaderboard
+	}
+	if req.Promotions != nil {
+		pref.Promotions = *req.Promotions
+	}
+
+	if pref.ID == 0 {
+		h.db.Create(&pref)
+	} else {
+		h.db.Save(&pref)
+	}
+
+	response.Success(c, http.StatusOK, "Sozlamalar saqlandi", NotificationPreferenceResponse{
+		Olympiads:    pref.Olympiads,
+		Payments:     pref.Payments,
+		News:         pref.News,
+		MockTests:    pref.MockTests,
+		Results:      pref.Results,
+		Certificates: pref.Certificates,
+		Leaderboard:  pref.Leaderboard,
+		Promotions:   pref.Promotions,
+	})
+}
+
+// GetCategories — mavjud bildirishnoma kategoriyalarini qaytaradi
+func (h *Handler) GetCategories(c *gin.Context) {
+	categories := []map[string]interface{}{
+		{"key": "olympiads", "label": "Olimpiadalar", "description": "Olimpiada e'lonlari va natijalar"},
+		{"key": "payments", "label": "To'lovlar", "description": "To'lov holatlari va qaytarishlar"},
+		{"key": "news", "label": "Yangiliklar", "description": "Yangiliklar va e'lonlar"},
+		{"key": "mock_tests", "label": "Mock testlar", "description": "Sinov testlari e'lonlari va natijalar"},
+		{"key": "results", "label": "Natijalar", "description": "Natijalar va reyting yangiliklari"},
+		{"key": "certificates", "label": "Sertifikatlar", "description": "Sertifikat tayyorligi haqida"},
+		{"key": "leaderboard", "label": "Leaderboard", "description": "Peshqadamlar reytingi yangilanishi"},
+		{"key": "promotions", "label": "Promo code va chegirmalar", "description": "Chegirmalar va maxsus takliflar"},
+	}
+
+	response.Success(c, http.StatusOK, "Bildirishnoma kategoriyalari", categories)
+}
+
 // CreateNotification — bildirishnoma yaratish helper (boshqa modullardan chaqiriladi)
 func CreateNotification(db *gorm.DB, userID uint, notifType, title, message, actionURL, sourceType string, sourceID *uint) {
 	notification := models.Notification{

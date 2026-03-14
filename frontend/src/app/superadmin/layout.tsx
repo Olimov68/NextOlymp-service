@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   GraduationCap,
+  Tag,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -35,6 +36,7 @@ const navItems = [
   { href: "/superadmin/feedback", label: "Fikrlar", icon: MessageSquare },
   { href: "/superadmin/results", label: "Natijalar", icon: FileText },
   { href: "/superadmin/payments", label: "To'lovlar", icon: CreditCard },
+  { href: "/superadmin/payments/promo-codes", label: "Promo kodlar", icon: Tag },
   { href: "/superadmin/security", label: "Xavfsizlik", icon: Lock },
   { href: "/superadmin/audit-logs", label: "Audit loglar", icon: ScrollText },
   { href: "/superadmin/settings", label: "Sozlamalar", icon: Settings },
@@ -102,7 +104,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/superadmin" && pathname.startsWith(item.href));
+            const isActive = pathname === item.href || (item.href !== "/superadmin" && pathname.startsWith(item.href) && !navItems.some((other) => other.href !== item.href && other.href.startsWith(item.href) && pathname.startsWith(other.href)));
             return (
               <Link
                 key={item.href}

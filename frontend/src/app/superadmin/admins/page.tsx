@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 import {
   getAdmins,
   createAdmin,
@@ -53,6 +54,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { normalizeList } from "@/lib/normalizeList";
 
 // ============================================
 // Types
@@ -405,7 +407,7 @@ export default function AdminsPage() {
     const loadPermissions = async () => {
       try {
         const res = await getPermissions();
-        const perms: Permission[] = Array.isArray(res) ? res : (res?.data || []);
+        const perms: Permission[] = normalizeList(res);
         setAllPermissions(perms);
       } catch {
         console.error("Failed to load permissions");
@@ -423,14 +425,14 @@ export default function AdminsPage() {
     try {
       const res = await getAdmins({
         page,
-        limit,
+        page_size: limit,
         search: search || undefined,
         role: roleFilter || undefined,
         status: statusFilter || undefined,
       });
-      const list = Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : (res.data?.data || []);
+      const list = normalizeList(res);
       setAdmins(list);
-      setTotal(res.pagination?.total || res.total || res.data?.total || 0);
+      setTotal(res.pagination?.total || res.total || res?.data?.total || 0);
     } catch {
       setAdmins([]);
     }
@@ -550,10 +552,13 @@ export default function AdminsPage() {
       setShowCreate(false);
       setForm({ ...emptyForm });
       setSelectedPermissions(new Set());
-      fetchAdmins();
+      setSearch("");
+      setRoleFilter("");
+      setStatusFilter("");
+      await fetchAdmins();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
-      alert(err?.response?.data?.message || "Xatolik yuz berdi");
+      toast.error(err?.response?.data?.message || "Xatolik yuz berdi");
     }
     setFormLoading(false);
   };

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getResults, getResult } from "@/lib/superadmin-api";
+import { normalizeList } from "@/lib/normalizeList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -62,8 +63,8 @@ export default function ResultsPage() {
     setLoading(true);
     try {
       const res = await getResults({ page, limit, search, type: typeFilter || undefined, subject: subjectFilter || undefined });
-      setItems(res.data || []);
-      setTotal(res.pagination?.total || 0);
+      setItems(normalizeList(res));
+      setTotal(res.pagination?.total || res?.data?.total || 0);
     } catch {
       setItems([]);
     }

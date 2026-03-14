@@ -6,11 +6,12 @@ import Link from "next/link";
 import { register } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, XCircle, Ban } from "lucide-react";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
@@ -24,6 +25,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { setAuth } = useAuth();
   const { t } = useI18n();
+  const settings = useSettings();
 
   // Password strength checks
   const hasMinLength = password.length >= 8;
@@ -81,6 +83,36 @@ export default function RegisterPage() {
       <span className={ok ? "text-emerald-400" : "text-white/30"}>{text}</span>
     </div>
   );
+
+  // Ro'yxatdan o'tish o'chirilgan bo'lsa
+  if (settings.registration_enabled === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background hero-mesh px-4 py-8">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl" />
+        </div>
+        <Card className="relative w-full max-w-md shadow-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+          <CardContent className="text-center py-12 space-y-4">
+            <div className="flex justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
+                <Ban className="h-8 w-8 text-amber-400" />
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-white">Ro&apos;yxatdan o&apos;tish vaqtincha to&apos;xtatilgan</h2>
+            <p className="text-blue-200/60 text-sm">
+              Hozirda yangi foydalanuvchilarni ro&apos;yxatdan o&apos;tkazish to&apos;xtatilgan. Iltimos, keyinroq urinib ko&apos;ring.
+            </p>
+            <Link href="/login">
+              <Button variant="outline" className="mt-4 border-white/10 text-white hover:bg-white/5">
+                {t("auth.login")}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background hero-mesh px-4 py-8">

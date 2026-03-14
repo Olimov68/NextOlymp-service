@@ -78,7 +78,7 @@ export default function LinkTelegramPage() {
                 @NextOlympuzBot ga istalgan xabar yuboring — bot sizga 6 xonali kod yuboradi.
               </p>
               <a
-                href="https://t.me/NextOlymp_bot"
+                href="https://t.me/nextolympuzbot"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#0088cc] text-white py-2 px-4 text-sm font-medium hover:bg-[#007ab8] transition-colors"

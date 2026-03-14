@@ -22,13 +22,16 @@ import {
   Plus,
   AlertCircle,
   CheckCircle2,
+  Tag,
 } from "lucide-react";
 import {
   getBalance,
   getTransactions,
   topUp,
+  applyPromoCode,
   type BalanceInfo,
   type Transaction,
+  type PromoApplyResponse,
 } from "@/lib/user-api";
 
 export default function BalancePage() {
@@ -41,6 +44,10 @@ export default function BalancePage() {
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [topUpMessage, setTopUpMessage] = useState("");
   const [topUpError, setTopUpError] = useState("");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoResult, setPromoResult] = useState<PromoApplyResponse | null>(null);
+  const [promoError, setPromoError] = useState("");
   const perPage = 10;
 
   const loadData = async (p: number) => {
@@ -82,6 +89,24 @@ export default function BalancePage() {
       setTopUpError(err?.response?.data?.message || "Xatolik yuz berdi");
     } finally {
       setTopUpLoading(false);
+    }
+  };
+
+  const handlePromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoError("Promo kodni kiriting");
+      return;
+    }
+    setPromoLoading(true);
+    setPromoError("");
+    setPromoResult(null);
+    try {
+      const result = await applyPromoCode({ code: promoCode.trim(), amount: parseInt(topUpAmount) || 0 });
+      setPromoResult(result);
+    } catch (err: any) {
+      setPromoError(err?.response?.data?.message || "Promo kod xato yoki muddati tugagan");
+    } finally {
+      setPromoLoading(false);
     }
   };
 
@@ -166,6 +191,46 @@ export default function BalancePage() {
                   {topUpError}
                 </div>
               )}
+
+              {/* Promo Code Section */}
+              <div className="border-t pt-3 mt-3">
+                <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <Tag className="h-3.5 w-3.5" />
+                  Promo kod
+                </h4>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Promo kod kiriting"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
+                    className="bg-background"
+                  />
+                  <Button
+                    onClick={handlePromoCode}
+                    disabled={promoLoading}
+                    variant="outline"
+                    className="flex-shrink-0"
+                  >
+                    {promoLoading ? "..." : "Tekshirish"}
+                  </Button>
+                </div>
+                {promoResult && (
+                  <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200 space-y-1">
+                    <p className="text-sm font-medium text-green-700">
+                      Chegirma: -{promoResult.discount_amount.toLocaleString()} so&apos;m
+                    </p>
+                    <p className="text-sm text-green-600">
+                      Yakuniy summa: {promoResult.final_amount.toLocaleString()} so&apos;m
+                    </p>
+                  </div>
+                )}
+                {promoError && (
+                  <div className="mt-2 p-2 bg-red-50 rounded-lg flex items-center gap-2 text-sm text-red-700">
+                    <AlertCircle className="h-4 w-4" />
+                    {promoError}
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import {
   getOlympiads, createOlympiad, updateOlympiad, deleteOlympiad,
 } from "@/lib/superadmin-api";
+import { normalizeList } from "@/lib/normalizeList";
 
 interface Olympiad {
   id: number;
@@ -104,8 +105,8 @@ export default function SuperadminOlympiadsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await getOlympiads({ page: 1, limit: 100 });
-      setItems(Array.isArray(data) ? data : (data as any)?.data || []);
+      const data = await getOlympiads({ page: 1, page_size: 100 });
+      setItems(normalizeList(data));
     } catch {
       toast.error("Ma'lumotlar yuklanmadi");
     } finally {
@@ -176,9 +177,12 @@ export default function SuperadminOlympiadsPage() {
         toast.success("Olimpiada yaratildi");
       }
       setOpen(false);
-      load();
+      setSearch("");
+      setStatusFilter("all");
+      await load();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "Xatolik yuz berdi");
+      const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { getDashboard } from "@/lib/superadmin-api";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Users,
@@ -12,6 +12,9 @@ import {
   Award,
   CreditCard,
   AlertCircle,
+  Tag,
+  DollarSign,
+  TrendingUp,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -24,6 +27,9 @@ interface DashboardStats {
   open_feedbacks: number;
   total_payments: number;
   total_certificates: number;
+  active_promo_codes: number;
+  total_revenue: number;
+  weekly_new_users: number;
 }
 
 interface LatestUser {
@@ -41,25 +47,30 @@ interface LatestFeedback {
   created_at: string;
 }
 
+interface LatestPayment {
+  id: number;
+  user_id: number;
+  username: string;
+  amount: number;
+  status: string;
+  created_at: string;
+}
+
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [latestUsers, setLatestUsers] = useState<LatestUser[]>([]);
   const [latestFeedbacks, setLatestFeedbacks] = useState<LatestFeedback[]>([]);
+  const [latestPayments, setLatestPayments] = useState<LatestPayment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("panel_access_token");
-    if (!token) return;
-
-    api
-      .get("/superadmin/dashboard", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((r) => {
-        const d = r.data.data;
+    getDashboard()
+      .then((res) => {
+        const d = res.data || res;
         setStats(d.stats);
-        setLatestUsers(d.latest_users || []);
-        setLatestFeedbacks(d.latest_feedbacks || []);
+        setLatestUsers(Array.isArray(d.latest_users) ? d.latest_users : []);
+        setLatestFeedbacks(Array.isArray(d.latest_feedbacks) ? d.latest_feedbacks : []);
+        setLatestPayments(Array.isArray(d.latest_payments) ? d.latest_payments : []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -90,6 +101,9 @@ export default function SuperAdminDashboard() {
     { label: "Sertifikatlar", value: stats.total_certificates, icon: Award, color: "cyan" },
     { label: "To'lovlar", value: stats.total_payments, icon: CreditCard, color: "emerald" },
     { label: "Bloklangan", value: stats.blocked_users, icon: AlertCircle, color: "red" },
+    { label: "Aktiv promo kodlar", value: stats.active_promo_codes, icon: Tag, color: "orange" },
+    { label: "Umumiy daromad", value: (stats.total_revenue || 0).toLocaleString() + " so'm", icon: DollarSign, color: "emerald" },
+    { label: "Haftalik yangi", value: stats.weekly_new_users, icon: TrendingUp, color: "teal" },
   ];
 
   const colorMap: Record<string, string> = {
@@ -101,6 +115,8 @@ export default function SuperAdminDashboard() {
     cyan: "from-cyan-500/20 to-cyan-600/5 border-cyan-400/20 text-cyan-400",
     emerald: "from-emerald-500/20 to-emerald-600/5 border-emerald-400/20 text-emerald-400",
     red: "from-red-500/20 to-red-600/5 border-red-400/20 text-red-400",
+    orange: "from-orange-500/20 to-orange-600/5 border-orange-400/20 text-orange-400",
+    teal: "from-teal-500/20 to-teal-600/5 border-teal-400/20 text-teal-400",
   };
 
   return (
@@ -171,6 +187,50 @@ export default function SuperAdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Latest Payments */}
+      <Card className="border border-border bg-accent/50 shadow-none">
+        <CardContent className="p-4">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Oxirgi to&apos;lovlar</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="pb-2 font-medium">ID</th>
+                  <th className="pb-2 font-medium">Foydalanuvchi</th>
+                  <th className="pb-2 font-medium text-right">Summa</th>
+                  <th className="pb-2 font-medium">Holat</th>
+                  <th className="pb-2 font-medium">Sana</th>
+                </tr>
+              </thead>
+              <tbody>
+                {latestPayments.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-4 text-center text-xs text-muted-foreground">Hali yo&apos;q</td>
+                  </tr>
+                )}
+                {latestPayments.map((p) => (
+                  <tr key={p.id} className="border-b border-border last:border-0">
+                    <td className="py-2 text-foreground">{p.id}</td>
+                    <td className="py-2 text-foreground">{p.username}</td>
+                    <td className="py-2 text-right text-foreground font-medium">{p.amount.toLocaleString()} so&apos;m</td>
+                    <td className="py-2">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        p.status === "completed" ? "bg-green-500/10 text-green-400" :
+                        p.status === "pending" ? "bg-amber-500/10 text-amber-400" :
+                        "bg-red-500/10 text-red-400"
+                      }`}>
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="py-2 text-[10px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

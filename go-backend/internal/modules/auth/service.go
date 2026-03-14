@@ -3,23 +3,43 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/nextolympservice/go-backend/internal/models"
+	"github.com/nextolympservice/go-backend/internal/shared/notifier"
 	"github.com/nextolympservice/go-backend/internal/utils"
 	"gorm.io/gorm"
 )
 
 type Service struct {
-	repo *Repository
-	jwt  *utils.JWTManager
+	repo       *Repository
+	jwt        *utils.JWTManager
+	sessionMgr *utils.SessionManager
+	notifier   *notifier.Notifier
 }
 
 func NewService(repo *Repository, jwt *utils.JWTManager) *Service {
 	return &Service{repo: repo, jwt: jwt}
 }
 
+// SetSessionManager — session manager ni sozlash (router.go da chaqiriladi)
+func (s *Service) SetSessionManager(sm *utils.SessionManager) {
+	s.sessionMgr = sm
+}
+
+// SetNotifier — notifier ni sozlash (router.go da chaqiriladi)
+func (s *Service) SetNotifier(n *notifier.Notifier) {
+	s.notifier = n
+}
+
+// SessionInfo — login/register da sessiya yaratish uchun kerakli ma'lumotlar
+type SessionInfo struct {
+	IPAddress string
+	UserAgent string
+}
+
 // Register creates a new user account
-func (s *Service) Register(req *RegisterRequest) (*RegisterResponse, error) {
+func (s *Service) Register(req *RegisterRequest, sessionInfo *SessionInfo) (*RegisterResponse, error) {
 	// Username validation
 	if err := utils.ValidateUsername(req.Username); err != nil {
 		return nil, fmt.Errorf("username: %w", err)
@@ -62,10 +82,26 @@ func (s *Service) Register(req *RegisterRequest) (*RegisterResponse, error) {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Generate tokens — registerdan keyin avtomatik login
-	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(user.ID, user.Username)
+	// Sessiya yaratish (avval session, keyin token — session_id JWT ichiga kiritiladi)
+	var sessionID uint
+	if s.sessionMgr != nil && sessionInfo != nil {
+		expiresAt := time.Now().Add(168 * time.Hour) // 7 kun
+		session, err := s.sessionMgr.CreateSession(user.ID, "user", "", sessionInfo.IPAddress, sessionInfo.UserAgent, expiresAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create session: %w", err)
+		}
+		sessionID = session.ID
+	}
+
+	// Generate tokens (session_id bilan)
+	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(user.ID, user.Username, sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
+	}
+
+	// Sessiya token hash ni yangilash
+	if s.sessionMgr != nil && sessionID > 0 {
+		s.sessionMgr.UpdateSessionTokenByID(sessionID, refreshToken)
 	}
 
 	return &RegisterResponse{
@@ -75,12 +111,12 @@ func (s *Service) Register(req *RegisterRequest) (*RegisterResponse, error) {
 			RefreshToken: refreshToken,
 			TokenType:    "Bearer",
 		},
-		NextStep: DetermineNextStep(user), // yangi user uchun doim "complete_profile"
+		NextStep: DetermineNextStep(user),
 	}, nil
 }
 
 // Login authenticates a user and returns tokens
-func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
+func (s *Service) Login(req *LoginRequest, sessionInfo *SessionInfo) (*LoginResponse, error) {
 	user, err := s.repo.GetByUsername(req.Username)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -89,7 +125,6 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
 
-	// Blocked yoki deleted user login qila olmasin
 	if user.Status == models.UserStatusBlocked {
 		return nil, errors.New("Your account has been blocked")
 	}
@@ -97,15 +132,35 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("Invalid credentials")
 	}
 
-	// Password tekshirish
 	if !utils.CheckPassword(req.Password, user.PasswordHash) {
 		return nil, errors.New("Invalid credentials")
 	}
 
-	// Generate tokens
-	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(user.ID, user.Username)
+	// Sessiya yaratish (avval session — eski sessiyalar avtomatik bekor bo'ladi)
+	var sessionID uint
+	if s.sessionMgr != nil && sessionInfo != nil {
+		expiresAt := time.Now().Add(168 * time.Hour)
+		session, err := s.sessionMgr.CreateSession(user.ID, "user", "", sessionInfo.IPAddress, sessionInfo.UserAgent, expiresAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create session: %w", err)
+		}
+		sessionID = session.ID
+
+		// Yangi qurilmadan kirish bildirishnomasi
+		if s.notifier != nil {
+			s.notifier.NewLogin(user.ID, session.DeviceName, session.IPAddress)
+		}
+	}
+
+	// Generate tokens (session_id bilan)
+	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(user.ID, user.Username, sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
+	}
+
+	// Sessiya token hash ni yangilash
+	if s.sessionMgr != nil && sessionID > 0 {
+		s.sessionMgr.UpdateSessionTokenByID(sessionID, refreshToken)
 	}
 
 	return &LoginResponse{
@@ -126,7 +181,6 @@ func (s *Service) RefreshTokens(refreshTokenStr string) (*TokenPair, error) {
 		return nil, errors.New("invalid or expired refresh token")
 	}
 
-	// User hali mavjudligini tekshirish
 	user, err := s.repo.GetByID(claims.UserID)
 	if err != nil {
 		return nil, errors.New("user not found")
@@ -136,9 +190,23 @@ func (s *Service) RefreshTokens(refreshTokenStr string) (*TokenPair, error) {
 		return nil, errors.New("account is not active")
 	}
 
-	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(user.ID, user.Username)
+	// Sessiya haqiqiyligini tekshirish (aniq session_id bo'yicha)
+	if s.sessionMgr != nil {
+		_, valid := s.sessionMgr.ValidateSession(user.ID, "user", claims.SessionID)
+		if !valid {
+			return nil, errors.New("session expired or invalidated")
+		}
+	}
+
+	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(user.ID, user.Username, claims.SessionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
+	}
+
+	// Sessiya token hash ni yangilash
+	if s.sessionMgr != nil {
+		expiresAt := time.Now().Add(168 * time.Hour)
+		s.sessionMgr.UpdateSessionToken(user.ID, "user", utils.HashToken(refreshTokenStr), refreshToken, expiresAt)
 	}
 
 	return &TokenPair{
@@ -163,4 +231,43 @@ func (s *Service) GetMe(userID uint) (*MeResponse, error) {
 		Profile:  ToProfileResponse(user.Profile),
 		NextStep: DetermineNextStep(user),
 	}, nil
+}
+
+// ChangePassword — parolni o'zgartirish
+func (s *Service) ChangePassword(userID uint, req *ChangePasswordRequest) error {
+	user, err := s.repo.GetByID(userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	if !utils.CheckPassword(req.CurrentPassword, user.PasswordHash) {
+		return errors.New("Joriy parol noto'g'ri")
+	}
+
+	if err := utils.ValidatePassword(req.NewPassword); err != nil {
+		return fmt.Errorf("Yangi parol: %w", err)
+	}
+
+	hash, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	user.PasswordHash = hash
+	if err := s.repo.UpdateUser(user); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
+}
+
+// Logout — joriy sessiyani bekor qilish
+func (s *Service) Logout(userID uint, sessionID uint) {
+	if s.sessionMgr != nil {
+		if sessionID > 0 {
+			s.sessionMgr.InvalidateSession(sessionID, userID)
+		} else {
+			s.sessionMgr.InvalidateAllSessions(userID)
+		}
+	}
 }

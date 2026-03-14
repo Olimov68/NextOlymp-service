@@ -50,7 +50,5 @@ func (h *Handler) List(c *gin.Context) {
 	q.Order("created_at DESC").
 		Offset((page - 1) * pageSize).Limit(pageSize).Find(&list)
 
-	response.Success(c, http.StatusOK, "Audit logs", gin.H{
-		"data": list, "total": total, "page": page, "page_size": pageSize,
-	})
+	response.SuccessWithPagination(c, http.StatusOK, "Audit logs", list, page, pageSize, total)
 }

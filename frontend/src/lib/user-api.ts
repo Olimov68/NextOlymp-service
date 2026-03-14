@@ -261,6 +261,11 @@ export const getOlympiadAttemptResult = (attemptId: number): Promise<AttemptResu
     .get(`/user/exams/olympiads/attempts/${attemptId}/result`)
     .then((r) => r.data.data ?? r.data);
 
+// ─── Change Password ────────────────────────────────────────────────────────
+
+export const changePassword = (data: { current_password: string; new_password: string }) =>
+  api.put("/profile/password", data).then((r) => r.data);
+
 // ─── Balance ─────────────────────────────────────────────────────────────────
 
 export const getBalance = (): Promise<BalanceInfo> =>
@@ -274,6 +279,65 @@ export const getTransactions = (params?: {
 
 export const topUp = (amount: number) =>
   api.post("/user/balance/topup", { amount }).then((r) => r.data);
+
+// ─── Promo Code ─────────────────────────────────────────────────────────────
+
+export interface PromoApplyResponse {
+  valid: boolean;
+  promo_code_id: number;
+  code: string;
+  discount_type: string;
+  discount_percent: number;
+  discount_fixed: number;
+  discount_amount: number;
+  final_amount: number;
+  message: string;
+}
+
+export const applyPromoCode = (data: {
+  code: string;
+  amount: number;
+  source_type?: string;
+}): Promise<PromoApplyResponse> =>
+  api.post("/user/balance/promo-code/apply", data).then((r) => r.data.data ?? r.data);
+
+// ─── Leaderboard ────────────────────────────────────────────────────────────
+
+export interface LeaderboardEntry {
+  rank: number;
+  user_id: number;
+  username: string;
+  full_name: string;
+  region: string;
+  total_score: number;
+  avg_percentage: number;
+  attempts_count: number;
+  medal: string;
+}
+
+export interface MyRankInfo {
+  rank: number;
+  total_score: number;
+  avg_percentage: number;
+  attempts_count: number;
+  total_participants: number;
+}
+
+export const getLeaderboard = (params?: {
+  subject?: string;
+  region?: string;
+  period?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{ data: LeaderboardEntry[]; total: number }> =>
+  api.get("/user/leaderboard", { params }).then((r) => r.data.data ?? r.data);
+
+export const getMyRank = (params?: {
+  subject?: string;
+  region?: string;
+  period?: string;
+}): Promise<MyRankInfo> =>
+  api.get("/user/leaderboard/my-rank", { params }).then((r) => r.data.data ?? r.data);
 
 // ─── Notifications ───────────────────────────────────────────────────────────
 
@@ -305,6 +369,65 @@ export const getMockTestResults = (params?: Record<string, any>): Promise<UserRe
 
 export const getOlympiadResults = (params?: Record<string, any>): Promise<UserResult[]> =>
   api.get("/user/results/olympiads", { params }).then((r) => r.data.data ?? r.data);
+
+// ─── Devices ────────────────────────────────────────────────────────────────
+
+export interface DeviceSession {
+  id: number;
+  device_name: string;
+  browser: string;
+  os: string;
+  device_type: string;
+  ip_address: string;
+  location: string;
+  is_active: boolean;
+  is_current: boolean;
+  last_active_at: string;
+  created_at: string;
+}
+
+export const listDevices = (): Promise<{ devices: DeviceSession[]; total: number }> =>
+  api.get("/user/devices").then((r) => r.data.data ?? r.data);
+
+export const getCurrentDevice = (): Promise<DeviceSession> =>
+  api.get("/user/devices/current").then((r) => r.data.data ?? r.data);
+
+export const logoutDevice = (id: number) =>
+  api.delete(`/user/devices/${id}`).then((r) => r.data);
+
+export const logoutAllOtherDevices = (): Promise<{ logged_out_count: number }> =>
+  api.post("/user/devices/logout-others").then((r) => r.data.data ?? r.data);
+
+export const logoutAllDevices = () =>
+  api.post("/user/devices/logout-all").then((r) => r.data);
+
+// ─── Notification Preferences ───────────────────────────────────────────────
+
+export interface NotificationPreferences {
+  olympiads: boolean;
+  payments: boolean;
+  news: boolean;
+  mock_tests: boolean;
+  results: boolean;
+  certificates: boolean;
+  leaderboard: boolean;
+  promotions: boolean;
+}
+
+export interface NotificationCategory {
+  key: string;
+  label: string;
+  description: string;
+}
+
+export const getNotificationPreferences = (): Promise<NotificationPreferences> =>
+  api.get("/user/notifications/preferences").then((r) => r.data.data ?? r.data);
+
+export const updateNotificationPreferences = (data: Partial<NotificationPreferences>): Promise<NotificationPreferences> =>
+  api.put("/user/notifications/preferences", data).then((r) => r.data.data ?? r.data);
+
+export const getNotificationCategories = (): Promise<NotificationCategory[]> =>
+  api.get("/user/notifications/categories").then((r) => r.data.data ?? r.data);
 
 // ─── News ────────────────────────────────────────────────────────────────────
 

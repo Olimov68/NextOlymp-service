@@ -60,9 +60,7 @@ func (h *Handler) List(c *gin.Context) {
 	offset := (page - 1) * pageSize
 	q.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&list)
 
-	response.Success(c, http.StatusOK, "Users", gin.H{
-		"data": list, "total": total, "page": page, "page_size": pageSize,
-	})
+	response.SuccessWithPagination(c, http.StatusOK, "Users", list, page, pageSize, total)
 }
 
 // GetByID GET /api/v1/superadmin/users/:id
@@ -126,6 +124,28 @@ func (h *Handler) Delete(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "Invalid ID", nil)
 		return
 	}
-	h.db.Model(&models.User{}).Where("id = ?", id).Update("status", models.UserStatusDeleted)
-	response.Success(c, http.StatusOK, "User deleted", nil)
+
+	// Foydalanuvchi mavjudligini tekshirish
+	var user models.User
+	if err := h.db.First(&user, id).Error; err != nil {
+		response.NotFound(c, "Foydalanuvchi topilmadi")
+		return
+	}
+
+	// Bog'liq ma'lumotlarni o'chirish (foreign key constraints)
+	tx := h.db.Begin()
+	tx.Where("user_id = ?", id).Delete(&models.Session{})
+	tx.Where("user_id = ?", id).Delete(&models.TelegramLink{})
+	tx.Where("user_id = ?", id).Delete(&models.Profile{})
+	tx.Where("user_id = ?", id).Delete(&models.PromoCodeUsage{})
+	tx.Where("user_id = ?", id).Delete(&models.Notification{})
+	tx.Delete(&user)
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		response.Error(c, http.StatusInternalServerError, "Foydalanuvchini o'chirishda xatolik")
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Foydalanuvchi bazadan to'liq o'chirildi", nil)
 }

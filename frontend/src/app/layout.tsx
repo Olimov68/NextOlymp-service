@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { AuthProvider } from "@/lib/auth-context";
+import { SettingsProvider } from "@/lib/settings-context";
 import { Toaster } from "sonner";
 
 const inter = Inter({
@@ -48,9 +49,11 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`}>
         <Providers>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <SettingsProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </SettingsProvider>
         </Providers>
         <Toaster richColors position="top-right" />
         <Script src="//code.jivo.ru/widget/GovfNB8EWK" strategy="lazyOnload" />

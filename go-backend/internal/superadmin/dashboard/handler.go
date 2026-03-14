@@ -18,15 +18,18 @@ func NewHandler(db *gorm.DB) *Handler {
 }
 
 type SuperAdminStats struct {
-	TotalUsers        int64 `json:"total_users"`
-	BlockedUsers      int64 `json:"blocked_users"`
-	TotalAdmins       int64 `json:"total_admins"`
-	TotalOlympiads    int64 `json:"total_olympiads"`
-	TotalMockTests    int64 `json:"total_mock_tests"`
-	TotalFeedbacks    int64 `json:"total_feedbacks"`
-	OpenFeedbacks     int64 `json:"open_feedbacks"`
-	TotalPayments     int64 `json:"total_payments"`
-	TotalCertificates int64 `json:"total_certificates"`
+	TotalUsers        int64   `json:"total_users"`
+	BlockedUsers      int64   `json:"blocked_users"`
+	TotalAdmins       int64   `json:"total_admins"`
+	TotalOlympiads    int64   `json:"total_olympiads"`
+	TotalMockTests    int64   `json:"total_mock_tests"`
+	TotalFeedbacks    int64   `json:"total_feedbacks"`
+	OpenFeedbacks     int64   `json:"open_feedbacks"`
+	TotalPayments     int64   `json:"total_payments"`
+	TotalCertificates int64   `json:"total_certificates"`
+	ActivePromoCodes  int64   `json:"active_promo_codes"`
+	TotalRevenue      float64 `json:"total_revenue"`
+	WeeklyNewUsers    int64   `json:"weekly_new_users"`
 }
 
 type LatestUser struct {
@@ -45,6 +48,15 @@ type LatestFeedback struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type LatestPayment struct {
+	ID        uint    `json:"id"`
+	UserID    uint    `json:"user_id"`
+	Username  string  `json:"username"`
+	Amount    float64 `json:"amount"`
+	Status    string  `json:"status"`
+	CreatedAt string  `json:"created_at"`
+}
+
 // Stats GET /api/v1/superadmin/dashboard
 func (h *Handler) Stats(c *gin.Context) {
 	var stats SuperAdminStats
@@ -57,6 +69,9 @@ func (h *Handler) Stats(c *gin.Context) {
 	h.db.Raw("SELECT COUNT(*) FROM feedbacks WHERE status = 'open'").Scan(&stats.OpenFeedbacks)
 	h.db.Raw("SELECT COUNT(*) FROM payments").Scan(&stats.TotalPayments)
 	h.db.Raw("SELECT COUNT(*) FROM certificates").Scan(&stats.TotalCertificates)
+	h.db.Raw("SELECT COUNT(*) FROM promo_codes WHERE status = 'active'").Scan(&stats.ActivePromoCodes)
+	h.db.Raw("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed'").Scan(&stats.TotalRevenue)
+	h.db.Raw("SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '7 days' AND status != 'deleted'").Scan(&stats.WeeklyNewUsers)
 
 	// Latest users
 	var latestUsers []models.User
@@ -89,9 +104,28 @@ func (h *Handler) Stats(c *gin.Context) {
 		feedbacks[i] = fb
 	}
 
+	// Latest payments
+	var latestPayments []models.Payment
+	h.db.Preload("User").Order("created_at DESC").Limit(5).Find(&latestPayments)
+	payments := make([]LatestPayment, len(latestPayments))
+	for i, p := range latestPayments {
+		lp := LatestPayment{
+			ID:        p.ID,
+			UserID:    p.UserID,
+			Amount:    p.Amount,
+			Status:    string(p.Status),
+			CreatedAt: p.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		}
+		if p.User != nil {
+			lp.Username = p.User.Username
+		}
+		payments[i] = lp
+	}
+
 	response.Success(c, http.StatusOK, "SuperAdmin dashboard stats", gin.H{
 		"stats":            stats,
 		"latest_users":     users,
 		"latest_feedbacks": feedbacks,
+		"latest_payments":  payments,
 	})
 }

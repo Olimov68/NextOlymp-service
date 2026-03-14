@@ -17,9 +17,10 @@ const (
 )
 
 type JWTClaims struct {
-	UserID   uint      `json:"user_id"`
-	Username string    `json:"username"`
-	Type     TokenType `json:"type"`
+	UserID    uint      `json:"user_id"`
+	Username  string    `json:"username"`
+	SessionID uint      `json:"session_id"`
+	Type      TokenType `json:"type"`
 	jwt.RegisteredClaims
 }
 
@@ -31,13 +32,13 @@ func NewJWTManager(cfg *config.JWTConfig) *JWTManager {
 	return &JWTManager{cfg: cfg}
 }
 
-func (j *JWTManager) GenerateTokenPair(userID uint, username string) (accessToken, refreshToken string, err error) {
-	accessToken, err = j.generateToken(userID, username, AccessToken, j.cfg.AccessSecret, j.cfg.AccessExpiryHours)
+func (j *JWTManager) GenerateTokenPair(userID uint, username string, sessionID uint) (accessToken, refreshToken string, err error) {
+	accessToken, err = j.generateToken(userID, username, sessionID, AccessToken, j.cfg.AccessSecret, j.cfg.AccessExpiryHours)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	refreshToken, err = j.generateToken(userID, username, RefreshToken, j.cfg.RefreshSecret, j.cfg.RefreshExpiryHours)
+	refreshToken, err = j.generateToken(userID, username, sessionID, RefreshToken, j.cfg.RefreshSecret, j.cfg.RefreshExpiryHours)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate refresh token: %w", err)
 	}
@@ -53,11 +54,12 @@ func (j *JWTManager) ValidateRefreshToken(tokenString string) (*JWTClaims, error
 	return j.validateToken(tokenString, j.cfg.RefreshSecret, RefreshToken)
 }
 
-func (j *JWTManager) generateToken(userID uint, username string, tokenType TokenType, secret string, expiryHours int) (string, error) {
+func (j *JWTManager) generateToken(userID uint, username string, sessionID uint, tokenType TokenType, secret string, expiryHours int) (string, error) {
 	claims := JWTClaims{
-		UserID:   userID,
-		Username: username,
-		Type:     tokenType,
+		UserID:    userID,
+		Username:  username,
+		SessionID: sessionID,
+		Type:      tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expiryHours) * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

@@ -45,6 +45,7 @@ import {
   ListChecks,
 } from "lucide-react";
 import { toast } from "sonner";
+import { normalizeList } from "@/lib/normalizeList";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -143,14 +144,14 @@ export default function MockTestsPage() {
     try {
       const res = await getMockTests({
         page,
-        limit,
+        page_size: limit,
         search: search || undefined,
         status: statusFilter || undefined,
         subject: subjectFilter || undefined,
       });
-      const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : res?.data?.data || [];
+      const list = normalizeList(res);
       setItems(list);
-      setTotal(res?.pagination?.total || res?.total || list.length);
+      setTotal(res?.pagination?.total || res?.data?.total || res?.total || list.length);
     } catch {
       setItems([]);
     }
@@ -205,9 +206,13 @@ export default function MockTestsPage() {
         toast.success("Mock test yaratildi");
       }
       setDialogOpen(false);
-      fetchData();
+      setSearch("");
+      setStatusFilter("all");
+      setSubjectFilter("all");
+      await fetchData();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || e?.response?.data?.message || "Xatolik yuz berdi");
+      const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -218,7 +223,7 @@ export default function MockTestsPage() {
       await deleteMockTest(id);
       toast.success("Mock test o'chirildi");
       setDeleteId(null);
-      fetchData();
+      await fetchData();
     } catch {
       toast.error("O'chirib bo'lmadi");
     }

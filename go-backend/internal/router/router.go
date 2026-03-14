@@ -16,20 +16,27 @@ import (
 	// User modules
 	userbalance "github.com/nextolympservice/go-backend/internal/user/balance"
 	usercerts "github.com/nextolympservice/go-backend/internal/user/certificates"
+	userdevices "github.com/nextolympservice/go-backend/internal/user/devices"
+	userleaderboard "github.com/nextolympservice/go-backend/internal/user/leaderboard"
 	userexams "github.com/nextolympservice/go-backend/internal/user/exams"
 	userfeedback "github.com/nextolympservice/go-backend/internal/user/feedback"
 	usermocktests "github.com/nextolympservice/go-backend/internal/user/mocktests"
 	usernews "github.com/nextolympservice/go-backend/internal/user/news"
 	usernotifs "github.com/nextolympservice/go-backend/internal/user/notifications"
 	userolympiads "github.com/nextolympservice/go-backend/internal/user/olympiads"
+	userpromos "github.com/nextolympservice/go-backend/internal/user/promocodes"
 	userresults "github.com/nextolympservice/go-backend/internal/user/results"
 
 	// Admin centralized routes
 	adminroutes "github.com/nextolympservice/go-backend/internal/admin/routes"
 
+	// Shared
+	"github.com/nextolympservice/go-backend/internal/shared/notifier"
+
 	// Superadmin centralized routes
 	saroutes "github.com/nextolympservice/go-backend/internal/superadmin/routes"
 
+	"github.com/nextolympservice/go-backend/internal/models"
 	"github.com/nextolympservice/go-backend/internal/utils"
 	"github.com/nextolympservice/go-backend/pkg/response"
 	"gorm.io/gorm"
@@ -51,10 +58,17 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	jwtManager := utils.NewJWTManager(&cfg.JWT)
 	panelJWT := utils.NewPanelJWTManager(&cfg.PanelJWT)
 
+	// ─── Session & Notifier ──────────────────────────────────────────
+	sessionMgr := utils.NewSessionManager(db)
+	appNotifier := notifier.New(db)
+
 	// ─── Existing modules ─────────────────────────────────────────────
 	authRepo := auth.NewRepository(db)
 	authService := auth.NewService(authRepo, jwtManager)
+	authService.SetSessionManager(sessionMgr)
+	authService.SetNotifier(appNotifier)
 	authHandler := auth.NewHandler(authService)
+	authHandler.SetDB(db)
 
 	userRepo := user.NewRepository(db)
 	userService := user.NewService(userRepo, &cfg.Upload)
@@ -68,6 +82,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	panelAuthRepo := panelauth.NewRepository(db)
 	panelAuthService := panelauth.NewService(panelAuthRepo, panelJWT)
 	panelAuthHandler := panelauth.NewHandler(panelAuthService)
+	panelAuthHandler.SetDB(db)
 
 	// ─── User modules ─────────────────────────────────────────────────
 	olympiadsHandler := userolympiads.NewHandler(userolympiads.NewService(userolympiads.NewRepository(db)))
@@ -78,7 +93,10 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	examsHandler := userexams.NewHandler(db)
 	balanceHandler := userbalance.NewHandler(db)
 	notifsHandler := usernotifs.NewHandler(db)
+	promosHandler := userpromos.NewHandler(db)
 	userResultsHandler := userresults.NewHandler(db)
+	devicesHandler := userdevices.NewHandler(sessionMgr)
+	leaderboardHandler := userleaderboard.NewHandler(db)
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -86,6 +104,8 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	})
 
 	api := r.Group("/api/v1")
+	api.Use(middleware.AuditLogger(db))
+	api.Use(middleware.MaintenanceMode(db))
 
 	// ============================================================
 	// MAVJUD USER AUTH ROUTES (o'zgarmadi)
@@ -96,6 +116,50 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		authGroup.POST("/login", authHandler.Login)
 		authGroup.POST("/refresh", authHandler.RefreshToken)
 	}
+
+	// ============================================================
+	// PUBLIC SETTINGS — /api/v1/settings/public (auth talab qilinmaydi)
+	// ============================================================
+	api.GET("/settings/public", func(c *gin.Context) {
+		var setting models.GlobalSetting
+		if db.First(&setting).Error != nil {
+			setting = models.GlobalSetting{
+				PlatformName:        "NextOlymp",
+				DefaultLanguage:     "uz",
+				SupportEmail:        "",
+				MaintenanceMode:     false,
+				RegistrationEnabled: true,
+			}
+			db.Create(&setting)
+		}
+		response.Success(c, 200, "Public settings", gin.H{
+			"platform_name":        setting.PlatformName,
+			"support_email":        setting.SupportEmail,
+			"maintenance_mode":     setting.MaintenanceMode,
+			"registration_enabled": setting.RegistrationEnabled,
+			"default_language":     setting.DefaultLanguage,
+		})
+	})
+
+	// ============================================================
+	// PUBLIC STATS — /api/v1/stats (auth talab qilinmaydi)
+	// ============================================================
+	api.GET("/stats", func(c *gin.Context) {
+		var totalUsers int64
+		var totalOlympiads int64
+		var totalMockTests int64
+
+		db.Model(&models.User{}).Count(&totalUsers)
+		db.Model(&models.Olympiad{}).Count(&totalOlympiads)
+		db.Model(&models.MockTest{}).Count(&totalMockTests)
+
+		response.Success(c, 200, "Stats", gin.H{
+			"total_users":      totalUsers,
+			"total_olympiads":  totalOlympiads,
+			"total_regions":    14,
+			"total_mock_tests": totalMockTests,
+		})
+	})
 
 	protected := api.Group("")
 	protected.Use(middleware.AuthRequired(jwtManager, db))
@@ -109,6 +173,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			profileGroup.PUT("/me", userHandler.UpdateProfile)
 			profileGroup.GET("/me", userHandler.GetProfile)
 			profileGroup.POST("/photo", userHandler.UploadPhoto)
+			profileGroup.PUT("/password", authHandler.ChangePassword)
 		}
 
 		telegramGroup := protected.Group("/telegram")
@@ -188,12 +253,13 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			eg.GET("/olympiads/attempts/:attempt_id/result", examsHandler.GetOlympiadAttemptResult)
 		}
 
-		// Balance
+		// Balance (promo-code apply ham shu ichida)
 		bg := userAPI.Group("/balance")
 		{
 			bg.GET("", balanceHandler.GetBalance)
 			bg.GET("/transactions", balanceHandler.GetTransactions)
 			bg.POST("/topup", balanceHandler.TopUp)
+			bg.POST("/promo-code/apply", promosHandler.ApplyPromo)
 		}
 
 		// Notifications
@@ -204,6 +270,10 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			ntfg.PATCH("/:id/read", notifsHandler.MarkAsRead)
 			ntfg.POST("/read-all", notifsHandler.MarkAllAsRead)
 			ntfg.DELETE("/:id", notifsHandler.Delete)
+			// Bildirishnoma sozlamalari
+			ntfg.GET("/preferences", notifsHandler.GetPreferences)
+			ntfg.PUT("/preferences", notifsHandler.UpdatePreferences)
+			ntfg.GET("/categories", notifsHandler.GetCategories)
 		}
 
 		// Results
@@ -212,6 +282,23 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			resg.GET("", userResultsHandler.GetMyResults)
 			resg.GET("/mock-tests", userResultsHandler.GetMockTestResults)
 			resg.GET("/olympiads", userResultsHandler.GetOlympiadResults)
+		}
+
+		// Devices — qurilmalar boshqaruvi
+		dg := userAPI.Group("/devices")
+		{
+			dg.GET("", devicesHandler.List)
+			dg.GET("/current", devicesHandler.GetCurrent)
+			dg.DELETE("/:id", devicesHandler.LogoutDevice)
+			dg.POST("/logout-others", devicesHandler.LogoutAllOthers)
+			dg.POST("/logout-all", devicesHandler.LogoutAll)
+		}
+
+		// Leaderboard
+		lg := userAPI.Group("/leaderboard")
+		{
+			lg.GET("", leaderboardHandler.GetLeaderboard)
+			lg.GET("/my-rank", leaderboardHandler.GetMyRank)
 		}
 	}
 

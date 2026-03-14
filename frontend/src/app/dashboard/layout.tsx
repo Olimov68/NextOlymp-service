@@ -8,7 +8,7 @@ import Link from "next/link";
 import {
   Trophy, Newspaper, Medal, UserCircle, LogOut, Home,
   ClipboardCheck, Award, Wallet, Bell, MessageSquare,
-  Menu, X, LayoutDashboard
+  Menu, X, LayoutDashboard, BarChart3
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -59,6 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: "/dashboard/mock-tests", label: "Mock testlar", icon: ClipboardCheck, module: "mock-tests" },
     { href: "/dashboard/news", label: t("dashboard.news"), icon: Newspaper, module: "news" },
     { href: "/dashboard/results", label: t("dashboard.results"), icon: Medal, module: "results" },
+    { href: "/dashboard/leaderboard", label: "Reyting", icon: BarChart3, module: "leaderboard" },
     { href: "/dashboard/certificates", label: "Sertifikatlar", icon: Award, module: "certificates" },
     { href: "/dashboard/balance", label: "Balans", icon: Wallet, module: "balance" },
     { href: "/dashboard/notifications", label: "Bildirishnomalar", icon: Bell, module: "notifications" },

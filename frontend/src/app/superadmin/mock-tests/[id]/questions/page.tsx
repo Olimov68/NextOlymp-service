@@ -39,6 +39,7 @@ import {
   deleteQuestion,
   getMockTest,
 } from "@/lib/superadmin-api";
+import { normalizeList } from "@/lib/normalizeList";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -133,9 +134,7 @@ export default function MockTestQuestionsPage() {
         getQuestionsBySource({ source_type: "mock_test", source_id: Number(id) }),
       ]);
       setMockTest(mtData);
-      setQuestions(
-        Array.isArray(qData) ? qData : (qData as any)?.data || []
-      );
+      setQuestions(normalizeList(qData));
     } catch {
       toast.error("Ma'lumotlar yuklanmadi");
     } finally {

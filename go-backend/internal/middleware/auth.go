@@ -10,8 +10,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// AuthRequired — JWT tokenni tekshiradi va userID ni context'ga qo'yadi
+// AuthRequired — JWT tokenni tekshiradi, sessiyani tekshiradi va userID ni context'ga qo'yadi
 func AuthRequired(jwt *utils.JWTManager, db *gorm.DB) gin.HandlerFunc {
+	sessionMgr := utils.NewSessionManager(db)
+
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -54,12 +56,21 @@ func AuthRequired(jwt *utils.JWTManager, db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Sessiya haqiqiyligini tekshirish — JWT ichidagi session_id bo'yicha
+		session, valid := sessionMgr.ValidateSession(user.ID, "user", claims.SessionID)
+		if !valid {
+			response.Unauthorized(c, "Session expired or invalidated. Please login again")
+			c.Abort()
+			return
+		}
+
 		// Context'ga user ma'lumotlarini qo'yish
 		c.Set("userID", user.ID)
 		c.Set("username", user.Username)
 		c.Set("userStatus", user.Status)
 		c.Set("isProfileCompleted", user.IsProfileCompleted)
 		c.Set("isTelegramLinked", user.IsTelegramLinked)
+		c.Set("sessionID", session.ID)
 
 		c.Next()
 	}

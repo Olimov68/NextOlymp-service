@@ -89,6 +89,11 @@ func DetermineNextStep(u *models.User) string {
 	return "dashboard"
 }
 
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required"`
+	NewPassword     string `json:"new_password" binding:"required,min=8,max=128"`
+}
+
 func ToProfileResponse(p *models.Profile) *ProfileResponse {
 	if p == nil {
 		return nil

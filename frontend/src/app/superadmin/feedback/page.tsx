@@ -18,6 +18,7 @@ import {
 import { Loader2, MessageSquare, Search, RefreshCw, Eye, Send } from "lucide-react";
 import { toast } from "sonner";
 import { getFeedbacks, getFeedback, replyFeedback } from "@/lib/superadmin-api";
+import { normalizeList } from "@/lib/normalizeList";
 
 interface Feedback {
   id: number;
@@ -59,8 +60,8 @@ export default function SuperadminFeedbackPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await getFeedbacks({ page: 1, limit: 100 });
-      setItems(Array.isArray(data) ? data : (data as any)?.data || []);
+      const data = await getFeedbacks({ page: 1, page_size: 100 });
+      setItems(normalizeList(data));
     } catch {
       toast.error("Ma'lumotlar yuklanmadi");
     } finally {
@@ -95,9 +96,10 @@ export default function SuperadminFeedbackPage() {
       await replyFeedback(detailItem.id, { reply: reply.trim(), status: replyStatus });
       toast.success("Javob yuborildi");
       setDetailItem(null);
-      load();
+      await load();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "Xatolik yuz berdi");
+      const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
+      toast.error(msg);
     } finally {
       setReplying(false);
     }

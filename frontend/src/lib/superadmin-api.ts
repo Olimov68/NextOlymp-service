@@ -142,6 +142,18 @@ export const refundPayment = (id: number, data: { reason: string }) => post(`/pa
 export const createManualPayment = (data: Record<string, unknown>) => post("/payments/manual", data);
 
 // ============================================
+// Promo Codes (under payments)
+// ============================================
+export const getPromoCodes = (params?: Record<string, unknown>) => get("/payments/promo-codes", params);
+export const getPromoCode = (id: number) => get(`/payments/promo-codes/${id}`);
+export const createPromoCode = (data: Record<string, unknown>) => post("/payments/promo-codes", data);
+export const updatePromoCode = (id: number, data: Record<string, unknown>) => put(`/payments/promo-codes/${id}`, data);
+export const deletePromoCode = (id: number) => del(`/payments/promo-codes/${id}`);
+export const togglePromoCode = (id: number) => patch(`/payments/promo-codes/${id}/toggle`);
+export const getPromoCodeUsages = (id: number) => get(`/payments/promo-codes/${id}/usages`);
+export const getPromoCodeStats = () => get("/payments/promo-codes/stats");
+
+// ============================================
 // Permissions
 // ============================================
 export const getPermissions = (params?: Record<string, unknown>) => get("/permissions", params);

@@ -69,13 +69,18 @@ func Migrate(db *gorm.DB) error {
 		&models.MockTestRegistration{},
 		&models.MockAttempt{},
 		&models.MockAttemptAnswer{},
+		&models.MockTestQuestionStat{},
 		// Communication
 		&models.Feedback{},
 		&models.Notification{},
+		&models.NotificationPreference{},
 		// Finance
 		&models.Payment{},
 		&models.Balance{},
 		&models.BalanceTransaction{},
+		// Promo codes
+		&models.PromoCode{},
+		&models.PromoCodeUsage{},
 		// Security & sessions
 		&models.Session{},
 		&models.LoginAttempt{},

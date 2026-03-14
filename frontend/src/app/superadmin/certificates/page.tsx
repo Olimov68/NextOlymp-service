@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getCertificates, createCertificate } from "@/lib/superadmin-api";
+import { normalizeList } from "@/lib/normalizeList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -41,10 +42,10 @@ export default function CertificatesPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await getCertificates({ page, limit, search, source_type: sourceTypeFilter || undefined });
-      const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      const res = await getCertificates({ page, page_size: limit, search, source_type: sourceTypeFilter || undefined });
+      const list = normalizeList(res);
       setItems(list);
-      setTotal(res.pagination?.total || res.data?.total || 0);
+      setTotal(res.pagination?.total || res?.data?.total || 0);
     } catch {
       setItems([]);
     }

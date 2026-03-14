@@ -42,10 +42,7 @@ func (h *Handler) List(c *gin.Context) {
 		items[i] = ToResponse(&f)
 	}
 
-	response.Success(c, http.StatusOK, "Feedbacks", gin.H{
-		"data": items, "total": total,
-		"page": params.Page, "page_size": params.PageSize,
-	})
+	response.SuccessWithPagination(c, http.StatusOK, "Feedbacks", items, params.Page, params.PageSize, total)
 }
 
 // GetByID GET /api/v1/superadmin/feedback/:id

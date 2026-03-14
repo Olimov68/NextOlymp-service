@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import {
   getQuestionsBySource, createQuestion, updateQuestion, deleteQuestion, getOlympiad,
 } from "@/lib/superadmin-api";
+import { normalizeList } from "@/lib/normalizeList";
 
 interface Option {
   id?: number;
@@ -93,7 +94,7 @@ export default function OlympiadQuestionsPage() {
         getQuestionsBySource({ source_type: "olympiad", source_id: Number(id) }),
       ]);
       setOlympiad(olympiadData);
-      setQuestions(Array.isArray(questionsData) ? questionsData : (questionsData as any)?.data || []);
+      setQuestions(normalizeList(questionsData));
     } catch {
       toast.error("Ma'lumotlar yuklanmadi");
     } finally {

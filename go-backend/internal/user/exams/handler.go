@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextolympservice/go-backend/internal/models"
+	"github.com/nextolympservice/go-backend/internal/shared/assessment"
 	"github.com/nextolympservice/go-backend/internal/user/notifications"
 	"github.com/nextolympservice/go-backend/pkg/response"
 	"gorm.io/gorm"
@@ -217,7 +218,47 @@ func (h *Handler) GetMockAttemptResult(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Natija", attempt)
+	// Rasch natijalarni ham qaytarish
+	resultData := map[string]interface{}{
+		"id":           attempt.ID,
+		"user_id":      attempt.UserID,
+		"mock_test_id": attempt.MockTestID,
+		"mock_test":    attempt.MockTest,
+		"started_at":   attempt.StartedAt,
+		"finished_at":  attempt.FinishedAt,
+		"score":        attempt.Score,
+		"max_score":    attempt.MaxScore,
+		"correct":      attempt.Correct,
+		"wrong":        attempt.Wrong,
+		"unanswered":   attempt.Unanswered,
+		"percentage":   attempt.Percentage,
+		"scoring_type": attempt.ScoringType,
+		"time_taken":   attempt.TimeTaken,
+		"status":       attempt.Status,
+		"answers":      attempt.Answers,
+	}
+
+	// Rasch fields (faqat mavjud bo'lsa)
+	if attempt.ThetaScore != nil {
+		resultData["theta_score"] = attempt.ThetaScore
+	}
+	if attempt.ZScore != nil {
+		resultData["z_score"] = attempt.ZScore
+	}
+	if attempt.TScore != nil {
+		resultData["t_score"] = attempt.TScore
+	}
+	if attempt.ScaledScore != nil {
+		resultData["scaled_score"] = attempt.ScaledScore
+	}
+	if attempt.GradeLabel != "" {
+		resultData["grade_label"] = attempt.GradeLabel
+	}
+	if attempt.CalculationMeta != nil {
+		resultData["calculation_meta"] = attempt.CalculationMeta
+	}
+
+	response.Success(c, http.StatusOK, "Natija", resultData)
 }
 
 // GetMyMockAttempts — mening urinishlarim
@@ -450,8 +491,11 @@ func (h *Handler) finishMockAttempt(attempt *models.MockAttempt) map[string]inte
 	var answers []models.MockAttemptAnswer
 	h.db.Where("attempt_id = ?", attempt.ID).Find(&answers)
 
-	var totalQuestions int64
-	h.db.Model(&models.Question{}).Where("source_type = ? AND source_id = ? AND is_active = true", "mock_test", attempt.MockTestID).Count(&totalQuestions)
+	// Savollarni olish
+	var questions []models.Question
+	h.db.Where("source_type = ? AND source_id = ? AND is_active = true", "mock_test", attempt.MockTestID).
+		Order("order_num ASC").Find(&questions)
+	totalQuestions := len(questions)
 
 	correct := 0
 	wrong := 0
@@ -465,8 +509,8 @@ func (h *Handler) finishMockAttempt(attempt *models.MockAttempt) map[string]inte
 		}
 	}
 
-	unanswered := int(totalQuestions) - len(answers)
-	score := float64(correct) // har bir to'g'ri javob 1 ball
+	unanswered := totalQuestions - len(answers)
+	score := float64(correct)
 	maxScore := attempt.MaxScore
 	if maxScore == 0 {
 		maxScore = float64(totalQuestions)
@@ -482,12 +526,53 @@ func (h *Handler) finishMockAttempt(attempt *models.MockAttempt) map[string]inte
 	attempt.Score = score
 	attempt.Percentage = percentage
 
+	// Mock test ma'lumotlarini olish
 	var mockTest models.MockTest
 	h.db.First(&mockTest, attempt.MockTestID)
+
 	if h.isTimeUp(attempt.StartedAt, mockTest.DurationMins) {
 		attempt.Status = "timed_out"
 	} else {
 		attempt.Status = "completed"
+	}
+
+	attempt.ScoringType = mockTest.ScoringType
+
+	// ============================================
+	// RASCH SCORING PIPELINE
+	// ============================================
+	result := map[string]interface{}{
+		"attempt_id": attempt.ID,
+		"score":      score,
+		"max_score":  maxScore,
+		"correct":    correct,
+		"wrong":      wrong,
+		"unanswered": unanswered,
+		"percentage": percentage,
+		"time_taken": attempt.TimeTaken,
+		"status":     attempt.Status,
+	}
+
+	if mockTest.ScoringType == "rasch" {
+		raschResult := h.calculateRaschScores(attempt, &mockTest, questions, answers)
+		result["theta_score"] = raschResult.Theta
+		result["z_score"] = raschResult.ZScore
+		result["t_score"] = raschResult.TScore
+		result["grade_label"] = raschResult.GradeLabel
+		result["scoring_type"] = "rasch"
+		result["calculation_meta"] = raschResult.Meta
+
+		// Scaling formula qo'llash
+		if mockTest.ScalingFormulaType != "" && mockTest.ScalingFormulaType != "none" {
+			scaledScore := assessment.ApplyScaling(raschResult.TScore, mockTest.ScalingFormulaType)
+			if scaledScore != nil {
+				attempt.ScaledScore = scaledScore
+				result["scaled_score"] = *scaledScore
+			}
+		}
+	} else {
+		attempt.ScoringType = "simple"
+		result["scoring_type"] = "simple"
 	}
 
 	h.db.Save(attempt)
@@ -498,22 +583,107 @@ func (h *Handler) finishMockAttempt(attempt *models.MockAttempt) map[string]inte
 		Update("status", "completed")
 
 	// Bildirishnoma
+	notifMsg := fmt.Sprintf("Siz %s testida %.1f%% natija ko'rsatdingiz", mockTest.Title, percentage)
+	if attempt.GradeLabel != "" {
+		notifMsg = fmt.Sprintf("Siz %s testida %s daraja oldingiz (T=%.1f)", mockTest.Title, attempt.GradeLabel, *attempt.TScore)
+	}
 	notifications.CreateNotification(h.db, attempt.UserID, "result_published",
-		"Test natijasi tayyor",
-		fmt.Sprintf("Siz %s testida %.1f%% natija ko'rsatdingiz", mockTest.Title, percentage),
+		"Test natijasi tayyor", notifMsg,
 		fmt.Sprintf("/dashboard/results?attempt=%d", attempt.ID),
 		"mock_test", &attempt.MockTestID)
 
-	return map[string]interface{}{
-		"attempt_id": attempt.ID,
-		"score":      score,
-		"max_score":  maxScore,
-		"correct":    correct,
-		"wrong":      wrong,
-		"unanswered": unanswered,
-		"percentage": percentage,
-		"time_taken": attempt.TimeTaken,
-		"status":     attempt.Status,
+	return result
+}
+
+// calculateRaschScores — Rasch pipeline: theta, Z, T, grade hisoblash
+func (h *Handler) calculateRaschScores(
+	attempt *models.MockAttempt,
+	mockTest *models.MockTest,
+	questions []models.Question,
+	answers []models.MockAttemptAnswer,
+) assessment.RaschResult {
+
+	// 1. Javob xaritasini tuzish: questionID -> isCorrect
+	answerMap := make(map[uint]bool)
+	for _, a := range answers {
+		if a.SelectedOptionID != nil {
+			answerMap[a.QuestionID] = a.IsCorrect
+		}
+	}
+
+	// 2. Item difficulty qiymatlarini olish
+	var questionStats []models.MockTestQuestionStat
+	h.db.Where("mock_test_id = ?", mockTest.ID).Find(&questionStats)
+
+	difficultyMap := make(map[uint]float64)
+	for _, qs := range questionStats {
+		difficultyMap[qs.QuestionID] = qs.DifficultyValue
+	}
+
+	// 3. Rasch inputni tuzish
+	var responses []bool
+	var itemDifficulties []float64
+	for _, q := range questions {
+		isCorrect, answered := answerMap[q.ID]
+		if answered {
+			responses = append(responses, isCorrect)
+		} else {
+			responses = append(responses, false) // javob berilmagan = noto'g'ri
+		}
+		// Agar difficulty calibration qilingan bo'lsa ishlat, aks holda default
+		if diff, ok := difficultyMap[q.ID]; ok {
+			itemDifficulties = append(itemDifficulties, diff)
+		} else {
+			// Default difficulty based on question.Difficulty field
+			itemDifficulties = append(itemDifficulties, h.defaultDifficulty(q.Difficulty))
+		}
+	}
+
+	raschInput := assessment.RaschInput{
+		Responses:        responses,
+		ItemDifficulties: itemDifficulties,
+	}
+
+	// 4. Cohort thetalarini olish (shu mock test bo'yicha oldingi completed attemptlar)
+	var prevAttempts []models.MockAttempt
+	h.db.Where("mock_test_id = ? AND status IN ? AND id != ? AND theta_score IS NOT NULL",
+		mockTest.ID, []string{"completed", "timed_out"}, attempt.ID).
+		Find(&prevAttempts)
+
+	var cohortThetas []float64
+	for _, pa := range prevAttempts {
+		if pa.ThetaScore != nil {
+			cohortThetas = append(cohortThetas, *pa.ThetaScore)
+		}
+	}
+
+	// 5. Rasch pipeline
+	raschResult := assessment.FullRaschPipeline(raschInput, cohortThetas)
+
+	// 6. Natijalarni attemptga yozish
+	attempt.ThetaScore = &raschResult.Theta
+	attempt.ZScore = &raschResult.ZScore
+	attempt.TScore = &raschResult.TScore
+	attempt.GradeLabel = raschResult.GradeLabel
+
+	meta := models.JSONB(raschResult.Meta)
+	meta["scaling_formula_type"] = mockTest.ScalingFormulaType
+	attempt.CalculationMeta = &meta
+
+	return raschResult
+}
+
+// defaultDifficulty — question difficulty fieldidan Rasch logit qiymatiga
+func (h *Handler) defaultDifficulty(difficulty string) float64 {
+	switch difficulty {
+	case "easy":
+		return -1.0 // oson savollar — past difficulty
+	case "medium":
+		return 0.0 // o'rtacha
+	case "hard":
+		return 1.0 // qiyin savollar — yuqori difficulty
+	default:
+		return 0.0
 	}
 }
 

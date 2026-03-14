@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getPayments, getPaymentStats, approvePayment, refundPayment, updatePaymentStatus } from "@/lib/superadmin-api";
+import { normalizeList } from "@/lib/normalizeList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, CheckCircle, RotateCcw, DollarSign, Clock, XCircle, TrendingUp } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, CheckCircle, RotateCcw, DollarSign, Clock, XCircle, TrendingUp, Tag } from "lucide-react";
+import Link from "next/link";
 
 interface Payment {
   id: number;
@@ -73,8 +75,8 @@ export default function PaymentsPage() {
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined
       });
-      setItems(res.data || []);
-      setTotal(res.pagination?.total || 0);
+      setItems(normalizeList(res));
+      setTotal(res.pagination?.total || res?.data?.total || 0);
     } catch {
       setItems([]);
     }
@@ -140,6 +142,12 @@ export default function PaymentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">To&apos;lovlar</h1>
+        <Link href="/superadmin/payments/promo-codes">
+          <Button variant="outline" className="flex items-center gap-2">
+            <Tag className="w-4 h-4" />
+            Promo kodlar
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Cards */}

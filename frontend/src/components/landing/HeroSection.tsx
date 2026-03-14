@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchStats } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings-context";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, Trophy, MapPin, ClipboardCheck, Globe } from "lucide-react";
 import Link from "next/link";
@@ -19,6 +20,8 @@ export function HeroSection() {
     retry: 1,
   });
   const { t, lang } = useI18n();
+  const settings = useSettings();
+  const platformName = settings.platform_name || "NextOly";
 
   const heroTitle: Record<string, React.ReactNode> = {
     uz: (
@@ -116,7 +119,7 @@ export function HeroSection() {
                 <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-2xl shadow-lg shadow-blue-500/30 mb-3 animate-pulse-glow">
                   NO
                 </div>
-                <h3 className="text-2xl font-bold text-foreground">NextOly</h3>
+                <h3 className="text-2xl font-bold text-foreground">{platformName}</h3>
                 <p className="text-muted-foreground text-sm">International Olympiad Platform</p>
               </div>
 

@@ -44,10 +44,7 @@ func (h *Handler) List(c *gin.Context) {
 		items[i] = item
 	}
 
-	response.Success(c, http.StatusOK, "Admins", gin.H{
-		"data": items, "total": total,
-		"page": params.Page, "page_size": params.PageSize,
-	})
+	response.SuccessWithPagination(c, http.StatusOK, "Admins", items, params.Page, params.PageSize, total)
 }
 
 // GetByID GET /api/v1/superadmin/admins/:id

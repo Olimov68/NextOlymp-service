@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { login } from "@/lib/api";
@@ -10,17 +10,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, KeyRound, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, KeyRound, AlertTriangle } from "lucide-react";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [sessionEndedMsg, setSessionEndedMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { setAuth } = useAuth();
   const { t } = useI18n();
+
+  useEffect(() => {
+    const reason = sessionStorage.getItem("session_ended_reason");
+    if (reason === "another_device") {
+      setSessionEndedMsg("Akkauntingiz boshqa qurilmadan ochildi. Bu sessiya yakunlandi.");
+      sessionStorage.removeItem("session_ended_reason");
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +74,12 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {sessionEndedMsg && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm p-3 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                {sessionEndedMsg}
+              </div>
+            )}
             {error && (
               <div className="rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm p-3">{error}</div>
             )}

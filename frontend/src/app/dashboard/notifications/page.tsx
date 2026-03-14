@@ -13,7 +13,9 @@ import {
   AlertTriangle,
   Trophy,
   Wallet,
+  Settings,
 } from "lucide-react";
+import Link from "next/link";
 import {
   listNotifications,
   markAsRead,
@@ -95,18 +97,27 @@ export default function NotificationsPage() {
               : "Barcha xabarlar o'qilgan"}
           </p>
         </div>
-        {unreadCount > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleMarkAllAsRead}
-            disabled={markingAll}
-            className="flex items-center gap-2"
-          >
-            <CheckCheck className="h-4 w-4" />
-            Barchasini o&apos;qilgan deb belgilash
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleMarkAllAsRead}
+              disabled={markingAll}
+              className="flex items-center gap-2"
+            >
+              <CheckCheck className="h-4 w-4" />
+              <span className="hidden sm:inline">Barchasini o&apos;qilgan deb belgilash</span>
+              <span className="sm:hidden">Barchasini</span>
+            </Button>
+          )}
+          <Link href="/dashboard/notifications/settings">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Sozlamalar</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {notifications.length === 0 ? (

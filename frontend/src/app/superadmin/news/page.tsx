@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { getNewsList, getNewsItem, createNews, updateNews, deleteNews } from "@/lib/superadmin-api";
 import { uploadPanelImage } from "@/lib/admin-api";
+import { normalizeList } from "@/lib/normalizeList";
 
 interface NewsItem {
   id: number;
@@ -82,8 +83,9 @@ export default function SuperadminNewsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await getNewsList({ page: 1, limit: 100 });
-      setNews(Array.isArray(data) ? data : data.data || []);
+      const data = await getNewsList({ page: 1, page_size: 100 });
+      const list = normalizeList(data);
+      setNews(list);
     } catch {
       toast.error("Yangiliklar yuklanmadi");
     } finally {
@@ -142,9 +144,13 @@ export default function SuperadminNewsPage() {
         toast.success("Yangilik yaratildi");
       }
       setOpen(false);
-      load();
+      setSearch("");
+      setTypeFilter("all");
+      setStatusFilter("all");
+      await load();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "Xatolik yuz berdi");
+      const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -155,7 +161,7 @@ export default function SuperadminNewsPage() {
       await deleteNews(id);
       toast.success("O'chirildi");
       setDeleteId(null);
-      load();
+      await load();
     } catch {
       toast.error("O'chirib bo'lmadi");
     }
