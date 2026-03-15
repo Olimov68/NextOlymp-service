@@ -28,7 +28,7 @@ func MaintenanceMode(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		// Auth login/register/refresh ham o'tkazib yuboriladi (lekin register bloklanishi mumkin)
-		if strings.Contains(path, "/auth/login") || strings.Contains(path, "/auth/refresh") {
+		if strings.Contains(path, "/auth/login") || strings.Contains(path, "/auth/refresh") || strings.Contains(path, "/auth/recovery") {
 			c.Next()
 			return
 		}

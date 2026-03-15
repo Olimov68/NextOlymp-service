@@ -192,6 +192,89 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Parol muvaffaqiyatli o'zgartirildi", nil)
 }
 
+// RecoveryIdentify godoc
+// @Summary      Identify user for password recovery
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body RecoveryIdentifyRequest true "Identifier"
+// @Success      200 {object} response.Response{data=RecoveryIdentifyResponse}
+// @Failure      400 {object} response.Response
+// @Router       /auth/recovery/identify [post]
+func (h *Handler) RecoveryIdentify(c *gin.Context) {
+	var req RecoveryIdentifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, utils.FormatValidationErrors(err))
+		return
+	}
+
+	result, err := h.service.RecoveryIdentify(req.Identifier)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	if h.db != nil {
+		utils.LogSystemAudit(h.db, c, "recovery_identify", "auth",
+			fmt.Sprintf("Parol tiklash so'rovi: %s", req.Identifier))
+	}
+
+	response.Success(c, http.StatusOK, "Kod yuborildi", result)
+}
+
+// RecoveryVerify godoc
+// @Summary      Verify recovery code
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body RecoveryVerifyRequest true "Verify code"
+// @Success      200 {object} response.Response
+// @Failure      400 {object} response.Response
+// @Router       /auth/recovery/verify [post]
+func (h *Handler) RecoveryVerify(c *gin.Context) {
+	var req RecoveryVerifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, utils.FormatValidationErrors(err))
+		return
+	}
+
+	if err := h.service.RecoveryVerify(req.Identifier, req.Code); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Kod tasdiqlandi", nil)
+}
+
+// RecoveryReset godoc
+// @Summary      Reset password with verified code
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body RecoveryResetRequest true "Reset password"
+// @Success      200 {object} response.Response
+// @Failure      400 {object} response.Response
+// @Router       /auth/recovery/reset [post]
+func (h *Handler) RecoveryReset(c *gin.Context) {
+	var req RecoveryResetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, utils.FormatValidationErrors(err))
+		return
+	}
+
+	if err := h.service.RecoveryReset(req.Identifier, req.Code, req.NewPassword); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	if h.db != nil {
+		utils.LogSystemAudit(h.db, c, "recovery_reset", "auth",
+			fmt.Sprintf("Parol muvaffaqiyatli tiklandi: %s", req.Identifier))
+	}
+
+	response.Success(c, http.StatusOK, "Parol muvaffaqiyatli o'zgartirildi", nil)
+}
+
 // Me godoc
 // @Summary      Get current user info
 // @Tags         auth

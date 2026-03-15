@@ -12,10 +12,18 @@ import (
 )
 
 type Service struct {
-	repo       *Repository
-	jwt        *utils.JWTManager
-	sessionMgr *utils.SessionManager
-	notifier   *notifier.Notifier
+	repo           *Repository
+	jwt            *utils.JWTManager
+	sessionMgr     *utils.SessionManager
+	notifier       *notifier.Notifier
+	telegramSender TelegramSender
+	botURL         string
+	botName        string
+}
+
+// TelegramSender — Telegram orqali xabar yuborish interfeysi
+type TelegramSender interface {
+	SendMessage(chatID int64, text string) error
 }
 
 func NewService(repo *Repository, jwt *utils.JWTManager) *Service {
@@ -30,6 +38,13 @@ func (s *Service) SetSessionManager(sm *utils.SessionManager) {
 // SetNotifier — notifier ni sozlash (router.go da chaqiriladi)
 func (s *Service) SetNotifier(n *notifier.Notifier) {
 	s.notifier = n
+}
+
+// SetTelegramSender — telegram xabar yuboruvchini sozlash
+func (s *Service) SetTelegramSender(sender TelegramSender, botURL, botName string) {
+	s.telegramSender = sender
+	s.botURL = botURL
+	s.botName = botName
 }
 
 // SessionInfo — login/register da sessiya yaratish uchun kerakli ma'lumotlar
@@ -256,6 +271,131 @@ func (s *Service) ChangePassword(userID uint, req *ChangePasswordRequest) error 
 	user.PasswordHash = hash
 	if err := s.repo.UpdateUser(user); err != nil {
 		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
+}
+
+// RecoveryIdentify — foydalanuvchini topib, Telegram botga kod yuborish
+func (s *Service) RecoveryIdentify(identifier string) (*RecoveryIdentifyResponse, error) {
+	// Foydalanuvchini username bo'yicha topish
+	user, err := s.repo.GetByUsername(identifier)
+	if err != nil {
+		return nil, errors.New("Foydalanuvchi topilmadi")
+	}
+
+	if user.Status == models.UserStatusBlocked {
+		return nil, errors.New("Hisobingiz bloklangan")
+	}
+	if user.Status == models.UserStatusDeleted {
+		return nil, errors.New("Foydalanuvchi topilmadi")
+	}
+
+	// Telegram ulangan bo'lishi kerak
+	if !user.IsTelegramLinked {
+		return nil, errors.New("Telegram bog'lanmagan. Parolni tiklash uchun Telegram ulangan bo'lishi kerak")
+	}
+
+	// Telegram link ni olish
+	link, err := s.repo.GetTelegramLinkByUserID(user.ID)
+	if err != nil {
+		return nil, errors.New("Telegram ma'lumotlari topilmadi")
+	}
+
+	// Eski kodlarni o'chirish
+	_ = s.repo.DeleteUnusedPasswordResetCodes(user.ID)
+
+	// Yangi 6 xonali kod yaratish
+	code := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+
+	resetCode := &models.PasswordResetCode{
+		UserID:    user.ID,
+		Code:      code,
+		ExpiresAt: time.Now().Add(10 * time.Minute),
+	}
+
+	if err := s.repo.CreatePasswordResetCode(resetCode); err != nil {
+		return nil, fmt.Errorf("kod yaratishda xatolik: %w", err)
+	}
+
+	// Telegram orqali kod yuborish
+	if s.telegramSender != nil {
+		msg := fmt.Sprintf(
+			"🔑 <b>Parolni tiklash kodi:</b>\n\n"+
+				"<code>%s</code>\n\n"+
+				"Bu kodni saytdagi parolni tiklash sahifasiga kiriting.\n"+
+				"⏱ Kod 10 daqiqa amal qiladi.\n\n"+
+				"❗️ Agar siz bu so'rovni yubormagan bo'lsangiz, ushbu xabarni e'tiborsiz qoldiring.",
+			code,
+		)
+		if err := s.telegramSender.SendMessage(link.TelegramID, msg); err != nil {
+			return nil, errors.New("Telegram orqali xabar yuborishda xatolik")
+		}
+	}
+
+	return &RecoveryIdentifyResponse{
+		Message: "Bir martalik kod Telegram botga yuborildi",
+		BotURL:  s.botURL,
+		BotName: s.botName,
+	}, nil
+}
+
+// RecoveryVerify — kodni tasdiqlash
+func (s *Service) RecoveryVerify(identifier, code string) error {
+	user, err := s.repo.GetByUsername(identifier)
+	if err != nil {
+		return errors.New("Foydalanuvchi topilmadi")
+	}
+
+	resetCode, err := s.repo.GetValidPasswordResetCode(user.ID, code)
+	if err != nil {
+		return errors.New("Kod noto'g'ri yoki muddati tugagan")
+	}
+
+	// Kodni verified deb belgilash
+	resetCode.Verified = true
+	if err := s.repo.UpdatePasswordResetCode(resetCode); err != nil {
+		return errors.New("Kodni tasdiqlashda xatolik")
+	}
+
+	return nil
+}
+
+// RecoveryReset — parolni o'zgartirish
+func (s *Service) RecoveryReset(identifier, code, newPassword string) error {
+	if err := utils.ValidatePassword(newPassword); err != nil {
+		return fmt.Errorf("Yangi parol: %w", err)
+	}
+
+	user, err := s.repo.GetByUsername(identifier)
+	if err != nil {
+		return errors.New("Foydalanuvchi topilmadi")
+	}
+
+	// Tasdiqlangan kodni tekshirish
+	resetCode, err := s.repo.GetVerifiedPasswordResetCode(user.ID, code)
+	if err != nil {
+		return errors.New("Kod noto'g'ri yoki tasdiqlanmagan")
+	}
+
+	// Parolni yangilash
+	hash, err := utils.HashPassword(newPassword)
+	if err != nil {
+		return errors.New("Parolni xeshlashda xatolik")
+	}
+
+	user.PasswordHash = hash
+	if err := s.repo.UpdateUser(user); err != nil {
+		return errors.New("Parolni yangilashda xatolik")
+	}
+
+	// Kodni ishlatilgan deb belgilash
+	resetCode.Used = true
+	_ = s.repo.UpdatePasswordResetCode(resetCode)
+
+	// Barcha sessiyalarni bekor qilish (xavfsizlik uchun)
+	if s.sessionMgr != nil {
+		s.sessionMgr.InvalidateAllSessions(user.ID)
 	}
 
 	return nil

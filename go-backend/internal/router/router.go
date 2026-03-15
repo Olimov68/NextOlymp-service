@@ -70,12 +70,15 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	authHandler := auth.NewHandler(authService)
 	authHandler.SetDB(db)
 
+	// Telegram sender ni auth service ga ulash (parol tiklash uchun)
+	telegramRepo := telegram.NewRepository(db)
+	telegramService := telegram.NewService(telegramRepo, &cfg.Telegram)
+	authService.SetTelegramSender(telegramService, telegramService.BotURL(), cfg.Telegram.BotUsername)
+
 	userRepo := user.NewRepository(db)
 	userService := user.NewService(userRepo, &cfg.Upload)
 	userHandler := user.NewHandler(userService)
 
-	telegramRepo := telegram.NewRepository(db)
-	telegramService := telegram.NewService(telegramRepo, &cfg.Telegram)
 	telegramHandler := telegram.NewHandler(telegramService)
 
 	// ─── Panel auth ───────────────────────────────────────────────────
@@ -115,6 +118,10 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		authGroup.POST("/register", authHandler.Register)
 		authGroup.POST("/login", authHandler.Login)
 		authGroup.POST("/refresh", authHandler.RefreshToken)
+		// Parol tiklash
+		authGroup.POST("/recovery/identify", authHandler.RecoveryIdentify)
+		authGroup.POST("/recovery/verify", authHandler.RecoveryVerify)
+		authGroup.POST("/recovery/reset", authHandler.RecoveryReset)
 	}
 
 	// ============================================================

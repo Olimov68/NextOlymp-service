@@ -94,6 +94,29 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"new_password" binding:"required,min=8,max=128"`
 }
 
+// --- Recovery DTOs ---
+
+type RecoveryIdentifyRequest struct {
+	Identifier string `json:"identifier" binding:"required"` // username
+}
+
+type RecoveryIdentifyResponse struct {
+	Message string `json:"message"`
+	BotURL  string `json:"bot_url"`
+	BotName string `json:"bot_name"`
+}
+
+type RecoveryVerifyRequest struct {
+	Identifier string `json:"identifier" binding:"required"`
+	Code       string `json:"code" binding:"required,len=6"`
+}
+
+type RecoveryResetRequest struct {
+	Identifier  string `json:"identifier" binding:"required"`
+	Code        string `json:"code" binding:"required,len=6"`
+	NewPassword string `json:"new_password" binding:"required,min=8,max=128"`
+}
+
 func ToProfileResponse(p *models.Profile) *ProfileResponse {
 	if p == nil {
 		return nil

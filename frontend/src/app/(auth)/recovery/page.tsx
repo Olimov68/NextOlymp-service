@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Bot, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Bot, CheckCircle2, AlertCircle, Loader2, Send, ExternalLink } from "lucide-react";
+import { api } from "@/lib/api";
 
 type RecoveryStep = "identify" | "bot_verify" | "reset_password" | "success";
 
@@ -20,21 +21,22 @@ export default function RecoveryPage() {
   const [verificationCode, setVerificationCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [maskedContact, setMaskedContact] = useState("");
+  const [botURL, setBotURL] = useState("");
+  const [botName, setBotName] = useState("");
 
   const handleIdentify = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      // Simulate API call - in production this would call backend
-      // POST /auth/recovery/identify { identifier }
-      // Backend checks if user exists, sends code via Telegram bot
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setMaskedContact("@t***gram_user");
+      const res = await api.post("/auth/recovery/identify", { identifier });
+      const data = res.data?.data;
+      if (data?.bot_url) setBotURL(data.bot_url);
+      if (data?.bot_name) setBotName(data.bot_name);
       setStep("bot_verify");
-    } catch {
-      setError(t("auth.recovery_user_not_found"));
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || "Foydalanuvchi topilmadi yoki Telegram bog'lanmagan");
     } finally {
       setLoading(false);
     }
@@ -44,16 +46,19 @@ export default function RecoveryPage() {
     e.preventDefault();
     setError("");
     if (verificationCode.length < 6) {
-      setError(t("auth.recovery_invalid_code"));
+      setError("Kod 6 ta raqamdan iborat bo'lishi kerak");
       return;
     }
     setLoading(true);
     try {
-      // POST /auth/recovery/verify { identifier, code }
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await api.post("/auth/recovery/verify", {
+        identifier,
+        code: verificationCode,
+      });
       setStep("reset_password");
-    } catch {
-      setError(t("auth.recovery_wrong_code"));
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || "Kod noto'g'ri yoki muddati tugagan");
     } finally {
       setLoading(false);
     }
@@ -63,20 +68,41 @@ export default function RecoveryPage() {
     e.preventDefault();
     setError("");
     if (newPassword.length < 8) {
-      setError(t("auth.recovery_password_short"));
+      setError("Parol kamida 8 ta belgidan iborat bo'lishi kerak");
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError(t("auth.password_mismatch"));
+      setError("Parollar mos kelmaydi");
       return;
     }
     setLoading(true);
     try {
-      // POST /auth/recovery/reset { identifier, code, new_password }
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await api.post("/auth/recovery/reset", {
+        identifier,
+        code: verificationCode,
+        new_password: newPassword,
+      });
       setStep("success");
-    } catch {
-      setError(t("common.error"));
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || "Parolni o'zgartirishda xatolik yuz berdi");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError("");
+    setVerificationCode("");
+    setLoading(true);
+    try {
+      const res = await api.post("/auth/recovery/identify", { identifier });
+      const data = res.data?.data;
+      if (data?.bot_url) setBotURL(data.bot_url);
+      if (data?.bot_name) setBotName(data.bot_name);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || "Kod qayta yuborishda xatolik");
     } finally {
       setLoading(false);
     }
@@ -127,22 +153,25 @@ export default function RecoveryPage() {
               <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4 text-sm text-blue-200">
                 <div className="flex items-start gap-3">
                   <Bot className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
-                  <p>{t("auth.recovery_bot_info")}</p>
+                  <p>
+                    Foydalanuvchi nomingizni kiriting. Telegram botga bir martalik kod yuboriladi.
+                    Telegram bog&apos;langan bo&apos;lishi kerak.
+                  </p>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-blue-100/80 text-xs">{t("auth.recovery_identifier")}</Label>
+                <Label className="text-blue-100/80 text-xs">Foydalanuvchi nomi (username)</Label>
                 <Input
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="username, email yoki telefon"
+                  placeholder="username"
                   required
                 />
               </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 border-0 gap-2" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {loading ? t("common.loading") : t("auth.recovery_send_code")}
+                {loading ? "Tekshirilmoqda..." : "Kod yuborish"}
               </Button>
             </form>
           )}
@@ -152,15 +181,29 @@ export default function RecoveryPage() {
             <form onSubmit={handleVerifyCode} className="space-y-4">
               <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-4 text-sm text-green-200">
                 <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-medium">{t("auth.recovery_code_sent")}</p>
-                    <p className="text-green-200/70 mt-1">{t("auth.recovery_check_bot")} {maskedContact}</p>
+                  <Bot className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
+                  <div className="space-y-2">
+                    <p className="font-medium">Bir martalik kod Telegram botga yuborildi!</p>
+                    <p className="text-green-200/70">
+                      Telegram botga kirib, kodni oling va quyidagi maydonga kiriting.
+                    </p>
+                    {botURL && (
+                      <a
+                        href={botURL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 hover:bg-blue-500/30 transition-colors text-xs font-medium"
+                      >
+                        <Bot className="h-3.5 w-3.5" />
+                        @{botName || "NextOlympBot"} — botni ochish
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-blue-100/80 text-xs">{t("auth.recovery_enter_code")}</Label>
+                <Label className="text-blue-100/80 text-xs">Bir martalik kodni kiriting</Label>
                 <Input
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20 text-center text-lg tracking-widest"
                   value={verificationCode}
@@ -172,10 +215,10 @@ export default function RecoveryPage() {
               </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 border-0" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {loading ? t("common.loading") : t("auth.recovery_verify")}
+                {loading ? "Tekshirilmoqda..." : "Kodni tasdiqlash"}
               </Button>
-              <button type="button" onClick={() => setStep("identify")} className="w-full text-center text-sm text-blue-300/50 hover:text-blue-300 transition-colors">
-                {t("auth.recovery_resend")}
+              <button type="button" onClick={handleResend} className="w-full text-center text-sm text-blue-300/50 hover:text-blue-300 transition-colors" disabled={loading}>
+                Kodni qayta yuborish
               </button>
             </form>
           )}
@@ -183,29 +226,37 @@ export default function RecoveryPage() {
           {/* Step 3: Reset password */}
           {step === "reset_password" && (
             <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-3 text-sm text-green-200">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" />
+                  <p>Kod tasdiqlandi! Yangi parolni kiriting.</p>
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label className="text-blue-100/80 text-xs">{t("auth.recovery_new_password")}</Label>
+                <Label className="text-blue-100/80 text-xs">Yangi parol</Label>
                 <Input
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20"
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Kamida 8 ta belgi"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-blue-100/80 text-xs">{t("auth.confirm_password")}</Label>
+                <Label className="text-blue-100/80 text-xs">Parolni tasdiqlang</Label>
                 <Input
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-400/50 focus:ring-blue-400/20"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Parolni qayta kiriting"
                   required
                 />
               </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 border-0" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {loading ? t("common.loading") : t("auth.recovery_reset")}
+                {loading ? "O'zgartirilmoqda..." : "Parolni o'zgartirish"}
               </Button>
             </form>
           )}
@@ -219,8 +270,8 @@ export default function RecoveryPage() {
                 </div>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">{t("auth.recovery_success")}</h3>
-                <p className="text-sm text-blue-200/60 mt-1">{t("auth.recovery_success_desc")}</p>
+                <h3 className="text-lg font-semibold text-white">Parol muvaffaqiyatli o&apos;zgartirildi!</h3>
+                <p className="text-sm text-blue-200/60 mt-1">Yangi parol bilan tizimga kirishingiz mumkin.</p>
               </div>
               <Link href="/login">
                 <Button className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 border-0 gap-2">
