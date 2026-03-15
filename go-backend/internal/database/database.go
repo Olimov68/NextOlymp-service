@@ -108,6 +108,7 @@ func seedSuperAdmin(db *gorm.DB) {
 	var count int64
 	db.Model(&models.StaffUser{}).Where("role = ?", "superadmin").Count(&count)
 	if count > 0 {
+		log.Println("SuperAdmin already exists")
 		return
 	}
 
