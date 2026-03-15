@@ -19,9 +19,27 @@ func NewHandler(db *gorm.DB) *Handler {
 	return &Handler{db: db}
 }
 
+type UserListItem struct {
+	ID                 uint   `json:"id"`
+	Username           string `json:"username"`
+	FullName           string `json:"full_name"`
+	Region             string `json:"region"`
+	Grade              int    `json:"grade"`
+	Status             string `json:"status"`
+	IsProfileCompleted bool   `json:"is_profile_completed"`
+	IsTelegramLinked   bool   `json:"is_telegram_linked"`
+	CreatedAt          string `json:"created_at"`
+}
+
 type UserDetailResponse struct {
 	ID                 uint        `json:"id"`
 	Username           string      `json:"username"`
+	FullName           string      `json:"full_name"`
+	Region             string      `json:"region"`
+	District           string      `json:"district"`
+	School             string      `json:"school"`
+	Grade              int         `json:"grade"`
+	BirthDate          string      `json:"birth_date"`
 	Status             string      `json:"status"`
 	IsProfileCompleted bool        `json:"is_profile_completed"`
 	IsTelegramLinked   bool        `json:"is_telegram_linked"`
@@ -59,9 +77,28 @@ func (h *Handler) List(c *gin.Context) {
 
 	q.Count(&total)
 	offset := (page - 1) * pageSize
-	q.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&list)
+	q.Preload("Profile").Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&list)
 
-	response.SuccessWithPagination(c, http.StatusOK, "Users", list, page, pageSize, total)
+	// Flatten profile data for frontend
+	items := make([]UserListItem, len(list))
+	for i, u := range list {
+		item := UserListItem{
+			ID:                 u.ID,
+			Username:           u.Username,
+			Status:             string(u.Status),
+			IsProfileCompleted: u.IsProfileCompleted,
+			IsTelegramLinked:   u.IsTelegramLinked,
+			CreatedAt:          u.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		}
+		if u.Profile != nil {
+			item.FullName = u.Profile.FirstName + " " + u.Profile.LastName
+			item.Region = u.Profile.Region
+			item.Grade = u.Profile.Grade
+		}
+		items[i] = item
+	}
+
+	response.SuccessWithPagination(c, http.StatusOK, "Users", items, page, pageSize, total)
 }
 
 // GetByID GET /api/v1/superadmin/users/:id
@@ -87,6 +124,12 @@ func (h *Handler) GetByID(c *gin.Context) {
 		UpdatedAt:          u.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 	if u.Profile != nil {
+		detail.FullName = u.Profile.FirstName + " " + u.Profile.LastName
+		detail.Region = u.Profile.Region
+		detail.District = u.Profile.District
+		detail.School = u.Profile.SchoolName
+		detail.Grade = u.Profile.Grade
+		detail.BirthDate = u.Profile.BirthDate
 		detail.Profile = u.Profile
 	}
 	if u.TelegramLink != nil {
