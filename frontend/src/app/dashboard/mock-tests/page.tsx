@@ -92,9 +92,18 @@ export default function MockTestsListPage() {
   const [paidFilter, setPaidFilter] = useState("");
 
   useEffect(() => {
-    listMockTests()
-      .then((data) => setMockTests(Array.isArray(data) ? data : []))
-      .catch(() => setMockTests([]))
+    listMockTests({ page: 1, page_size: 100 })
+      .then((data) => {
+        let list: MockExam[] = [];
+        if (Array.isArray(data)) list = data;
+        else if ((data as any)?.data && Array.isArray((data as any).data)) list = (data as any).data;
+        else if ((data as any)?.items && Array.isArray((data as any).items)) list = (data as any).items;
+        setMockTests(list);
+      })
+      .catch((err) => {
+        console.error("Mock tests load error:", err);
+        setMockTests([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 

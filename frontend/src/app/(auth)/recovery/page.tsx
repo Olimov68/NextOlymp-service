@@ -154,8 +154,8 @@ export default function RecoveryPage() {
                 <div className="flex items-start gap-3">
                   <Bot className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
                   <p>
-                    Foydalanuvchi nomingizni kiriting. Keyingi qadamda Telegram botga kirib bir martalik kodni olasiz.
-                    Telegram bog&apos;langan bo&apos;lishi kerak.
+                    Foydalanuvchi nomingizni kiriting. Telegram botga kirib bir martalik kodni oling.
+                    Telegram akkauntingiz bog&apos;langan bo&apos;lishi kerak.
                   </p>
                 </div>
               </div>
@@ -171,7 +171,7 @@ export default function RecoveryPage() {
               </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 border-0 gap-2" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {loading ? "Tekshirilmoqda..." : "Kod yuborish"}
+                {loading ? "Tekshirilmoqda..." : "Botga o'tish"}
               </Button>
             </form>
           )}

@@ -34,7 +34,7 @@ func (r *Repository) List(params ListParams) ([]models.User, int64, error) {
 
 	q.Count(&total)
 	offset := (params.Page - 1) * params.PageSize
-	err := q.Order("created_at DESC").Offset(offset).Limit(params.PageSize).Find(&list).Error
+	err := q.Preload("Profile").Order("created_at DESC").Offset(offset).Limit(params.PageSize).Find(&list).Error
 	return list, total, err
 }
 

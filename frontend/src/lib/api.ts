@@ -140,7 +140,13 @@ export interface NewsItem {
   id: number;
   title: string;
   description: string;
+  excerpt: string;
   image: string;
+  cover_image: string;
+  body: string;
+  type: string;
+  status: string;
+  published_at: string;
   created_at: string;
 }
 

@@ -15,6 +15,7 @@ import {
 import {
   Trophy, Clock, BookOpen, Users, CheckCircle2, XCircle, AlertCircle,
   ArrowLeft, ArrowRight, Flag, DollarSign, Loader2, Award,
+  ChevronLeft, ChevronRight, Timer, Maximize, Minimize, MinusCircle,
 } from "lucide-react";
 import {
   getOlympiad,
@@ -31,12 +32,16 @@ interface Option {
   id: number;
   label: string;
   text: string;
+  content?: string;
   is_correct?: boolean;
+  order_num?: number;
 }
 
 interface Question {
   id: number;
   text: string;
+  title?: string;
+  content?: string;
   points: number;
   order_num: number;
   options: Option[];
@@ -73,11 +78,13 @@ export default function OlympiadDetailPage() {
   const [attemptId, setAttemptId] = useState<number | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({}); // questionId → optionId
+  const [answers, setAnswers] = useState<Record<number, number>>({});
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [finishing, setFinishing] = useState(false);
   const [finishConfirm, setFinishConfirm] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const examContainerRef = useRef<HTMLDivElement>(null);
 
   // Result state
   const [result, setResult] = useState<AttemptResult | null>(null);
@@ -85,7 +92,6 @@ export default function OlympiadDetailPage() {
   // Payment state
   const [balance, setBalance] = useState<number>(0);
 
-  // Stable ref to handleFinish so the timer closure doesn't capture stale state
   const handleFinishRef = useRef<(auto?: boolean) => void>(() => {});
 
   const handleFinish = useCallback(async (auto = false) => {
@@ -98,6 +104,8 @@ export default function OlympiadDetailPage() {
       const resultData = await getOlympiadAttemptResult(attemptId);
       setResult(resultData as unknown as AttemptResult);
       setPhase("result");
+      if (auto) toast.info("Vaqt tugadi! Olimpiada yakunlandi.");
+      else toast.success("Olimpiada muvaffaqiyatli yakunlandi!");
     } catch (e: any) {
       toast.error(e?.response?.data?.error || "Yakunlashda xatolik yuz berdi");
     } finally {
@@ -135,6 +143,33 @@ export default function OlympiadDetailPage() {
     }, 1000);
   }, []);
 
+  // Fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      const el = examContainerRef.current || document.documentElement;
+      el.requestFullscreen?.().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
+  useEffect(() => {
+    if (phase === "exam") {
+      const el = examContainerRef.current || document.documentElement;
+      el.requestFullscreen?.().catch(() => {});
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, [phase]);
+
   const handleJoin = async () => {
     if (!olympiad) return;
     if (olympiad.is_paid) {
@@ -146,26 +181,21 @@ export default function OlympiadDetailPage() {
       setPhase("ready");
     } catch (e: any) {
       const msg = e?.response?.data?.error || "";
-      if (msg.includes("already")) {
-        setPhase("ready");
-      } else {
-        console.error(msg || "Xatolik yuz berdi");
-      }
+      if (msg.includes("already")) setPhase("ready");
+      else toast.error(msg || "Xatolik yuz berdi");
     }
   };
 
   const handlePayAndJoin = async () => {
     if (!olympiad) return;
-    if (balance < (olympiad.price || 0)) {
-      return;
-    }
+    if (balance < (olympiad.price || 0)) return;
     try {
       await joinOlympiad(Number(id));
       setPhase("ready");
     } catch (e: any) {
       const msg = e?.response?.data?.error || "";
       if (msg.includes("already")) setPhase("ready");
-      else console.error(msg || "Xatolik yuz berdi");
+      else toast.error(msg || "Xatolik yuz berdi");
     }
   };
 
@@ -181,22 +211,28 @@ export default function OlympiadDetailPage() {
       setPhase("exam");
       startTimer((attempt as any).duration_minutes || olympiad?.duration_minutes || 60);
     } catch (e: any) {
-      console.error(e?.response?.data?.error || "Test boshlashda xatolik");
+      toast.error(e?.response?.data?.error || "Test boshlashda xatolik");
     }
   };
 
   const handleAnswer = async (optionId: number) => {
     const question = questions[currentIdx];
     if (!question || !attemptId) return;
-    setAnswers(prev => ({ ...prev, [question.id]: optionId }));
-    try {
-      await submitOlympiadAnswer(attemptId, question.id, optionId);
-    } catch {
-      // Ignore submit errors - answer saved locally
+
+    const isDeselect = answers[question.id] === optionId;
+
+    if (isDeselect) {
+      const newAnswers = { ...answers };
+      delete newAnswers[question.id];
+      setAnswers(newAnswers);
+    } else {
+      setAnswers(prev => ({ ...prev, [question.id]: optionId }));
     }
-    // Auto-advance if not last
-    if (currentIdx < questions.length - 1) {
-      setTimeout(() => setCurrentIdx(i => i + 1), 300);
+
+    try {
+      await submitOlympiadAnswer(attemptId, question.id, isDeselect ? 0 : optionId);
+    } catch {
+      // silent
     }
   };
 
@@ -221,6 +257,7 @@ export default function OlympiadDetailPage() {
   // === RESULT PHASE ===
   if (phase === "result" && result) {
     const pct = result.percentage || Math.round((result.correct_answers / result.total_questions) * 100);
+    const wrongCount = result.total_questions - result.correct_answers;
     return (
       <div className="max-w-lg mx-auto py-10 space-y-6">
         <div className="rounded-2xl border border-border bg-card p-8 text-center space-y-4">
@@ -235,11 +272,11 @@ export default function OlympiadDetailPage() {
           </div>
           <div className="grid grid-cols-3 gap-4 py-4 border-y border-border">
             <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">{result.correct_answers}</p>
+              <p className="text-2xl font-bold text-green-600">{result.correct_answers}</p>
               <p className="text-xs text-muted-foreground">To&apos;g&apos;ri</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">{result.total_questions - result.correct_answers}</p>
+              <p className="text-2xl font-bold text-red-500">{wrongCount}</p>
               <p className="text-xs text-muted-foreground">Noto&apos;g&apos;ri</p>
             </div>
             <div className="text-center">
@@ -268,123 +305,251 @@ export default function OlympiadDetailPage() {
     );
   }
 
-  // === EXAM PHASE ===
+  // === EXAM PHASE (Fullscreen) ===
   if (phase === "exam" && questions.length > 0) {
     const question = questions[currentIdx];
     const selectedOpt = question ? answers[question.id] : undefined;
-    const answered = Object.keys(answers).length;
-    const pct = (answered / questions.length) * 100;
+    const answeredCount = Object.keys(answers).length;
+    const unansweredCount = questions.length - answeredCount;
     const urgent = timeLeft < 60;
 
     return (
-      <div className="max-w-2xl mx-auto py-6 space-y-6">
-        {/* Timer + Progress */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{answered}/{questions.length} javob berildi</span>
-          </div>
-          <div className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-mono font-bold ${urgent ? "bg-red-500/10 text-red-600" : "bg-primary/10 text-primary"}`}>
-            <Clock className="h-4 w-4" />
-            {formatTime(timeLeft)}
+      <div
+        ref={examContainerRef}
+        className="fixed inset-0 z-[100] bg-background flex flex-col"
+      >
+        {/* Top bar */}
+        <div className="flex-shrink-0 bg-background border-b border-border px-4 md:px-6 py-3">
+          <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
+            <div className="flex items-center gap-3 min-w-0">
+              <h2 className="text-lg font-semibold text-foreground truncate">
+                {olympiad.title}
+              </h2>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="text-sm text-muted-foreground hidden sm:block">
+                <span className="font-medium text-foreground">{answeredCount}</span>
+                /{questions.length} javob
+              </div>
+              <div
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-mono text-lg font-bold ${
+                  urgent
+                    ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 animate-pulse"
+                    : "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400"
+                }`}
+              >
+                <Timer className="h-5 w-5" />
+                {formatTime(timeLeft)}
+              </div>
+              <button
+                onClick={toggleFullscreen}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                title={isFullscreen ? "Kichiklashtirish" : "Kattalashtirish"}
+              >
+                {isFullscreen ? <Minimize className="h-5 w-5 text-muted-foreground" /> : <Maximize className="h-5 w-5 text-muted-foreground" />}
+              </button>
+            </div>
           </div>
         </div>
-        <Progress value={pct} className="h-2" />
 
-        {/* Question */}
-        {question && (
-          <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
-            <div className="flex items-start gap-3">
-              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
-                {currentIdx + 1}
-              </span>
-              <p className="font-medium text-foreground text-base leading-relaxed">{question.text}</p>
+        {/* Main content */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Question area */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-8">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <Badge variant="outline" className="text-sm px-3 py-1">
+                  Savol {currentIdx + 1} / {questions.length}
+                </Badge>
+                {question.points > 0 && (
+                  <Badge variant="outline" className="text-sm px-3 py-1">
+                    {question.points} ball
+                  </Badge>
+                )}
+              </div>
+
+              {(question.title || question.text) && (
+                <h3 className="text-lg font-semibold text-foreground mb-3">
+                  {question.title || question.text}
+                </h3>
+              )}
+
+              {question.content && (
+                <div
+                  className="text-base text-foreground leading-relaxed mb-8 whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{ __html: question.content }}
+                />
+              )}
+
+              {/* Options */}
+              <div className="space-y-3">
+                {question.options
+                  .sort((a, b) => (a.order_num ?? 0) - (b.order_num ?? 0))
+                  .map((opt, optIdx) => {
+                    const isSelected = selectedOpt === opt.id;
+                    const letter = opt.label || String.fromCharCode(65 + optIdx);
+
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => handleAnswer(opt.id)}
+                        className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-start gap-4 ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-sm"
+                            : "border-border hover:border-blue-200 dark:hover:border-blue-800 hover:bg-accent/50"
+                        }`}
+                      >
+                        <div
+                          className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                            isSelected
+                              ? "bg-blue-600 text-white"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {letter}
+                        </div>
+                        <span
+                          className={`text-base pt-1 ${
+                            isSelected
+                              ? "text-blue-900 dark:text-blue-100 font-medium"
+                              : "text-foreground"
+                          }`}
+                        >
+                          {opt.text || opt.content}
+                        </span>
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Navigation */}
+              <div className="flex items-center justify-between mt-8 pt-4 border-t border-border">
+                <Button
+                  variant="outline"
+                  disabled={currentIdx === 0}
+                  onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Oldingi
+                </Button>
+
+                <Button
+                  variant="destructive"
+                  onClick={() => setFinishConfirm(true)}
+                  disabled={finishing}
+                  className="px-6"
+                >
+                  Yakunlash
+                </Button>
+
+                <Button
+                  variant="outline"
+                  disabled={currentIdx === questions.length - 1}
+                  onClick={() => setCurrentIdx((prev) => prev + 1)}
+                >
+                  Keyingi
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
+          </div>
 
-            <div className="space-y-3">
-              {question.options.map(opt => {
-                const isSelected = selectedOpt === opt.id;
+          {/* Right sidebar: Question tracker */}
+          <div className="w-64 flex-shrink-0 border-l border-border bg-muted/30 overflow-y-auto p-4 hidden md:block">
+            <p className="text-sm font-semibold text-foreground mb-4">
+              Savollar
+            </p>
+            <div className="grid grid-cols-5 gap-2">
+              {questions.map((q, idx) => {
+                const isAnswered = answers[q.id] !== undefined;
+                const isCurrent = idx === currentIdx;
                 return (
                   <button
-                    key={opt.id}
-                    onClick={() => handleAnswer(opt.id)}
-                    className={`w-full flex items-center gap-3 rounded-xl border p-4 text-left transition-all ${
-                      isSelected
-                        ? "border-primary bg-primary/5 text-foreground"
-                        : "border-border bg-background hover:border-primary/30 hover:bg-primary/5 text-foreground"
+                    key={q.id}
+                    onClick={() => setCurrentIdx(idx)}
+                    className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${
+                      isCurrent
+                        ? "bg-blue-600 text-white ring-2 ring-blue-300 shadow-md"
+                        : isAnswered
+                        ? "bg-green-500 text-white shadow-sm"
+                        : "bg-white dark:bg-background text-muted-foreground border border-border hover:bg-accent"
                     }`}
                   >
-                    <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold border ${
-                      isSelected ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground"
-                    }`}>
-                      {opt.label}
-                    </span>
-                    <span className="text-sm leading-relaxed">{opt.text}</span>
-                    {isSelected && <CheckCircle2 className="h-4 w-4 text-primary ml-auto flex-shrink-0" />}
+                    {idx + 1}
                   </button>
                 );
               })}
             </div>
 
-            {question.points > 0 && (
-              <p className="text-xs text-muted-foreground text-right">{question.points} ball</p>
-            )}
+            <div className="mt-6 pt-4 border-t border-border space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded bg-green-500" />
+                <span className="text-foreground">Javob berilgan ({answeredCount})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded bg-white dark:bg-background border border-border" />
+                <span className="text-foreground">Javobsiz ({unansweredCount})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded bg-blue-600" />
+                <span className="text-foreground">Joriy savol</span>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-border">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-foreground">
+                  {answeredCount}/{questions.length}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Yechilgan savollar</p>
+              </div>
+              <div className="mt-3 w-full bg-muted rounded-full h-2">
+                <div
+                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(answeredCount / questions.length) * 100}%` }}
+                />
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={() => setCurrentIdx(i => Math.max(0, i - 1))} disabled={currentIdx === 0}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Oldingi
-          </Button>
-
-          <div className="flex gap-1 flex-wrap justify-center max-w-xs">
-            {questions.map((q, i) => (
-              <button
-                key={q.id}
-                onClick={() => setCurrentIdx(i)}
-                className={`h-7 w-7 rounded-md text-xs font-medium transition-colors ${
-                  i === currentIdx ? "bg-primary text-primary-foreground"
-                    : answers[q.id] ? "bg-green-500/20 text-green-600"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-
-          {currentIdx < questions.length - 1 ? (
-            <Button onClick={() => setCurrentIdx(i => i + 1)}>
-              Keyingi <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
-          ) : (
-            <Button variant="destructive" onClick={() => setFinishConfirm(true)} disabled={finishing} className="gap-2">
-              <Flag className="h-4 w-4" /> Yakunlash
-            </Button>
-          )}
         </div>
 
-        {/* Always visible finish button when not on last question */}
-        {currentIdx < questions.length - 1 && answered > 0 && (
-          <div className="text-center">
-            <Button variant="outline" size="sm" className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => setFinishConfirm(true)}>
-              <Flag className="h-3.5 w-3.5" /> Erta yakunlash
-            </Button>
+        {/* Mobile bottom bar */}
+        <div className="md:hidden flex-shrink-0 border-t border-border bg-background px-4 py-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {questions.map((q, idx) => {
+              const isAnswered = answers[q.id] !== undefined;
+              const isCurrent = idx === currentIdx;
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => setCurrentIdx(idx)}
+                  className={`h-8 w-8 rounded-lg text-xs font-bold flex-shrink-0 transition-all ${
+                    isCurrent
+                      ? "bg-blue-600 text-white ring-2 ring-blue-300"
+                      : isAnswered
+                      ? "bg-green-500 text-white"
+                      : "bg-white dark:bg-muted text-muted-foreground border border-border"
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              );
+            })}
           </div>
-        )}
+        </div>
 
-        {/* Finish confirmation dialog */}
+        {/* Finish confirmation */}
         <Dialog open={finishConfirm} onOpenChange={setFinishConfirm}>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Testni yakunlash</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Olimpiadani yakunlash</DialogTitle></DialogHeader>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Jami: {questions.length} savol, {answered} ta javob berildi.
+                Jami: {questions.length} savol, {answeredCount} ta javob berildi.
               </p>
-              {answered < questions.length && (
-                <p className="text-sm text-yellow-600 flex items-center gap-1.5">
+              {unansweredCount > 0 && (
+                <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                   <AlertCircle className="h-4 w-4" />
-                  {questions.length - answered} ta savol javobsiz qolmoqda
+                  {unansweredCount} ta savol javobsiz qolmoqda
                 </p>
               )}
             </div>
@@ -452,7 +617,7 @@ export default function OlympiadDetailPage() {
     );
   }
 
-  // === READY PHASE (joined, ready to start) ===
+  // === READY PHASE ===
   if (phase === "ready") {
     return (
       <div className="max-w-md mx-auto py-10">
@@ -471,13 +636,13 @@ export default function OlympiadDetailPage() {
             </div>
             <div className="rounded-xl border border-border p-3 text-center">
               <Trophy className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-              <p className="font-semibold text-foreground">{olympiad.total_questions} savol</p>
+              <p className="font-semibold text-foreground">{olympiad.total_questions ?? olympiad.questions_count ?? "?"} savol</p>
             </div>
           </div>
           <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-left space-y-1.5 text-sm">
             <p className="flex items-start gap-2 text-foreground"><AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />Test boshlanganidan keyin vaqt hisoblanadi</p>
             <p className="flex items-start gap-2 text-foreground"><AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />Vaqt tugaganda test avtomatik yakunlanadi</p>
-            {olympiad.rules && <p className="flex items-start gap-2 text-foreground"><AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />{olympiad.rules}</p>}
+            <p className="flex items-start gap-2 text-foreground"><AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />Test to&apos;liq ekran rejimida ochiladi</p>
           </div>
           <Button className="w-full gap-2" onClick={handleStart}>
             <Trophy className="h-4 w-4" /> Testni boshlash
@@ -487,7 +652,7 @@ export default function OlympiadDetailPage() {
     );
   }
 
-  // === DETAIL PHASE (default) ===
+  // === DETAIL PHASE ===
   return (
     <div className="max-w-2xl mx-auto py-6 space-y-6">
       <Button variant="ghost" size="sm" className="gap-2" onClick={() => router.push("/dashboard/olympiads")}>
@@ -495,7 +660,6 @@ export default function OlympiadDetailPage() {
       </Button>
 
       <div className="rounded-2xl border border-border bg-card p-8 space-y-6">
-        {/* Header */}
         <div className="flex items-start gap-4">
           <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/10">
             <Trophy className="h-7 w-7 text-primary" />
@@ -516,7 +680,6 @@ export default function OlympiadDetailPage() {
           <p className="text-sm text-muted-foreground leading-relaxed">{olympiad.description}</p>
         )}
 
-        {/* Info grid */}
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded-xl border border-border p-4 text-center">
             <Clock className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
@@ -525,12 +688,11 @@ export default function OlympiadDetailPage() {
           </div>
           <div className="rounded-xl border border-border p-4 text-center">
             <Trophy className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
-            <p className="font-semibold text-foreground">{olympiad.total_questions ?? olympiad.questions_count ?? "—"} ta</p>
+            <p className="font-semibold text-foreground">{olympiad.total_questions ?? olympiad.questions_count ?? "\u2014"} ta</p>
             <p className="text-xs text-muted-foreground">Savollar soni</p>
           </div>
         </div>
 
-        {/* Dates */}
         {(olympiad.start_time || olympiad.start_date) && (
           <div className="grid grid-cols-2 gap-4 text-sm">
             {(olympiad.start_time || olympiad.start_date) && (
@@ -552,7 +714,6 @@ export default function OlympiadDetailPage() {
           </div>
         )}
 
-        {/* Rules */}
         {olympiad.rules && (
           <div className="rounded-xl border border-border p-4">
             <p className="text-sm font-semibold text-foreground mb-2">Qoidalar</p>
@@ -560,7 +721,6 @@ export default function OlympiadDetailPage() {
           </div>
         )}
 
-        {/* CTA */}
         {olympiad.status === "ended" || olympiad.status === "completed" ? (
           <Button disabled className="w-full">Olimpiada tugagan</Button>
         ) : (

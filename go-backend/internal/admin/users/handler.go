@@ -39,9 +39,20 @@ func (h *Handler) List(c *gin.Context) {
 
 	items := make([]gin.H, len(list))
 	for i, u := range list {
+		fullName := ""
+		region := ""
+		var grade int
+		if u.Profile != nil {
+			fullName = u.Profile.FirstName + " " + u.Profile.LastName
+			region = u.Profile.Region
+			grade = u.Profile.Grade
+		}
 		items[i] = gin.H{
 			"id":                   u.ID,
 			"username":             u.Username,
+			"full_name":            fullName,
+			"region":               region,
+			"grade":                grade,
 			"status":               u.Status,
 			"is_profile_completed": u.IsProfileCompleted,
 			"is_telegram_linked":   u.IsTelegramLinked,

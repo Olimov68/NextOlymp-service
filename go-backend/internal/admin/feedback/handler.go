@@ -69,6 +69,13 @@ func (h *Handler) Reply(c *gin.Context) {
 		return
 	}
 
+	// Check that feedback exists
+	var feedback models.Feedback
+	if err := h.db.First(&feedback, id).Error; err != nil {
+		response.NotFound(c, "Feedback not found")
+		return
+	}
+
 	var req ReplyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error(), nil)
@@ -99,7 +106,11 @@ func (h *Handler) Reply(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Reply sent", nil)
+	// Return updated feedback with user
+	var updated models.Feedback
+	h.db.Preload("User").First(&updated, id)
+
+	response.Success(c, http.StatusOK, "Reply sent", updated)
 }
 
 // results handler (kelajakda kengaytiriladi)

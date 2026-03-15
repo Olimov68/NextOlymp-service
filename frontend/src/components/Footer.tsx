@@ -18,7 +18,7 @@ export function Footer() {
 
   const infoLinks = [
     { label: t("nav.about"),    href: "/#about" },
-    { label: t("nav.partners"), href: "/#partners" },
+    { label: t("nav.partners"), href: "/partners" },
     { label: t("nav.login"),    href: "/login" },
     { label: t("nav.register"), href: "/register" },
   ];

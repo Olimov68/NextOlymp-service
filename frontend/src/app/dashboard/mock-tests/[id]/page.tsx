@@ -34,6 +34,8 @@ import {
   Shield,
   Target,
   MinusCircle,
+  Maximize,
+  Minimize,
 } from "lucide-react";
 import {
   getMockTest,
@@ -56,7 +58,7 @@ import type { MockExam } from "@/lib/api";
 type Phase = "detail" | "exam" | "result";
 
 interface AnswerMap {
-  [questionId: number]: number | null; // option_id or null if deselected
+  [questionId: number]: number | null;
 }
 
 // ─── Helper: format seconds to mm:ss ────────────────────────────────────────
@@ -122,7 +124,9 @@ export default function MockTestDetailPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [finishing, setFinishing] = useState(false);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const examContainerRef = useRef<HTMLDivElement>(null);
 
   // Result state
   const [result, setResult] = useState<AttemptResult | null>(null);
@@ -168,7 +172,6 @@ export default function MockTestDetailPage() {
   useEffect(() => {
     if (phase !== "exam" || !examData) return;
 
-    // Calculate time left from started_at + duration
     const startedMs = new Date(examData.started_at).getTime();
     const durationMs = examData.duration_minutes * 60 * 1000;
     const endMs = startedMs + durationMs;
@@ -193,6 +196,40 @@ export default function MockTestDetailPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, examData]);
+
+  // ─── Fullscreen ─────────────────────────────────────────────────────────
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      const el = examContainerRef.current || document.documentElement;
+      el.requestFullscreen?.().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  // Listen for fullscreen change
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
+  // Enter fullscreen when exam starts
+  useEffect(() => {
+    if (phase === "exam") {
+      const el = examContainerRef.current || document.documentElement;
+      el.requestFullscreen?.().catch(() => {});
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    }
+  }, [phase]);
 
   // ─── Handlers ─────────────────────────────────────────────────────────
 
@@ -243,7 +280,6 @@ export default function MockTestDetailPage() {
     }
     setAnswers(newAnswers);
 
-    // Submit to API
     try {
       await submitMockAnswer(examData.attempt_id, {
         question_id: questionId,
@@ -271,13 +307,11 @@ export default function MockTestDetailPage() {
       toast.info("Vaqt tugadi! Test yakunlandi.");
     } catch (err: any) {
       toast.error("Testni yakunlashda xatolik");
-      // Still try to show result
       try {
         const resultData = await getMockAttemptResult(examData.attempt_id);
         setResult(resultData);
         setPhase("result");
       } catch {
-        // Fallback - go to detail
         setPhase("detail");
         const newAttempts = await getMyMockAttempts(id);
         setAttempts(Array.isArray(newAttempts) ? newAttempts : []);
@@ -354,7 +388,7 @@ export default function MockTestDetailPage() {
     );
   }
 
-  // ─── Phase: Exam ──────────────────────────────────────────────────────
+  // ─── Phase: Exam (Fullscreen) ──────────────────────────────────────────
 
   if (phase === "exam" && examData) {
     const questions = examData.questions;
@@ -363,189 +397,241 @@ export default function MockTestDetailPage() {
       (v) => v !== null && v !== undefined
     ).length;
     const unansweredCount = questions.length - answeredCount;
-
     const isTimeLow = timeLeft <= 60;
 
     return (
-      <div className="max-w-5xl mx-auto">
-        {/* Top bar: Timer + Progress */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border pb-3 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 pt-1">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-foreground truncate max-w-[200px] md:max-w-none">
+      <div
+        ref={examContainerRef}
+        className="fixed inset-0 z-[100] bg-background flex flex-col"
+      >
+        {/* Top bar: Timer + Title + Controls */}
+        <div className="flex-shrink-0 bg-background border-b border-border px-4 md:px-6 py-3">
+          <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
+            <div className="flex items-center gap-3 min-w-0">
+              <h2 className="text-lg font-semibold text-foreground truncate">
                 {mockTest.title}
               </h2>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="text-sm text-muted-foreground hidden sm:block">
                 <span className="font-medium text-foreground">{answeredCount}</span>
                 /{questions.length} javob
               </div>
               <div
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-base font-bold ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-mono text-lg font-bold ${
                   isTimeLow
                     ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 animate-pulse"
                     : "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400"
                 }`}
               >
-                <Timer className="h-4 w-4" />
+                <Timer className="h-5 w-5" />
                 {formatTime(timeLeft)}
+              </div>
+              <button
+                onClick={toggleFullscreen}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                title={isFullscreen ? "Kichiklashtirish" : "Kattalashtirish"}
+              >
+                {isFullscreen ? (
+                  <Minimize className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <Maximize className="h-5 w-5 text-muted-foreground" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Main content area */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Question area - takes most space */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-8">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center justify-between mb-6">
+                <Badge
+                  variant="outline"
+                  className="text-sm px-3 py-1"
+                >
+                  Savol {currentIdx + 1} / {questions.length}
+                </Badge>
+                <Badge variant="outline" className="text-sm px-3 py-1">
+                  {currentQ.points} ball
+                </Badge>
+              </div>
+
+              {currentQ.title && (
+                <h3 className="text-lg font-semibold text-foreground mb-3">
+                  {currentQ.title}
+                </h3>
+              )}
+
+              {currentQ.content && (
+                <div
+                  className="text-base text-foreground leading-relaxed mb-8 whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{ __html: currentQ.content }}
+                />
+              )}
+
+              {/* Options */}
+              <div className="space-y-3">
+                {currentQ.options
+                  .sort((a, b) => a.order_num - b.order_num)
+                  .map((opt, optIdx) => {
+                    const isSelected = answers[currentQ.id] === opt.id;
+                    const letter = String.fromCharCode(65 + optIdx);
+
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() =>
+                          handleSelectOption(currentQ.id, opt.id)
+                        }
+                        className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-start gap-4 ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-sm"
+                            : "border-border hover:border-blue-200 dark:hover:border-blue-800 hover:bg-accent/50"
+                        }`}
+                      >
+                        <div
+                          className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                            isSelected
+                              ? "bg-blue-600 text-white"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {letter}
+                        </div>
+                        <span
+                          className={`text-base pt-1 ${
+                            isSelected
+                              ? "text-blue-900 dark:text-blue-100 font-medium"
+                              : "text-foreground"
+                          }`}
+                        >
+                          {opt.content}
+                        </span>
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Navigation buttons */}
+              <div className="flex items-center justify-between mt-8 pt-4 border-t border-border">
+                <Button
+                  variant="outline"
+                  disabled={currentIdx === 0}
+                  onClick={() => setCurrentIdx((prev) => prev - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Oldingi
+                </Button>
+
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowFinishDialog(true)}
+                  disabled={finishing}
+                  className="px-6"
+                >
+                  Yakunlash
+                </Button>
+
+                <Button
+                  variant="outline"
+                  disabled={currentIdx === questions.length - 1}
+                  onClick={() => setCurrentIdx((prev) => prev + 1)}
+                >
+                  Keyingi
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right sidebar: Question tracker */}
+          <div className="w-64 flex-shrink-0 border-l border-border bg-muted/30 overflow-y-auto p-4 hidden md:block">
+            <p className="text-sm font-semibold text-foreground mb-4">
+              Savollar
+            </p>
+            <div className="grid grid-cols-5 gap-2">
+              {questions.map((q, idx) => {
+                const isAnswered =
+                  answers[q.id] !== null && answers[q.id] !== undefined;
+                const isCurrent = idx === currentIdx;
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => setCurrentIdx(idx)}
+                    className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${
+                      isCurrent
+                        ? "bg-blue-600 text-white ring-2 ring-blue-300 shadow-md"
+                        : isAnswered
+                        ? "bg-green-500 text-white shadow-sm"
+                        : "bg-white dark:bg-background text-muted-foreground border border-border hover:bg-accent"
+                    }`}
+                  >
+                    {idx + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-border space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded bg-green-500" />
+                <span className="text-foreground">Javob berilgan ({answeredCount})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded bg-white dark:bg-background border border-border" />
+                <span className="text-foreground">Javobsiz ({unansweredCount})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded bg-blue-600" />
+                <span className="text-foreground">Joriy savol</span>
+              </div>
+            </div>
+
+            {/* Quick stats */}
+            <div className="mt-6 pt-4 border-t border-border">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-foreground">
+                  {answeredCount}/{questions.length}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Yechilgan savollar</p>
+              </div>
+              <div className="mt-3 w-full bg-muted rounded-full h-2">
+                <div
+                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(answeredCount / questions.length) * 100}%` }}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Question Navigation - sidebar on large, top on mobile */}
-          <div className="lg:w-64 lg:flex-shrink-0 order-2 lg:order-1">
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <p className="text-sm font-medium text-muted-foreground mb-3">
-                  Savollar
-                </p>
-                <div className="grid grid-cols-8 lg:grid-cols-5 gap-1.5">
-                  {questions.map((q, idx) => {
-                    const isAnswered =
-                      answers[q.id] !== null && answers[q.id] !== undefined;
-                    const isCurrent = idx === currentIdx;
-                    return (
-                      <button
-                        key={q.id}
-                        onClick={() => setCurrentIdx(idx)}
-                        className={`h-8 w-8 rounded-md text-xs font-medium transition-colors ${
-                          isCurrent
-                            ? "bg-blue-600 text-white ring-2 ring-blue-300"
-                            : isAnswered
-                            ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
-                            : "bg-muted text-muted-foreground hover:bg-accent"
-                        }`}
-                      >
-                        {idx + 1}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-border space-y-1.5 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded bg-green-100 dark:bg-green-950/30" />
-                    Javob berilgan ({answeredCount})
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded bg-muted" />
-                    Javobsiz ({unansweredCount})
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Current Question */}
-          <div className="flex-1 order-1 lg:order-2">
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <Badge
-                    variant="outline"
-                    className="text-xs"
-                  >
-                    Savol {currentIdx + 1}/{questions.length}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {currentQ.points} ball
-                  </Badge>
-                </div>
-
-                {currentQ.title && (
-                  <h3 className="text-base font-semibold text-foreground mb-2">
-                    {currentQ.title}
-                  </h3>
-                )}
-
-                {currentQ.content && (
-                  <div
-                    className="text-sm text-foreground leading-relaxed mb-6 whitespace-pre-wrap"
-                    dangerouslySetInnerHTML={{ __html: currentQ.content }}
-                  />
-                )}
-
-                {/* Options */}
-                <div className="space-y-2">
-                  {currentQ.options
-                    .sort((a, b) => a.order_num - b.order_num)
-                    .map((opt, optIdx) => {
-                      const isSelected = answers[currentQ.id] === opt.id;
-                      const letter = String.fromCharCode(65 + optIdx); // A, B, C, D
-
-                      return (
-                        <button
-                          key={opt.id}
-                          onClick={() =>
-                            handleSelectOption(currentQ.id, opt.id)
-                          }
-                          className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-start gap-3 ${
-                            isSelected
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                              : "border-border hover:border-blue-200 dark:hover:border-blue-800 hover:bg-accent/50"
-                          }`}
-                        >
-                          <div
-                            className={`h-7 w-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                              isSelected
-                                ? "bg-blue-600 text-white"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            {letter}
-                          </div>
-                          <span
-                            className={`text-sm pt-0.5 ${
-                              isSelected
-                                ? "text-blue-900 dark:text-blue-100 font-medium"
-                                : "text-foreground"
-                            }`}
-                          >
-                            {opt.content}
-                          </span>
-                        </button>
-                      );
-                    })}
-                </div>
-
-                {/* Navigation */}
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentIdx === 0}
-                    onClick={() => setCurrentIdx((prev) => prev - 1)}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Oldingi
-                  </Button>
-
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setShowFinishDialog(true)}
-                    disabled={finishing}
-                  >
-                    Yakunlash
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentIdx === questions.length - 1}
-                    onClick={() => setCurrentIdx((prev) => prev + 1)}
-                  >
-                    Keyingi
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Mobile bottom bar for question numbers */}
+        <div className="md:hidden flex-shrink-0 border-t border-border bg-background px-4 py-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {questions.map((q, idx) => {
+              const isAnswered =
+                answers[q.id] !== null && answers[q.id] !== undefined;
+              const isCurrent = idx === currentIdx;
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => setCurrentIdx(idx)}
+                  className={`h-8 w-8 rounded-lg text-xs font-bold flex-shrink-0 transition-all ${
+                    isCurrent
+                      ? "bg-blue-600 text-white ring-2 ring-blue-300"
+                      : isAnswered
+                      ? "bg-green-500 text-white"
+                      : "bg-white dark:bg-muted text-muted-foreground border border-border"
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -608,8 +694,7 @@ export default function MockTestDetailPage() {
     ).length ?? 0;
     const skippedCount = totalQuestions - correctCount - wrongCount;
 
-    // Calculate time taken
-    let timeTakenStr = "—";
+    let timeTakenStr = "\u2014";
     if (result.started_at && result.finished_at) {
       const startMs = new Date(result.started_at).getTime();
       const endMs = new Date(result.finished_at).getTime();
@@ -619,7 +704,6 @@ export default function MockTestDetailPage() {
       timeTakenStr = `${mins} daqiqa ${secs} soniya`;
     }
 
-    // SVG progress ring
     const radius = 60;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -893,6 +977,7 @@ export default function MockTestDetailPage() {
               <li>Jami {mockTest.questions_count} ta savol mavjud</li>
               <li>Har bir savolda bitta to&apos;g&apos;ri javob bor</li>
               <li>Vaqt tugagach test avtomatik yakunlanadi</li>
+              <li>Test to&apos;liq ekran rejimida ochiladi</li>
               {mockTest.max_attempts > 0 && (
                 <li>
                   Maksimal {mockTest.max_attempts} marta urinish mumkin

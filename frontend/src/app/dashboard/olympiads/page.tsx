@@ -28,10 +28,10 @@ interface Olympiad {
   price?: number;
   is_paid?: boolean;
   duration_minutes: number;
-  start_time?: string;
-  end_time?: string;
-  start_date?: string;
-  end_date?: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
   total_questions?: number;
   questions_count?: number;
   participants_count?: number;
@@ -98,8 +98,17 @@ export default function OlympiadsListPage() {
 
   useEffect(() => {
     listOlympiads({ page: 1, page_size: 100 })
-      .then((data) => setOlympiads(Array.isArray(data) ? data : (data as any)?.data || []))
-      .catch(() => setOlympiads([]))
+      .then((data) => {
+        let list: Olympiad[] = [];
+        if (Array.isArray(data)) list = data;
+        else if ((data as any)?.data && Array.isArray((data as any).data)) list = (data as any).data;
+        else if ((data as any)?.items && Array.isArray((data as any).items)) list = (data as any).items;
+        setOlympiads(list);
+      })
+      .catch((err) => {
+        console.error("Olympiads load error:", err);
+        setOlympiads([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
