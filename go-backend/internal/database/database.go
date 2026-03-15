@@ -6,6 +6,7 @@ import (
 
 	"github.com/nextolympservice/go-backend/config"
 	"github.com/nextolympservice/go-backend/internal/models"
+	"github.com/nextolympservice/go-backend/internal/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -96,5 +97,38 @@ func Migrate(db *gorm.DB) error {
 	}
 
 	log.Println("Database migration completed")
+
+	// Auto-create superadmin if not exists
+	seedSuperAdmin(db)
+
 	return nil
+}
+
+func seedSuperAdmin(db *gorm.DB) {
+	var count int64
+	db.Model(&models.StaffUser{}).Where("role = ?", "superadmin").Count(&count)
+	if count > 0 {
+		return
+	}
+
+	hash, err := utils.HashPassword("SuperAdmin123!")
+	if err != nil {
+		log.Println("Warning: failed to hash superadmin password:", err)
+		return
+	}
+
+	superadmin := &models.StaffUser{
+		Username:     "superadmin",
+		PasswordHash: hash,
+		FullName:     "Super Administrator",
+		Role:         models.StaffRoleSuperAdmin,
+		Status:       models.StaffStatusActive,
+	}
+
+	if err := db.Create(superadmin).Error; err != nil {
+		log.Println("Warning: failed to create superadmin:", err)
+		return
+	}
+
+	log.Printf("SuperAdmin created (username: superadmin, password: SuperAdmin123!)")
 }
