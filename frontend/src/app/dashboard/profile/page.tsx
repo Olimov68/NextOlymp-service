@@ -579,7 +579,7 @@ function ProfileForm({
   if (!user) return null;
   if (formLoading) return <div className="text-muted-foreground p-8 text-center">Yuklanmoqda...</div>;
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:8080";
+  const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "https://nextolymp.uz";
 
   return (
     <Card className="border-0 shadow-sm">
