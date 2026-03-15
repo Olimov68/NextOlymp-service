@@ -63,7 +63,6 @@ func (h *Handler) GetByID(c *gin.Context) {
 
 // Reply PUT /api/v1/admin/feedback/:id/reply
 func (h *Handler) Reply(c *gin.Context) {
-	staffID, _ := c.Get("staffID")
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid ID", nil)
@@ -77,13 +76,25 @@ func (h *Handler) Reply(c *gin.Context) {
 	}
 
 	now := time.Now()
-	sid := staffID.(uint)
-	if err := h.db.Model(&models.Feedback{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"admin_reply":   req.Reply,
-		"status":        models.FeedbackStatusAnswered,
-		"replied_by_id": sid,
-		"replied_at":    now,
-	}).Error; err != nil {
+
+	status := string(models.FeedbackStatusAnswered)
+	if req.Status != "" {
+		status = req.Status
+	}
+
+	fields := map[string]interface{}{
+		"admin_reply": req.Reply,
+		"status":      status,
+		"replied_at":  now,
+	}
+
+	if staffID, exists := c.Get("staffID"); exists {
+		if sid, ok := staffID.(uint); ok {
+			fields["replied_by_id"] = sid
+		}
+	}
+
+	if err := h.db.Model(&models.Feedback{}).Where("id = ?", id).Updates(fields).Error; err != nil {
 		response.InternalError(c)
 		return
 	}

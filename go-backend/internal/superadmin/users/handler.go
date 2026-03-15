@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextolympservice/go-backend/internal/models"
+	"github.com/nextolympservice/go-backend/internal/utils"
 	"github.com/nextolympservice/go-backend/pkg/response"
 	"gorm.io/gorm"
 )
@@ -115,6 +116,71 @@ func (h *Handler) Unblock(c *gin.Context) {
 	}
 	h.db.Model(&models.User{}).Where("id = ?", id).Update("status", models.UserStatusActive)
 	response.Success(c, http.StatusOK, "User unblocked", nil)
+}
+
+// Create POST /api/v1/superadmin/users — admin yangi foydalanuvchi qo'shadi
+func (h *Handler) Create(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required,min=3,max=50"`
+		Password string `json:"password" binding:"required,min=8"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	// Username band emasligini tekshirish
+	var existing models.User
+	if h.db.Where("username = ?", req.Username).First(&existing).Error == nil {
+		response.Error(c, http.StatusConflict, "Bu username allaqachon band", nil)
+		return
+	}
+
+	hash, err := utils.HashPassword(req.Password)
+	if err != nil {
+		response.InternalError(c)
+		return
+	}
+
+	user := models.User{
+		Username:           req.Username,
+		PasswordHash:       hash,
+		Status:             models.UserStatusActive,
+		IsProfileCompleted: false,
+		IsTelegramLinked:   false,
+	}
+
+	if err := h.db.Create(&user).Error; err != nil {
+		response.Error(c, http.StatusInternalServerError, "Foydalanuvchi yaratishda xatolik", nil)
+		return
+	}
+
+	response.Success(c, http.StatusCreated, "Foydalanuvchi yaratildi", gin.H{
+		"id": user.ID, "username": user.Username, "status": user.Status,
+	})
+}
+
+// Verify PATCH /api/v1/superadmin/users/:id/verify — admin foydalanuvchini tasdiqlaydi
+func (h *Handler) Verify(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid ID", nil)
+		return
+	}
+
+	var user models.User
+	if err := h.db.First(&user, id).Error; err != nil {
+		response.NotFound(c, "Foydalanuvchi topilmadi")
+		return
+	}
+
+	// Profilni to'ldirilgan deb belgilash
+	h.db.Model(&user).Updates(map[string]interface{}{
+		"is_profile_completed": true,
+		"status":               models.UserStatusActive,
+	})
+
+	response.Success(c, http.StatusOK, "Foydalanuvchi tasdiqlandi", nil)
 }
 
 // Delete DELETE /api/v1/superadmin/users/:id (soft delete)

@@ -7,7 +7,8 @@ import (
 )
 
 type ReplyRequest struct {
-	Reply string `json:"reply" binding:"required,min=1"`
+	Reply  string `json:"reply" binding:"required,min=1"`
+	Status string `json:"status"`
 }
 
 type ListParams struct {

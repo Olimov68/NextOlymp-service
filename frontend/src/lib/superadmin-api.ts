@@ -58,8 +58,10 @@ export const unblockAdmin = (id: number) => patch(`/admins/${id}/unblock`);
 // ============================================
 export const getUsers = (params?: Record<string, unknown>) => get("/users", params);
 export const getUser = (id: number) => get(`/users/${id}`);
+export const createUser = (data: { username: string; password: string }) => post("/users", data);
 export const blockUser = (id: number) => patch(`/users/${id}/block`);
 export const unblockUser = (id: number) => patch(`/users/${id}/unblock`);
+export const verifyUser = (id: number) => patch(`/users/${id}/verify`);
 export const deleteUser = (id: number) => del(`/users/${id}`);
 
 // ============================================

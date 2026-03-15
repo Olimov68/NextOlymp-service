@@ -1,7 +1,8 @@
 package adminfeedback
 
 type ReplyRequest struct {
-	Reply string `json:"reply" binding:"required,min=3"`
+	Reply  string `json:"reply" binding:"required,min=1"`
+	Status string `json:"status"`
 }
 
 type ListParams struct {

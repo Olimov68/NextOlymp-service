@@ -149,6 +149,16 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	})
 
 	// ============================================================
+	// PUBLIC NEWS — /api/v1/news (auth talab qilinmaydi, hammaga ochiq)
+	// ============================================================
+	publicNewsHandler := usernews.NewHandler(usernews.NewService(usernews.NewRepository(db)))
+	publicNews := api.Group("/news")
+	{
+		publicNews.GET("", publicNewsHandler.List)
+		publicNews.GET("/:id", publicNewsHandler.GetByID)
+	}
+
+	// ============================================================
 	// PUBLIC STATS — /api/v1/stats (auth talab qilinmaydi)
 	// ============================================================
 	api.GET("/stats", func(c *gin.Context) {

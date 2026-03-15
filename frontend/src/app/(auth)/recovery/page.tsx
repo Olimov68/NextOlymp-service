@@ -154,7 +154,7 @@ export default function RecoveryPage() {
                 <div className="flex items-start gap-3">
                   <Bot className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
                   <p>
-                    Foydalanuvchi nomingizni kiriting. Telegram botga bir martalik kod yuboriladi.
+                    Foydalanuvchi nomingizni kiriting. Keyingi qadamda Telegram botga kirib bir martalik kodni olasiz.
                     Telegram bog&apos;langan bo&apos;lishi kerak.
                   </p>
                 </div>
@@ -183,9 +183,9 @@ export default function RecoveryPage() {
                 <div className="flex items-start gap-3">
                   <Bot className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
                   <div className="space-y-2">
-                    <p className="font-medium">Bir martalik kod Telegram botga yuborildi!</p>
+                    <p className="font-medium">Telegram botga kirib, bir martalik kodni oling!</p>
                     <p className="text-green-200/70">
-                      Telegram botga kirib, kodni oling va quyidagi maydonga kiriting.
+                      Quyidagi tugmani bosib botni oching, &quot;/recovery&quot; buyrug&apos;ini yuboring va kodni oling.
                     </p>
                     {botURL && (
                       <a

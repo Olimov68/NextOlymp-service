@@ -70,9 +70,11 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 		uG := sa.Group("/users")
 		{
 			uG.GET("", usersHandler.List)
+			uG.POST("", usersHandler.Create)
 			uG.GET("/:id", usersHandler.GetByID)
 			uG.PATCH("/:id/block", usersHandler.Block)
 			uG.PATCH("/:id/unblock", usersHandler.Unblock)
+			uG.PATCH("/:id/verify", usersHandler.Verify)
 			uG.DELETE("/:id", usersHandler.Delete)
 		}
 

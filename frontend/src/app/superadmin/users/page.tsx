@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUsers, getUser, blockUser, unblockUser, deleteUser } from "@/lib/superadmin-api";
+import { getUsers, getUser, createUser, blockUser, unblockUser, verifyUser, deleteUser } from "@/lib/superadmin-api";
 import { normalizeList } from "@/lib/normalizeList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Trash2, ShieldOff, Shield, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Search, Trash2, ShieldOff, Shield, ChevronLeft, ChevronRight, Eye, Plus, CheckCircle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { regions } from "@/lib/regions";
 
 interface User {
@@ -20,6 +21,7 @@ interface User {
   region: string;
   grade: number;
   status: string;
+  is_profile_completed: boolean;
   created_at: string;
 }
 
@@ -30,6 +32,7 @@ interface UserDetail extends User {
   district: string;
   birth_date: string;
   updated_at: string;
+  is_telegram_linked: boolean;
 }
 
 export default function UsersPage() {
@@ -42,6 +45,10 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [viewUser, setViewUser] = useState<UserDetail | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [creating, setCreating] = useState(false);
   const limit = 20;
 
   const fetchUsers = async () => {
@@ -65,7 +72,7 @@ export default function UsersPage() {
       const res = await getUser(id);
       setViewUser(res.data || res);
     } catch {
-      alert("Foydalanuvchi ma'lumotlarini yuklashda xatolik");
+      toast.error("Foydalanuvchi ma'lumotlarini yuklashda xatolik");
     }
     setViewLoading(false);
   };
@@ -74,9 +81,21 @@ export default function UsersPage() {
     try {
       if (blocked) await unblockUser(id);
       else await blockUser(id);
+      toast.success(blocked ? "Blok olib tashlandi" : "Bloklandi");
       fetchUsers();
-    } catch (e: unknown) {
-      alert((e as { response?: { data?: { message?: string } } })?.response?.data?.message || "Xatolik");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Xatolik");
+    }
+  };
+
+  const handleVerify = async (id: number) => {
+    try {
+      await verifyUser(id);
+      toast.success("Foydalanuvchi tasdiqlandi");
+      fetchUsers();
+      setViewUser(null);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Xatolik");
     }
   };
 
@@ -84,21 +103,49 @@ export default function UsersPage() {
     if (!confirm("Foydalanuvchini o'chirishni xohlaysizmi?")) return;
     try {
       await deleteUser(id);
+      toast.success("O'chirildi");
       fetchUsers();
-    } catch (e: unknown) {
-      alert((e as { response?: { data?: { message?: string } } })?.response?.data?.message || "Xatolik");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Xatolik");
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!newUsername.trim() || !newPassword.trim()) {
+      toast.error("Username va parol majburiy");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("Parol kamida 8 ta belgi bo'lishi kerak");
+      return;
+    }
+    setCreating(true);
+    try {
+      await createUser({ username: newUsername.trim(), password: newPassword });
+      toast.success("Foydalanuvchi yaratildi");
+      setCreateOpen(false);
+      setNewUsername("");
+      setNewPassword("");
+      fetchUsers();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Xatolik");
+    } finally {
+      setCreating(false);
     }
   };
 
   const totalPages = Math.ceil(total / limit);
 
-  // regions imported from @/lib/regions
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Foydalanuvchilar</h1>
-        <span className="text-sm text-muted-foreground">Jami: {total}</span>
+        <div>
+          <h1 className="text-2xl font-bold">Foydalanuvchilar</h1>
+          <p className="text-sm text-muted-foreground mt-1">Jami: {total}</p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" /> Yangi foydalanuvchi
+        </Button>
       </div>
 
       {/* Filters */}
@@ -151,22 +198,32 @@ export default function UsersPage() {
               <TableRow key={u.id} className="border-border hover:bg-accent">
                 <TableCell>{u.id}</TableCell>
                 <TableCell className="font-medium">{u.username}</TableCell>
-                <TableCell>{u.full_name}</TableCell>
+                <TableCell>{u.full_name || "—"}</TableCell>
                 <TableCell>{u.region || "—"}</TableCell>
                 <TableCell>{u.grade || "—"}</TableCell>
                 <TableCell>
-                  <Badge className={u.status === "active" ? "bg-green-600" : "bg-red-600"}>{u.status}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge className={u.status === "active" ? "bg-green-600" : "bg-red-600"}>{u.status}</Badge>
+                    {!u.is_profile_completed && (
+                      <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Tasdiqlanmagan</Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>{new Date(u.created_at).toLocaleDateString()}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => handleViewUser(u.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => handleViewUser(u.id)} title="Ko'rish">
                       <Eye className="w-4 h-4 text-blue-400" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleBlock(u.id, u.status === "blocked")}>
+                    {!u.is_profile_completed && (
+                      <Button size="sm" variant="ghost" onClick={() => handleVerify(u.id)} title="Tasdiqlash">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      </Button>
+                    )}
+                    <Button size="sm" variant="ghost" onClick={() => handleBlock(u.id, u.status === "blocked")} title={u.status === "blocked" ? "Blokdan chiqarish" : "Bloklash"}>
                       {u.status === "blocked" ? <Shield className="w-4 h-4 text-green-400" /> : <ShieldOff className="w-4 h-4 text-yellow-400" />}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(u.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(u.id)} title="O'chirish">
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </Button>
                   </div>
@@ -189,6 +246,32 @@ export default function UsersPage() {
         </div>
       )}
 
+      {/* Create User Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Yangi foydalanuvchi qo&apos;shish</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Username *</Label>
+              <Input placeholder="Foydalanuvchi nomi" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Parol *</Label>
+              <Input type="password" placeholder="Kamida 8 ta belgi" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Bekor qilish</Button>
+            <Button onClick={handleCreate} disabled={creating} className="gap-2">
+              {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+              Yaratish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* View Detail Dialog */}
       <Dialog open={!!viewUser || viewLoading} onOpenChange={() => setViewUser(null)}>
         <DialogContent className="bg-card border-border">
@@ -196,11 +279,11 @@ export default function UsersPage() {
           {viewLoading ? (
             <p className="text-muted-foreground text-center py-4">Yuklanmoqda...</p>
           ) : viewUser ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-muted-foreground text-xs">ID</Label><p className="text-sm">{viewUser.id}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Username</Label><p className="text-sm">{viewUser.username}</p></div>
-                <div><Label className="text-muted-foreground text-xs">To&apos;liq ism</Label><p className="text-sm">{viewUser.full_name}</p></div>
+                <div><Label className="text-muted-foreground text-xs">To&apos;liq ism</Label><p className="text-sm">{viewUser.full_name || "—"}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Email</Label><p className="text-sm">{viewUser.email || "—"}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Telefon</Label><p className="text-sm">{viewUser.phone || "—"}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Viloyat</Label><p className="text-sm">{viewUser.region || "—"}</p></div>
@@ -208,9 +291,33 @@ export default function UsersPage() {
                 <div><Label className="text-muted-foreground text-xs">Maktab</Label><p className="text-sm">{viewUser.school || "—"}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Sinf</Label><p className="text-sm">{viewUser.grade || "—"}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Tug&apos;ilgan sana</Label><p className="text-sm">{viewUser.birth_date ? new Date(viewUser.birth_date).toLocaleDateString() : "—"}</p></div>
-                <div><Label className="text-muted-foreground text-xs">Status</Label><Badge className={viewUser.status === "active" ? "bg-green-600" : "bg-red-600"}>{viewUser.status}</Badge></div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Status</Label>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Badge className={viewUser.status === "active" ? "bg-green-600" : "bg-red-600"}>{viewUser.status}</Badge>
+                    {viewUser.is_profile_completed ? (
+                      <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">Tasdiqlangan</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Tasdiqlanmagan</Badge>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Telegram</Label>
+                  <p className="text-sm">{viewUser.is_telegram_linked ? "✅ Ulangan" : "❌ Ulanmagan"}</p>
+                </div>
                 <div><Label className="text-muted-foreground text-xs">Yaratilgan</Label><p className="text-sm">{new Date(viewUser.created_at).toLocaleString()}</p></div>
               </div>
+
+              {/* Verify button in detail view */}
+              {!viewUser.is_profile_completed && (
+                <div className="pt-2 border-t border-border">
+                  <Button onClick={() => handleVerify(viewUser.id)} className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700">
+                    <CheckCircle className="h-4 w-4" />
+                    Foydalanuvchini tasdiqlash
+                  </Button>
+                </div>
+              )}
             </div>
           ) : null}
         </DialogContent>

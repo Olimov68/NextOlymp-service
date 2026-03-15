@@ -23,6 +23,13 @@ import { getNewsList, getNewsItem, createNews, updateNews, deleteNews } from "@/
 import { uploadPanelImage } from "@/lib/admin-api";
 import { normalizeList } from "@/lib/normalizeList";
 
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1").replace(/\/api\/v1$/, "");
+function imageUrl(path: string) {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  return `${BACKEND_URL}${path}`;
+}
+
 interface NewsItem {
   id: number;
   title: string;
@@ -242,7 +249,7 @@ export default function SuperadminNewsPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       {item.cover_image ? (
-                        <img src={item.cover_image} alt="" className="h-10 w-14 rounded-md object-cover border border-border" />
+                        <img src={imageUrl(item.cover_image)} alt="" className="h-10 w-14 rounded-md object-cover border border-border" />
                       ) : (
                         <div className="h-10 w-14 rounded-md bg-muted flex items-center justify-center">
                           <ImageIcon className="h-4 w-4 text-muted-foreground" />
@@ -340,7 +347,7 @@ export default function SuperadminNewsPage() {
                     )}
                   </div>
                   {form.cover_image && (
-                    <img src={form.cover_image} alt="" className="h-16 w-24 rounded-lg object-cover border border-border" />
+                    <img src={imageUrl(form.cover_image)} alt="" className="h-16 w-24 rounded-lg object-cover border border-border" />
                   )}
                 </div>
               </div>

@@ -87,14 +87,25 @@ func (h *Handler) Reply(c *gin.Context) {
 		return
 	}
 
-	staffID, _ := c.Get("staffID")
 	now := time.Now()
 
+	// Status — frontenddan kelgan qiymatni ishlatish, default: answered
+	status := string(models.FeedbackStatusAnswered)
+	if req.Status != "" {
+		status = req.Status
+	}
+
 	fields := map[string]interface{}{
-		"admin_reply":  req.Reply,
-		"replied_by_id": staffID.(uint),
-		"replied_at":   now,
-		"status":       string(models.FeedbackStatusAnswered),
+		"admin_reply": req.Reply,
+		"replied_at":  now,
+		"status":      status,
+	}
+
+	// staffID ni set qilish (agar mavjud bo'lsa)
+	if staffID, exists := c.Get("staffID"); exists {
+		if sid, ok := staffID.(uint); ok {
+			fields["replied_by_id"] = sid
+		}
 	}
 
 	if err := h.repo.Update(uint(id), fields); err != nil {
