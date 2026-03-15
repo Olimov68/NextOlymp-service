@@ -20,11 +20,11 @@ interface NewsItem {
   created_at: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1").replace(/\/api\/v1$/, "");
 function getImageUrl(url: string) {
   if (!url) return null;
   if (url.startsWith("http")) return url;
-  return `${API_BASE}${url}`;
+  return `${BACKEND_URL}${url}`;
 }
 
 export default function DashboardNewsPage() {

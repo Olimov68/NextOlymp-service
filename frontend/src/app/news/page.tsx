@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Search, Newspaper, ArrowRight } from "lucide-react";
-import { listNews } from "@/lib/user-api";
+import { api } from "@/lib/api";
 
 interface NewsItem {
   id: number;
@@ -24,12 +24,12 @@ interface NewsItem {
   created_at: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1").replace(/\/api\/v1$/, "");
 
 function getImageUrl(url: string) {
   if (!url) return null;
   if (url.startsWith("http")) return url;
-  return `${API_BASE}${url}`;
+  return `${BACKEND_URL}${url}`;
 }
 
 export default function NewsPage() {
@@ -38,9 +38,10 @@ export default function NewsPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    listNews({ page: 1, page_size: 50 })
-      .then(data => {
-        const arr = Array.isArray(data) ? data : (data as any)?.data || [];
+    api.get("/news?page=1&page_size=50")
+      .then(res => {
+        const d = res.data?.data;
+        const arr = Array.isArray(d) ? d : d?.data || [];
         setItems(arr);
       })
       .catch(() => setItems([]))

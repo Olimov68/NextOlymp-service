@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Calendar, Newspaper } from "lucide-react";
-import { getNewsDetail } from "@/lib/user-api";
+import { api } from "@/lib/api";
 
 interface NewsItem {
   id: number;
@@ -25,12 +25,12 @@ interface NewsItem {
   created_at: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1").replace(/\/api\/v1$/, "");
 
 function getImageUrl(url: string) {
   if (!url) return null;
   if (url.startsWith("http")) return url;
-  return `${API_BASE}${url}`;
+  return `${BACKEND_URL}${url}`;
 }
 
 export default function NewsDetailPage() {
@@ -41,8 +41,8 @@ export default function NewsDetailPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    getNewsDetail(id)
-      .then(data => setItem(data))
+    api.get(`/news/${id}`)
+      .then(res => setItem(res.data?.data))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [id]);
