@@ -657,7 +657,13 @@ export default function ChatModerationPage() {
                     <TableRow key={log.id} className="border-border hover:bg-accent">
                       <TableCell>{log.id}</TableCell>
                       <TableCell>
-                        <span className="font-medium">{log.staff_username || `#${log.staff_id}`}</span>
+                        <span className="font-medium">
+                          {log.staff_id === 0 ? (
+                            <Badge className="bg-gray-600">Tizim</Badge>
+                          ) : (
+                            log.staff_username || `#${log.staff_id}`
+                          )}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -665,10 +671,11 @@ export default function ChatModerationPage() {
                             log.action === "delete" ? "bg-red-600" :
                             log.action === "ban" ? "bg-yellow-600" :
                             log.action === "unban" ? "bg-green-600" :
+                            log.action === "profanity_blocked" ? "bg-orange-600" :
                             "bg-blue-600"
                           }
                         >
-                          {log.action}
+                          {log.action === "profanity_blocked" ? "Yomon so'z" : log.action}
                         </Badge>
                       </TableCell>
                       <TableCell>

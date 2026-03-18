@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -116,6 +117,15 @@ func (h *Handler) onMessage(client *Client, msg *IncomingMessage) {
 
 	// Yomon so'zlar filtri
 	if ContainsProfanity(content) {
+		// Moderation logga yozish — kim, nima yozmoqchi bo'lgani
+		h.db.Create(&models.ChatModerationLog{
+			StaffID:  0, // avtomatik tizim tomonidan
+			Action:   "profanity_blocked",
+			TargetID: client.userID,
+			Reason:   "Taqiqlangan so'z ishlatildi",
+			Details:  fmt.Sprintf("User: %s (ID:%d) | Xabar: %s", client.username, client.userID, content),
+		})
+
 		client.send <- &BroadcastMessage{
 			Type: "error",
 			Payload: map[string]interface{}{
