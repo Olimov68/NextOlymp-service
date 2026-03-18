@@ -88,11 +88,11 @@ func (h *Hub) Broadcast(msg *BroadcastMessage) {
 	h.broadcast <- msg
 }
 
-// OnlineCount — online userlar soni
+// OnlineCount — online unique userlar soni
 func (h *Hub) OnlineCount() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	return len(h.clients)
+	return len(h.onlineUsers)
 }
 
 // IsUserOnline — user online mi?
@@ -107,6 +107,6 @@ func (h *Hub) IsUserOnline(userID uint) bool {
 func (h *Hub) broadcastOnlineCount() {
 	h.broadcast <- &BroadcastMessage{
 		Type:    "online_count",
-		Payload: map[string]int{"count": len(h.clients)},
+		Payload: map[string]int{"count": len(h.onlineUsers)},
 	}
 }
