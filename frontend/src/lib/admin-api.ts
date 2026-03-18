@@ -138,20 +138,10 @@ export const getVerification = (id: number) => get(`/verifications/${id}`);
 export const approveVerification = (id: number, data?: { note?: string }) => post(`/verifications/${id}/approve`, data);
 export const rejectVerification = (id: number, data: { reason: string }) => post(`/verifications/${id}/reject`, data);
 
-export const approveUserVerification = async (userId: number, note?: string) => {
-  const res = await get("/verifications", { status: "pending", search: "" });
-  const items = res?.data || [];
-  const item = items.find((v: Record<string, unknown>) => v.user_id === userId);
-  if (item) return post(`/verifications/${item.id}/approve`, { note });
-  throw new Error("Pending verification topilmadi");
-};
-export const rejectUserVerification = async (userId: number, reason: string) => {
-  const res = await get("/verifications", { status: "pending", search: "" });
-  const items = res?.data || [];
-  const item = items.find((v: Record<string, unknown>) => v.user_id === userId);
-  if (item) return post(`/verifications/${item.id}/reject`, { reason });
-  throw new Error("Pending verification topilmadi");
-};
+export const approveUserVerification = (userId: number, note?: string) =>
+  post(`/verifications/user/${userId}/approve`, { note });
+export const rejectUserVerification = (userId: number, reason: string) =>
+  post(`/verifications/user/${userId}/reject`, { reason });
 
 // ============================================
 // Permissions

@@ -184,6 +184,8 @@ export const getVerifications = (params?: Record<string, unknown>) => get("/veri
 export const getVerification = (id: number) => get(`/verifications/${id}`);
 export const approveVerification = (id: number, data?: { note?: string }) => post(`/verifications/${id}/approve`, data);
 export const rejectVerification = (id: number, data: { reason: string }) => post(`/verifications/${id}/reject`, data);
+export const approveUserByID = (userId: number, note?: string) => post(`/verifications/user/${userId}/approve`, { note });
+export const rejectUserByID = (userId: number, reason: string) => post(`/verifications/user/${userId}/reject`, { reason });
 
 // ============================================
 // Chat Moderation

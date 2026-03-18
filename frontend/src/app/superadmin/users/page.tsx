@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUsers, getUser, createUser, blockUser, unblockUser, verifyUser, deleteUser, approveVerification, rejectVerification, getVerifications } from "@/lib/superadmin-api";
+import { getUsers, getUser, createUser, blockUser, unblockUser, verifyUser, deleteUser, approveUserByID, rejectUserByID } from "@/lib/superadmin-api";
 import { normalizeList } from "@/lib/normalizeList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,17 +92,8 @@ export default function UsersPage() {
 
   const handleApproveUser = async (userId: number, note?: string) => {
     try {
-      const res = await getVerifications({ status: "pending" });
-      const items = res?.data || [];
-      const item = items.find((v: any) => v.user_id === userId);
-      if (item) {
-        await approveVerification(item.id, { note });
-        toast.success("Foydalanuvchi tasdiqlandi");
-      } else {
-        // Fallback to old verify
-        await verifyUser(userId);
-        toast.success("Foydalanuvchi tasdiqlandi");
-      }
+      await approveUserByID(userId, note);
+      toast.success("Foydalanuvchi tasdiqlandi");
       fetchUsers();
       setViewUser(null);
     } catch (e: any) {
@@ -120,15 +111,8 @@ export default function UsersPage() {
       return;
     }
     try {
-      const res = await getVerifications({ status: "pending" });
-      const items = res?.data || [];
-      const item = items.find((v: any) => v.user_id === userId);
-      if (item) {
-        await rejectVerification(item.id, { reason: rejectReason.trim() });
-        toast.success("Foydalanuvchi rad etildi");
-      } else {
-        toast.error("Tasdiqlash so'rovi topilmadi");
-      }
+      await rejectUserByID(userId, rejectReason.trim());
+      toast.success("Foydalanuvchi rad etildi");
       fetchUsers();
       setViewUser(null);
       setRejectDialog(null);

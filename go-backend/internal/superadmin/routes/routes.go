@@ -208,6 +208,8 @@ paymentsHandler := sapayments.NewHandler(db)
 			vG.GET("/:id", verificationsHandler.GetByID)
 			vG.POST("/:id/approve", verificationsHandler.Approve)
 			vG.POST("/:id/reject", verificationsHandler.Reject)
+			vG.POST("/user/:user_id/approve", verificationsHandler.ApproveByUserID)
+			vG.POST("/user/:user_id/reject", verificationsHandler.RejectByUserID)
 		}
 
 		// Chat moderation

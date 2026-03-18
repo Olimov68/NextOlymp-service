@@ -268,6 +268,135 @@ func (h *Handler) Reject(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Verification rad etildi", nil)
 }
 
+// ApproveByUserID POST /admin/verifications/user/:user_id/approve
+func (h *Handler) ApproveByUserID(c *gin.Context) {
+	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Noto'g'ri user ID", nil)
+		return
+	}
+
+	var body struct {
+		Note string `json:"note"`
+	}
+	c.ShouldBindJSON(&body)
+
+	staffID, _ := c.Get("staff_id")
+	sid, _ := staffID.(uint)
+
+	// Check user exists
+	var user models.User
+	if h.db.First(&user, userID).Error != nil {
+		response.NotFound(c, "Foydalanuvchi topilmadi")
+		return
+	}
+
+	if user.IsTelegramLinked {
+		response.Error(c, http.StatusConflict, "Foydalanuvchi allaqachon tasdiqlangan", nil)
+		return
+	}
+
+	now := time.Now()
+
+	// Find or create verification record
+	var v models.UserVerification
+	if h.db.Where("user_id = ? AND status = 'pending'", userID).First(&v).Error != nil {
+		// No pending verification — create one and approve it
+		v = models.UserVerification{
+			UserID: uint(userID),
+			Method: "admin_manual",
+			Status: "approved",
+			Note:   body.Note,
+			ApprovedBy: &sid,
+			VerifiedAt: &now,
+		}
+		h.db.Create(&v)
+	} else {
+		h.db.Model(&v).Updates(map[string]interface{}{
+			"status":      "approved",
+			"method":      "admin_manual",
+			"note":        body.Note,
+			"approved_by": sid,
+			"verified_at": now,
+		})
+	}
+
+	// Update user
+	h.db.Model(&models.User{}).Where("id = ?", userID).Updates(map[string]interface{}{
+		"is_telegram_linked":  true,
+		"verification_method": "admin_manual",
+		"verified_at":         now,
+		"verified_by":         sid,
+	})
+
+	// Audit log
+	resourceID := uint(userID)
+	h.db.Create(&models.AuditLog{
+		ActorID:    sid,
+		ActorType:  "staff",
+		Action:     "user_verified_by_admin",
+		Resource:   "user",
+		ResourceID: &resourceID,
+		Details:    "Admin manual verification. Note: " + body.Note,
+	})
+
+	response.Success(c, http.StatusOK, "Foydalanuvchi muvaffaqiyatli tasdiqlandi", gin.H{
+		"user_id":     userID,
+		"status":      "approved",
+		"verified_at": now.Format(time.RFC3339),
+	})
+}
+
+// RejectByUserID POST /admin/verifications/user/:user_id/reject
+func (h *Handler) RejectByUserID(c *gin.Context) {
+	userID, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Noto'g'ri user ID", nil)
+		return
+	}
+
+	var body struct {
+		Reason string `json:"reason" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.Error(c, http.StatusBadRequest, "Sabab kiritish majburiy", nil)
+		return
+	}
+
+	staffID, _ := c.Get("staff_id")
+	sid, _ := staffID.(uint)
+
+	// Find or create verification record
+	var v models.UserVerification
+	if h.db.Where("user_id = ? AND status = 'pending'", userID).First(&v).Error != nil {
+		v = models.UserVerification{
+			UserID: uint(userID),
+			Method: "admin_manual",
+			Status: "rejected",
+			Reason: body.Reason,
+		}
+		h.db.Create(&v)
+	} else {
+		h.db.Model(&v).Updates(map[string]interface{}{
+			"status": "rejected",
+			"reason": body.Reason,
+		})
+	}
+
+	// Audit log
+	resourceID := uint(userID)
+	h.db.Create(&models.AuditLog{
+		ActorID:    sid,
+		ActorType:  "staff",
+		Action:     "user_verification_rejected",
+		Resource:   "user",
+		ResourceID: &resourceID,
+		Details:    "Rejected. Reason: " + body.Reason,
+	})
+
+	response.Success(c, http.StatusOK, "Verification rad etildi", nil)
+}
+
 // GetVerificationStatus GET /profile/verification-status (user endpoint)
 func (h *Handler) GetVerificationStatus(c *gin.Context) {
 	userID, _ := c.Get("user_id")
