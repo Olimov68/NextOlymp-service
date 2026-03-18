@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /news
+Allow: /results
+
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /superadmin
+Disallow: /login
+Disallow: /register
+Disallow: /api
+
+Sitemap: https://nextoly.uz/sitemap.xml

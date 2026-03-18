@@ -43,7 +43,13 @@ export default function NewsDetailPage() {
 
   useEffect(() => {
     api.get(`/public/news/${id}`)
-      .then(res => setItem(res.data?.data))
+      .then(res => {
+        const data = res.data?.data;
+        setItem(data);
+        if (data?.title) {
+          document.title = `${data.title} | NextOly`;
+        }
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [id]);
