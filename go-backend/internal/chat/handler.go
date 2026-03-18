@@ -499,6 +499,80 @@ func (h *Handler) AdminGetModerationLogs(c *gin.Context) {
 	})
 }
 
+// AdminSendMessage — admin/superadmin chatga xabar yuborishi
+func (h *Handler) AdminSendMessage(c *gin.Context) {
+	staffID, _ := c.Get("staff_id")
+	sid, _ := staffID.(uint)
+	if sid == 0 {
+		response.Error(c, http.StatusUnauthorized, "Avtorizatsiya talab qilinadi", nil)
+		return
+	}
+
+	var body struct {
+		Content string `json:"content" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.Error(c, http.StatusBadRequest, "Xabar matni talab qilinadi", nil)
+		return
+	}
+
+	content := strings.TrimSpace(body.Content)
+	if content == "" {
+		response.Error(c, http.StatusBadRequest, "Bo'sh xabar yuborib bo'lmaydi", nil)
+		return
+	}
+	if len(content) > 1000 {
+		content = content[:1000]
+	}
+	content = sanitizeMessage(content)
+
+	// Staff ma'lumotlarini olish
+	var staff models.StaffUser
+	if h.db.First(&staff, sid).Error != nil {
+		response.Error(c, http.StatusNotFound, "Staff topilmadi", nil)
+		return
+	}
+
+	// DB ga saqlash
+	chatMsg := models.ChatMessage{
+		UserID:  sid,
+		Content: content,
+		Type:    "admin",
+	}
+	if err := h.db.Create(&chatMsg).Error; err != nil {
+		response.Error(c, http.StatusInternalServerError, "Xabar saqlanmadi", nil)
+		return
+	}
+
+	username := staff.FullName
+	if username == "" {
+		username = staff.Username
+	}
+
+	role := string(staff.Role)
+
+	// Broadcast
+	h.hub.Broadcast(&BroadcastMessage{
+		Type: "new_message",
+		Payload: map[string]interface{}{
+			"id":         chatMsg.ID,
+			"user_id":    sid,
+			"username":   username,
+			"photo_url":  "",
+			"content":    content,
+			"type":       "admin",
+			"role":       role,
+			"created_at": chatMsg.CreatedAt.Format(time.RFC3339),
+		},
+	})
+
+	response.Success(c, http.StatusOK, "Xabar yuborildi", gin.H{
+		"id":         chatMsg.ID,
+		"content":    content,
+		"created_at": chatMsg.CreatedAt.Format(time.RFC3339),
+	})
+}
+
 // sanitizeMessage — basic HTML sanitization
 func sanitizeMessage(s string) string {
 	s = strings.ReplaceAll(s, "<", "&lt;")

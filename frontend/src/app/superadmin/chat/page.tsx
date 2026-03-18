@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   getChatMessages,
+  sendChatMessage,
   deleteChatMessage,
   banChatUser,
   unbanChatUser,
@@ -110,6 +111,10 @@ export default function ChatModerationPage() {
   const [banDuration, setBanDuration] = useState(60);
   const [banning, setBanning] = useState(false);
 
+  // Admin message input
+  const [adminMsg, setAdminMsg] = useState("");
+  const [sending, setSending] = useState(false);
+
   const limit = 20;
 
   // Fetch messages
@@ -125,6 +130,21 @@ export default function ChatModerationPage() {
     }
     setMsgLoading(false);
   }, [msgPage, msgSearch]);
+
+  // Send admin message
+  const handleSendMessage = async () => {
+    if (!adminMsg.trim() || sending) return;
+    setSending(true);
+    try {
+      await sendChatMessage(adminMsg.trim());
+      setAdminMsg("");
+      toast.success("Xabar yuborildi");
+      fetchMessages();
+    } catch {
+      toast.error("Xabar yuborilmadi");
+    }
+    setSending(false);
+  };
 
   // Fetch bans
   const fetchBans = useCallback(async () => {
@@ -362,6 +382,28 @@ export default function ChatModerationPage() {
       {/* Messages Tab */}
       {tab === "messages" && (
         <div className="space-y-4">
+          {/* Admin xabar yuborish */}
+          <div className="flex gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <Input
+              placeholder="Admin sifatida xabar yozing..."
+              value={adminMsg}
+              onChange={(e) => setAdminMsg(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+              maxLength={1000}
+              disabled={sending || !isChatOpen}
+              className="flex-1 bg-muted border-border"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!adminMsg.trim() || sending || !isChatOpen}
+              variant="default"
+              className="bg-amber-600 hover:bg-amber-500"
+            >
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4 mr-2" />}
+              {!sending && "Yuborish"}
+            </Button>
+          </div>
+
           <div className="flex flex-wrap gap-3">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

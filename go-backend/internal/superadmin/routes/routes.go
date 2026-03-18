@@ -216,6 +216,7 @@ paymentsHandler := sapayments.NewHandler(db)
 		chatG := sa.Group("/chat")
 		{
 			chatG.GET("/messages", chatHandler.GetMessages)
+			chatG.POST("/messages", chatHandler.AdminSendMessage)
 			chatG.DELETE("/messages/:id", chatHandler.AdminDeleteMessage)
 			chatG.POST("/ban/:user_id", chatHandler.AdminBanUser)
 			chatG.POST("/unban/:user_id", chatHandler.AdminUnbanUser)

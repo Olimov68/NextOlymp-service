@@ -106,6 +106,7 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 		chatG := admin.Group("/chat")
 		{
 			chatG.GET("/messages", chatHandler.GetMessages)
+			chatG.POST("/messages", chatHandler.AdminSendMessage)
 			chatG.DELETE("/messages/:id", chatHandler.AdminDeleteMessage)
 			chatG.POST("/ban/:user_id", chatHandler.AdminBanUser)
 			chatG.POST("/unban/:user_id", chatHandler.AdminUnbanUser)
