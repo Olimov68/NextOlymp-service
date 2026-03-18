@@ -11,6 +11,7 @@ import {
   Menu, X, LayoutDashboard, BarChart3
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, nextStep, loading, logout } = useAuth();
@@ -175,6 +176,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
         <main className="p-4 md:p-6 overflow-auto">{children}</main>
       </div>
+
+      {/* Global Chat Widget */}
+      <ChatWidget />
     </div>
   );
 }

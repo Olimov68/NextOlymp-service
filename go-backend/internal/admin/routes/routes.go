@@ -13,11 +13,12 @@ import (
 	adminnews "github.com/nextolympservice/go-backend/internal/admin/news"
 	admintests "github.com/nextolympservice/go-backend/internal/admin/tests"
 	adminusers "github.com/nextolympservice/go-backend/internal/admin/users"
+	"github.com/nextolympservice/go-backend/internal/chat"
 	panelupload "github.com/nextolympservice/go-backend/internal/panel/upload"
 )
 
 // Register — admin routelarni ro'yxatdan o'tkazadi
-func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB, cfg *config.Config) {
+func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB, cfg *config.Config, chatHandler *chat.Handler) {
 	// Handlers
 	dashHandler := admindashboard.NewHandler(db)
 	testsHandler := admintests.NewHandler(admintests.NewService(admintests.NewRepository(db)))
@@ -95,6 +96,18 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 			fbG.GET("", middleware.PermissionRequired(db, "news.view"), feedbackHandler.List)
 			fbG.GET("/:id", middleware.PermissionRequired(db, "news.view"), feedbackHandler.GetByID)
 			fbG.PUT("/:id/reply", middleware.PermissionRequired(db, "news.update"), feedbackHandler.Reply)
+		}
+
+		// Chat Moderation
+		chatG := admin.Group("/chat")
+		{
+			chatG.GET("/messages", chatHandler.GetMessages)
+			chatG.DELETE("/messages/:id", chatHandler.AdminDeleteMessage)
+			chatG.POST("/ban/:user_id", chatHandler.AdminBanUser)
+			chatG.POST("/unban/:user_id", chatHandler.AdminUnbanUser)
+			chatG.POST("/toggle", chatHandler.AdminToggleChat)
+			chatG.GET("/bans", chatHandler.AdminGetBannedUsers)
+			chatG.GET("/online", chatHandler.GetOnlineCount)
 		}
 
 		// Upload

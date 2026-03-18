@@ -10,6 +10,9 @@ import (
 	"github.com/nextolympservice/go-backend/internal/modules/telegram"
 	"github.com/nextolympservice/go-backend/internal/modules/user"
 
+	// Chat
+	"github.com/nextolympservice/go-backend/internal/chat"
+
 	// Panel auth
 	panelauth "github.com/nextolympservice/go-backend/internal/panel/auth"
 
@@ -25,6 +28,7 @@ import (
 	usernotifs "github.com/nextolympservice/go-backend/internal/user/notifications"
 	userolympiads "github.com/nextolympservice/go-backend/internal/user/olympiads"
 	userpromos "github.com/nextolympservice/go-backend/internal/user/promocodes"
+	useranticheat "github.com/nextolympservice/go-backend/internal/user/anticheat"
 	userresults "github.com/nextolympservice/go-backend/internal/user/results"
 
 	// Admin centralized routes
@@ -36,13 +40,14 @@ import (
 	// Superadmin centralized routes
 	saroutes "github.com/nextolympservice/go-backend/internal/superadmin/routes"
 
+	"github.com/nextolympservice/go-backend/internal/cache"
 	"github.com/nextolympservice/go-backend/internal/models"
 	"github.com/nextolympservice/go-backend/internal/utils"
 	"github.com/nextolympservice/go-backend/pkg/response"
 	"gorm.io/gorm"
 )
 
-func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
+func Setup(cfg *config.Config, db *gorm.DB, redisClient *cache.RedisClient) *gin.Engine {
 	if cfg.App.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -50,7 +55,14 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	r.Use(middleware.CORS())
+	r.Use(middleware.SecurityHeaders())
+
+	// CORS: production da aniq originlar, development da hamma
+	if cfg.App.Env == "production" && len(cfg.CORS.AllowedOrigins) > 0 {
+		r.Use(middleware.CORSWithOrigins(cfg.CORS.AllowedOrigins))
+	} else {
+		r.Use(middleware.CORS())
+	}
 
 	r.Static("/uploads", cfg.Upload.Dir)
 
@@ -100,10 +112,39 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	userResultsHandler := userresults.NewHandler(db)
 	devicesHandler := userdevices.NewHandler(sessionMgr)
 	leaderboardHandler := userleaderboard.NewHandler(db)
+	anticheatHandler := useranticheat.NewHandler(db)
+
+	// ─── Chat ─────────────────────────────────────────────────────
+	chatHub := chat.NewHub()
+	go chatHub.Run()
+	chatHandler := chat.NewHandler(db, chatHub)
+
+	// Rate limiter
+	var rateLimiter *cache.RateLimiter
+	if redisClient != nil {
+		rateLimiter = cache.NewRateLimiter(redisClient, cache.DefaultRateLimitConfig())
+	}
+
+	// Session store (Redis cache)
+	var sessionStore *cache.SessionStore
+	if redisClient != nil {
+		sessionStore = cache.NewSessionStore(redisClient)
+	}
+
+	_ = sessionStore // Will be used in auth middleware enhancement
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
-		response.Success(c, 200, "OK", gin.H{"status": "healthy"})
+		health := gin.H{"status": "healthy", "database": "connected"}
+
+		if redisClient != nil {
+			redisHealth := redisClient.Health(c.Request.Context())
+			health["redis"] = redisHealth
+		} else {
+			health["redis"] = gin.H{"status": "not_configured"}
+		}
+
+		response.Success(c, 200, "OK", health)
 	})
 
 	api := r.Group("/api/v1")
@@ -115,11 +156,11 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	// ============================================================
 	authGroup := api.Group("/auth")
 	{
-		authGroup.POST("/register", authHandler.Register)
-		authGroup.POST("/login", authHandler.Login)
+		authGroup.POST("/register", middleware.RateLimitRegister(rateLimiter), authHandler.Register)
+		authGroup.POST("/login", middleware.RateLimitLogin(rateLimiter), authHandler.Login)
 		authGroup.POST("/refresh", authHandler.RefreshToken)
 		// Parol tiklash
-		authGroup.POST("/recovery/identify", authHandler.RecoveryIdentify)
+		authGroup.POST("/recovery/identify", middleware.RateLimitLogin(rateLimiter), authHandler.RecoveryIdentify)
 		authGroup.POST("/recovery/verify", authHandler.RecoveryVerify)
 		authGroup.POST("/recovery/reset", authHandler.RecoveryReset)
 	}
@@ -232,13 +273,6 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			ng.GET("", newsHandler.List)
 			ng.GET("/:id", newsHandler.GetByID)
 		}
-		// Announcements
-		ag := userAPI.Group("/announcements")
-		{
-			ag.GET("", newsHandler.List)
-			ag.GET("/:id", newsHandler.GetByID)
-		}
-
 		// Certificates
 		cg := userAPI.Group("/certificates")
 		{
@@ -317,6 +351,20 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			lg.GET("", leaderboardHandler.GetLeaderboard)
 			lg.GET("/my-rank", leaderboardHandler.GetMyRank)
 		}
+
+		// Anti-cheat
+		acg := userAPI.Group("/anticheat")
+		{
+			acg.POST("/violations", anticheatHandler.ReportViolation)
+		}
+
+		// Chat
+		chatGroup := userAPI.Group("/chat")
+		{
+			chatGroup.GET("/ws", chatHandler.HandleWebSocket)
+			chatGroup.GET("/messages", chatHandler.GetMessages)
+			chatGroup.GET("/online", chatHandler.GetOnlineCount)
+		}
 	}
 
 	// ============================================================
@@ -340,7 +388,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	// ADMIN ROUTES — /api/v1/admin/...
 	// admin + superadmin kira oladi (centralized)
 	// ============================================================
-	adminroutes.Register(api, panelJWT, db, cfg)
+	adminroutes.Register(api, panelJWT, db, cfg, chatHandler)
 
 	// ============================================================
 	// SUPERADMIN ROUTES — /api/v1/superadmin/...

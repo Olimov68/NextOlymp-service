@@ -91,6 +91,13 @@ func Migrate(db *gorm.DB) error {
 		&models.SecuritySetting{},
 		&models.GlobalSetting{},
 		&models.PasswordResetCode{},
+		// Chat
+		&models.ChatMessage{},
+		&models.ChatBan{},
+		&models.ChatSetting{},
+		// Anti-cheat & Security events
+		&models.AntiCheatViolation{},
+		&models.SuspiciousEvent{},
 	)
 	if err != nil {
 		return fmt.Errorf("migration failed: %w", err)

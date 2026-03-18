@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -11,10 +12,23 @@ import (
 type Config struct {
 	App      AppConfig
 	DB       DBConfig
+	Redis    RedisConfig
 	JWT      JWTConfig
 	PanelJWT PanelJWTConfig
 	Upload   UploadConfig
 	Telegram TelegramConfig
+	CORS     CORSConfig
+}
+
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
+}
+
+type CORSConfig struct {
+	AllowedOrigins []string
 }
 
 type AppConfig struct {
@@ -70,6 +84,13 @@ func Load() (*Config, error) {
 	panelAccessExpiry, _ := strconv.Atoi(getEnv("PANEL_JWT_ACCESS_EXPIRY_HOURS", "8"))
 	panelRefreshExpiry, _ := strconv.Atoi(getEnv("PANEL_JWT_REFRESH_EXPIRY_HOURS", "168"))
 	maxSize, _ := strconv.Atoi(getEnv("MAX_UPLOAD_SIZE_MB", "5"))
+	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
+
+	// CORS origins
+	corsOrigins := strings.Split(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000"), ",")
+	for i := range corsOrigins {
+		corsOrigins[i] = strings.TrimSpace(corsOrigins[i])
+	}
 
 	cfg := &Config{
 		App: AppConfig{
@@ -83,6 +104,15 @@ func Load() (*Config, error) {
 			Password: getEnv("DB_PASSWORD", "postgres"),
 			Name:     getEnv("DB_NAME", "nextolympservice"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		},
+		Redis: RedisConfig{
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       redisDB,
+		},
+		CORS: CORSConfig{
+			AllowedOrigins: corsOrigins,
 		},
 		JWT: JWTConfig{
 			AccessSecret:       getEnv("JWT_ACCESS_SECRET", ""),
