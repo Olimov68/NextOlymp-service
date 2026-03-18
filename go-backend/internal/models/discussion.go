@@ -45,3 +45,14 @@ type DiscussionUserState struct {
 }
 
 func (DiscussionUserState) TableName() string { return "discussion_user_state" }
+
+// DiscussionSettings — chat sozlamalari (yopish/read-only)
+type DiscussionSettings struct {
+	ID             uint   `gorm:"primaryKey" json:"id"`
+	IsChatEnabled  bool   `gorm:"default:true;not null" json:"is_chat_enabled"`
+	ReadOnlyMode   bool   `gorm:"default:false;not null" json:"read_only_mode"`
+	UpdatedAt      time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	UpdatedByID    *uint  `json:"updated_by_id,omitempty"`
+}
+
+func (DiscussionSettings) TableName() string { return "discussion_settings" }

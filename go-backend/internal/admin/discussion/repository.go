@@ -145,3 +145,23 @@ func (r *Repository) UnblockUser(userID uint) error {
 			"reason":     "",
 		}).Error
 }
+
+// Settings
+
+func (r *Repository) GetSettings() (*models.DiscussionSettings, error) {
+	var settings models.DiscussionSettings
+	err := r.db.First(&settings).Error
+	if err == gorm.ErrRecordNotFound {
+		// Default settings yaratish
+		settings = models.DiscussionSettings{IsChatEnabled: true, ReadOnlyMode: false}
+		if err := r.db.Create(&settings).Error; err != nil {
+			return nil, err
+		}
+		return &settings, nil
+	}
+	return &settings, err
+}
+
+func (r *Repository) UpdateSettings(id uint, updates map[string]interface{}) error {
+	return r.db.Model(&models.DiscussionSettings{}).Where("id = ?", id).Updates(updates).Error
+}

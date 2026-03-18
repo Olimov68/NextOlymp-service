@@ -78,6 +78,7 @@ func Migrate(db *gorm.DB) error {
 		// Discussion
 		&models.DiscussionMessage{},
 		&models.DiscussionUserState{},
+		&models.DiscussionSettings{},
 		// Finance
 		&models.Payment{},
 		&models.Balance{},

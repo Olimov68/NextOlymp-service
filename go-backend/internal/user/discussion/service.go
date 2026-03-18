@@ -51,21 +51,33 @@ func (s *Service) List(params ListParams) (map[string]interface{}, error) {
 }
 
 func (s *Service) GetMyState(userID uint) (*UserStateResponse, error) {
+	settings := s.repo.GetSettings()
 	state, err := s.repo.GetUserState(userID)
 	if err != nil {
 		return nil, err
 	}
-	if state == nil {
-		return &UserStateResponse{}, nil
+	resp := &UserStateResponse{
+		IsChatEnabled: settings.IsChatEnabled,
+		ReadOnlyMode:  settings.ReadOnlyMode,
 	}
-	return &UserStateResponse{
-		IsMuted:    state.IsMuted,
-		MutedUntil: state.MutedUntil,
-		IsBlocked:  state.IsBlocked,
-	}, nil
+	if state != nil {
+		resp.IsMuted = state.IsMuted
+		resp.MutedUntil = state.MutedUntil
+		resp.IsBlocked = state.IsBlocked
+	}
+	return resp, nil
 }
 
 func (s *Service) Create(userID uint, req CreateMessageRequest) (*MessageResponse, error) {
+	// Chat settings tekshirish
+	settings := s.repo.GetSettings()
+	if !settings.IsChatEnabled {
+		return nil, errors.New("chat vaqtincha yopilgan")
+	}
+	if settings.ReadOnlyMode {
+		return nil, errors.New("chat faqat o'qish rejimida")
+	}
+
 	// Blocked tekshirish
 	if s.repo.IsBlocked(userID) {
 		return nil, errors.New("siz muhokamada bloklangansiz")

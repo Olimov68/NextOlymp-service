@@ -97,3 +97,13 @@ func (r *Repository) IsBlocked(userID uint) bool {
 	}
 	return state.IsBlocked
 }
+
+func (r *Repository) GetSettings() *models.DiscussionSettings {
+	var settings models.DiscussionSettings
+	err := r.db.First(&settings).Error
+	if err != nil {
+		// Default
+		return &models.DiscussionSettings{IsChatEnabled: true, ReadOnlyMode: false}
+	}
+	return &settings
+}

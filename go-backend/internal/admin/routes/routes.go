@@ -114,6 +114,8 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 			discG.PATCH("/users/:id/unmute", discussionHandler.UnmuteUser)
 			discG.PATCH("/users/:id/block", discussionHandler.BlockUser)
 			discG.PATCH("/users/:id/unblock", discussionHandler.UnblockUser)
+			discG.GET("/settings", discussionHandler.GetSettings)
+			discG.PUT("/settings", discussionHandler.UpdateSettings)
 		}
 
 		// Upload

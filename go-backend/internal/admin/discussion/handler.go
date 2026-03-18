@@ -206,3 +206,51 @@ func (h *Handler) UnblockUser(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Blok olib tashlandi", nil)
 }
+
+// GetSettings — chat sozlamalarini olish
+func (h *Handler) GetSettings(c *gin.Context) {
+	settings, err := h.repo.GetSettings()
+	if err != nil {
+		response.InternalError(c)
+		return
+	}
+	response.Success(c, http.StatusOK, "Discussion settings", settings)
+}
+
+// UpdateSettings — chat sozlamalarini yangilash
+func (h *Handler) UpdateSettings(c *gin.Context) {
+	var req struct {
+		IsChatEnabled *bool `json:"is_chat_enabled"`
+		ReadOnlyMode  *bool `json:"read_only_mode"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	settings, err := h.repo.GetSettings()
+	if err != nil {
+		response.InternalError(c)
+		return
+	}
+
+	updates := map[string]interface{}{}
+	if req.IsChatEnabled != nil {
+		updates["is_chat_enabled"] = *req.IsChatEnabled
+	}
+	if req.ReadOnlyMode != nil {
+		updates["read_only_mode"] = *req.ReadOnlyMode
+	}
+
+	staffID, _ := c.Get("staffID")
+	if sid, ok := staffID.(uint); ok {
+		updates["updated_by_id"] = sid
+	}
+
+	if err := h.repo.UpdateSettings(settings.ID, updates); err != nil {
+		response.InternalError(c)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Sozlamalar yangilandi", nil)
+}

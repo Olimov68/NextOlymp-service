@@ -42,9 +42,11 @@ type ReplyToResponse struct {
 }
 
 type UserStateResponse struct {
-	IsMuted    bool       `json:"is_muted"`
-	MutedUntil *time.Time `json:"muted_until,omitempty"`
-	IsBlocked  bool       `json:"is_blocked"`
+	IsMuted        bool       `json:"is_muted"`
+	MutedUntil     *time.Time `json:"muted_until,omitempty"`
+	IsBlocked      bool       `json:"is_blocked"`
+	IsChatEnabled  bool       `json:"is_chat_enabled"`
+	ReadOnlyMode   bool       `json:"read_only_mode"`
 }
 
 const deletedPlaceholder = "Bu xabar o'chirilgan"
