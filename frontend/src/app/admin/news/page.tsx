@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ImageUpload } from "@/components/ImageUpload";
+import { uploadPanelImage } from "@/lib/admin-api";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -122,7 +124,14 @@ export default function AdminNewsPage() {
           </Select>
         </div>
       </div>
-      <div><Label className="text-foreground">Muqova rasmi (URL)</Label><Input value={form.cover_image} onChange={(e) => setForm({ ...form, cover_image: e.target.value })} className="bg-background border-border" placeholder="https://..." /></div>
+      <ImageUpload
+        label="Muqova rasmi"
+        value={form.cover_image}
+        onChange={(url) => setForm({ ...form, cover_image: url })}
+        uploadFn={uploadPanelImage}
+        placeholder="Muqova rasmini yuklang"
+        maxSizeMB={5}
+      />
       <div><Label className="text-foreground">Slug</Label><Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="bg-background border-border" placeholder="yangilik-slug" /></div>
       <Button onClick={isEdit ? handleUpdate : handleCreate} className="w-full bg-blue-600 hover:bg-blue-700">{isEdit ? "Saqlash" : "Yaratish"}</Button>
     </div>
