@@ -10,7 +10,7 @@ import {
   ClipboardCheck, Award, Wallet, Bell, MessagesSquare,
   Menu, X, LayoutDashboard, BarChart3
 } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Moon } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, nextStep, loading, logout } = useAuth();
@@ -123,7 +123,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </nav>
 
       <div className="p-3 border-t border-border space-y-1">
-        <ThemeToggle variant="sidebar" />
         <Link
           href={mustCompleteStep ? "#" : "/"}
           onClick={mustCompleteStep ? (e: React.MouseEvent) => e.preventDefault() : undefined}
@@ -172,7 +171,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-accent text-muted-foreground">
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-semibold text-foreground">NextOly</span>
+          <span className="font-semibold text-foreground flex-1">NextOly</span>
+          <Moon className="h-4 w-4 text-muted-foreground" />
         </header>
         <main className="p-4 md:p-6 overflow-auto">
           {waitVerification && (
