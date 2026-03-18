@@ -16,6 +16,7 @@ func NewRepository(db *gorm.DB) *Repository {
 type ListParams struct {
 	Status   string `form:"status"`
 	Search   string `form:"search"`
+	Region   string `form:"region"`
 	Page     int    `form:"page,default=1"`
 	PageSize int    `form:"page_size,default=20"`
 }
@@ -24,17 +25,21 @@ func (r *Repository) List(params ListParams) ([]models.User, int64, error) {
 	var list []models.User
 	var total int64
 
-	q := r.db.Model(&models.User{}).Where("status != ?", models.UserStatusDeleted)
+	q := r.db.Model(&models.User{}).Where("\"user\".status != ?", models.UserStatusDeleted)
 	if params.Status != "" {
-		q = q.Where("status = ?", params.Status)
+		q = q.Where("\"user\".status = ?", params.Status)
 	}
 	if params.Search != "" {
-		q = q.Where("username ILIKE ?", "%"+params.Search+"%")
+		q = q.Where("\"user\".username ILIKE ?", "%"+params.Search+"%")
+	}
+	if params.Region != "" {
+		q = q.Joins("JOIN profile ON profile.user_id = \"user\".id").
+			Where("profile.region = ?", params.Region)
 	}
 
 	q.Count(&total)
 	offset := (params.Page - 1) * params.PageSize
-	err := q.Order("created_at DESC").Offset(offset).Limit(params.PageSize).Find(&list).Error
+	err := q.Order("\"user\".created_at DESC").Offset(offset).Limit(params.PageSize).Find(&list).Error
 	return list, total, err
 }
 

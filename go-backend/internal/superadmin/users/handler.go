@@ -62,22 +62,27 @@ func (h *Handler) List(c *gin.Context) {
 
 	status := c.Query("status")
 	search := c.Query("search")
+	region := c.Query("region")
 
 	var list []models.User
 	var total int64
 	q := h.db.Model(&models.User{})
 	if status != "" {
-		q = q.Where("status = ?", status)
+		q = q.Where("\"user\".status = ?", status)
 	} else {
-		q = q.Where("status != ?", "deleted")
+		q = q.Where("\"user\".status != ?", "deleted")
 	}
 	if search != "" {
-		q = q.Where("username ILIKE ?", "%"+search+"%")
+		q = q.Where("\"user\".username ILIKE ?", "%"+search+"%")
+	}
+	if region != "" {
+		q = q.Joins("JOIN profile ON profile.user_id = \"user\".id").
+			Where("profile.region = ?", region)
 	}
 
 	q.Count(&total)
 	offset := (page - 1) * pageSize
-	q.Preload("Profile").Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&list)
+	q.Preload("Profile").Order("\"user\".created_at DESC").Offset(offset).Limit(pageSize).Find(&list)
 
 	// Flatten profile data for frontend
 	items := make([]UserListItem, len(list))
