@@ -62,6 +62,7 @@ export default function SuperAdminDashboard() {
   const [latestFeedbacks, setLatestFeedbacks] = useState<LatestFeedback[]>([]);
   const [latestPayments, setLatestPayments] = useState<LatestPayment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getDashboard()
@@ -72,7 +73,10 @@ export default function SuperAdminDashboard() {
         setLatestFeedbacks(Array.isArray(d.latest_feedbacks) ? d.latest_feedbacks : []);
         setLatestPayments(Array.isArray(d.latest_payments) ? d.latest_payments : []);
       })
-      .catch(() => {})
+      .catch((err) => {
+        const msg = err?.response?.data?.message || err?.message || "Serverga ulanib bo'lmadi";
+        setError(msg);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -86,8 +90,10 @@ export default function SuperAdminDashboard() {
 
   if (!stats) {
     return (
-      <div className="flex items-center justify-center h-64 text-red-400 gap-2">
-        <AlertCircle className="h-5 w-5" /> Ma'lumot yuklanmadi
+      <div className="flex flex-col items-center justify-center h-64 text-red-400 gap-2">
+        <AlertCircle className="h-5 w-5" />
+        <span>Ma&apos;lumot yuklanmadi</span>
+        {error && <span className="text-xs text-red-400/60">{error}</span>}
       </div>
     );
   }
