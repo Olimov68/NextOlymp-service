@@ -40,8 +40,8 @@ func (h *Handler) GetHub() *Hub {
 
 // HandleWebSocket — WebSocket upgrade va client yaratish
 func (h *Handler) HandleWebSocket(c *gin.Context) {
-	// Auth tekshirish — query param orqali token
-	userID, _ := c.Get("user_id")
+	// Auth tekshirish — middleware orqali
+	userID, _ := c.Get("userID")
 	uid, ok := userID.(uint)
 	if !ok || uid == 0 {
 		response.Error(c, http.StatusUnauthorized, "Avtorizatsiya talab qilinadi", nil)
@@ -408,7 +408,7 @@ func (h *Handler) AdminGetBannedUsers(c *gin.Context) {
 
 // GetChatStatus — user endpoint to check ban status and chat settings
 func (h *Handler) GetChatStatus(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	userID, _ := c.Get("userID")
 	uid, _ := userID.(uint)
 
 	var ban models.ChatBan
