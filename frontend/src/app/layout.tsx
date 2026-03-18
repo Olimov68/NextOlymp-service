@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script";
+
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { AuthProvider } from "@/lib/auth-context";
@@ -56,7 +56,6 @@ export default function RootLayout({
           </SettingsProvider>
         </Providers>
         <Toaster richColors position="top-right" />
-        <Script src="//code.jivo.ru/widget/GovfNB8EWK" strategy="lazyOnload" />
       </body>
     </html>
   );

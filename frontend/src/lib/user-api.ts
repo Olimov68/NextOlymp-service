@@ -469,3 +469,30 @@ export async function getFeedback(id: number) {
   const res = await api.get(`/user/feedback/${id}`);
   return res.data.data;
 }
+
+// ─── Discussion ──────────────────────────────────────────────────────────────
+
+export async function listDiscussionMessages(params?: { page?: number; page_size?: number }) {
+  const res = await api.get('/user/discussion/messages', { params });
+  return res.data.data;
+}
+
+export async function createDiscussionMessage(data: { message: string; reply_to_id?: number }) {
+  const res = await api.post('/user/discussion/messages', data);
+  return res.data.data;
+}
+
+export async function updateDiscussionMessage(id: number, data: { message: string }) {
+  const res = await api.put(`/user/discussion/messages/${id}`, data);
+  return res.data.data;
+}
+
+export async function deleteDiscussionMessage(id: number) {
+  const res = await api.delete(`/user/discussion/messages/${id}`);
+  return res.data;
+}
+
+export async function getDiscussionState() {
+  const res = await api.get('/user/discussion/state');
+  return res.data.data;
+}

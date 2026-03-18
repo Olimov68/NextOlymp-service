@@ -98,6 +98,12 @@ func (s *Service) VerifyCode(userID uint, code string) error {
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 	user.IsTelegramLinked = true
+	// Telegram orqali verification — agar hali verified bo'lmasa
+	if user.VerificationStatus == models.VerificationPending {
+		user.VerificationStatus = models.VerificationTelegramVerified
+		now := time.Now()
+		user.VerifiedAt = &now
+	}
 	if err := s.repo.UpdateUser(user); err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}

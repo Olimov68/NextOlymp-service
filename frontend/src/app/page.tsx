@@ -1,5 +1,6 @@
 "use client";
 
+import Script from "next/script";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -38,6 +39,7 @@ export default function Home() {
         <AboutSection />
       </main>
       <Footer />
+      <Script src="//code.jivo.ru/widget/GovfNB8EWK" strategy="lazyOnload" />
     </div>
   );
 }

@@ -61,7 +61,9 @@ export const getUser = (id: number) => get(`/users/${id}`);
 export const createUser = (data: { username: string; password: string }) => post("/users", data);
 export const blockUser = (id: number) => patch(`/users/${id}/block`);
 export const unblockUser = (id: number) => patch(`/users/${id}/unblock`);
-export const verifyUser = (id: number) => patch(`/users/${id}/verify`);
+export const verifyUser = (id: number, data?: Record<string, unknown>) => patch(`/users/${id}/verify`, data);
+export const rejectUser = (id: number, data?: Record<string, unknown>) => patch(`/users/${id}/reject`, data);
+export const getPendingUsers = () => get("/users/pending-verification");
 export const deleteUser = (id: number) => del(`/users/${id}`);
 
 // ============================================
@@ -131,6 +133,19 @@ export const deleteCertTemplate = (id: number) => del(`/certificate-templates/${
 export const getFeedbacks = (params?: Record<string, unknown>) => get("/feedback", params);
 export const getFeedback = (id: number) => get(`/feedback/${id}`);
 export const replyFeedback = (id: number, data: { reply: string; status?: string }) => put(`/feedback/${id}/reply`, data);
+
+// ============================================
+// Discussion moderation
+// ============================================
+export const saGetDiscussionMessages = (params?: Record<string, unknown>) => get("/discussion/messages", params);
+export const saDeleteDiscussionMessage = (id: number) => del(`/discussion/messages/${id}`);
+export const saHideDiscussionMessage = (id: number) => patch(`/discussion/messages/${id}/hide`);
+export const saUnhideDiscussionMessage = (id: number) => patch(`/discussion/messages/${id}/unhide`);
+export const saGetDiscussionUsers = (params?: Record<string, unknown>) => get("/discussion/users", params);
+export const saMuteDiscussionUser = (id: number, data?: Record<string, unknown>) => patch(`/discussion/users/${id}/mute`, data);
+export const saUnmuteDiscussionUser = (id: number) => patch(`/discussion/users/${id}/unmute`);
+export const saBlockDiscussionUser = (id: number, data?: Record<string, unknown>) => patch(`/discussion/users/${id}/block`, data);
+export const saUnblockDiscussionUser = (id: number) => patch(`/discussion/users/${id}/unblock`);
 
 // ============================================
 // Payments

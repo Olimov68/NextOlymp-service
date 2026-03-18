@@ -90,6 +90,9 @@ export const getAdminUsers = (params?: Record<string, unknown>) => get("/users",
 export const getAdminUser = (id: number) => get(`/users/${id}`);
 export const blockAdminUser = (id: number) => patch(`/users/${id}/block`);
 export const unblockAdminUser = (id: number) => patch(`/users/${id}/unblock`);
+export const verifyAdminUser = (id: number, data?: { note?: string }) => patch(`/users/${id}/verify`, data);
+export const rejectAdminUser = (id: number, data?: { note?: string }) => patch(`/users/${id}/reject`, data);
+export const getPendingVerificationUsers = () => get("/users/pending-verification");
 
 // ============================================
 // Upload
@@ -123,6 +126,37 @@ export async function replyAdminFeedback(id: number, data: { reply: string; stat
   const res = await adminApi.put(`/admin/feedback/${id}/reply`, data);
   return res.data.data;
 }
+
+// ============================================
+// Discussion moderation
+// ============================================
+
+export const getAdminDiscussionMessages = (params?: Record<string, any>) =>
+  adminApi.get("/admin/discussion/messages", { params }).then((r) => r.data.data);
+
+export const deleteAdminDiscussionMessage = (id: number) =>
+  adminApi.delete(`/admin/discussion/messages/${id}`).then((r) => r.data);
+
+export const hideAdminDiscussionMessage = (id: number) =>
+  adminApi.patch(`/admin/discussion/messages/${id}/hide`).then((r) => r.data);
+
+export const unhideAdminDiscussionMessage = (id: number) =>
+  adminApi.patch(`/admin/discussion/messages/${id}/unhide`).then((r) => r.data);
+
+export const getAdminDiscussionUsers = (params?: Record<string, any>) =>
+  adminApi.get("/admin/discussion/users", { params }).then((r) => r.data.data);
+
+export const muteAdminDiscussionUser = (id: number, data?: { reason?: string; hours?: number }) =>
+  adminApi.patch(`/admin/discussion/users/${id}/mute`, data).then((r) => r.data);
+
+export const unmuteAdminDiscussionUser = (id: number) =>
+  adminApi.patch(`/admin/discussion/users/${id}/unmute`).then((r) => r.data);
+
+export const blockAdminDiscussionUser = (id: number, data?: { reason?: string }) =>
+  adminApi.patch(`/admin/discussion/users/${id}/block`, data).then((r) => r.data);
+
+export const unblockAdminDiscussionUser = (id: number) =>
+  adminApi.patch(`/admin/discussion/users/${id}/unblock`).then((r) => r.data);
 
 // ============================================
 // Permissions

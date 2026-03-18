@@ -9,22 +9,22 @@ import { fetchResults } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Medal, Loader2, AlertCircle, Search } from "lucide-react";
+import { BarChart3, Medal, Loader2, AlertCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-const subjects = [
-  { key: "mathematics", uz: "Matematika", ru: "Математика", en: "Mathematics" },
-  { key: "physics", uz: "Fizika", ru: "Физика", en: "Physics" },
-  { key: "chemistry", uz: "Kimyo", ru: "Химия", en: "Chemistry" },
-  { key: "biology", uz: "Biologiya", ru: "Биология", en: "Biology" },
-  { key: "informatics", uz: "Informatika", ru: "Информатика", en: "Informatics" },
+const sourceTypes = [
+  { key: "", uz: "Barchasi", ru: "Все", en: "All" },
+  { key: "olympiad", uz: "Olimpiadalar", ru: "Олимпиады", en: "Olympiads" },
+  { key: "mock_test", uz: "Mock testlar", ru: "Мок-тесты", en: "Mock Tests" },
 ];
 
-const medalConfig: Record<string, { cls: string; icon: string }> = {
-  Gold:   { cls: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30", icon: "🥇" },
-  Silver: { cls: "bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-500/30", icon: "🥈" },
-  Bronze: { cls: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30", icon: "🥉" },
-};
+function getGradeStyle(grade: string) {
+  if (!grade) return null;
+  if (grade.startsWith("A")) return "bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30";
+  if (grade.startsWith("B")) return "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30";
+  if (grade.startsWith("C")) return "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30";
+  return "bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-500/30";
+}
 
 const rankStyle = (rank: number) => {
   if (rank === 1) return "text-yellow-500 font-bold text-lg";
@@ -35,27 +35,33 @@ const rankStyle = (rank: number) => {
 
 export default function ResultsPage() {
   const { lang } = useI18n();
-  const [activeSubject, setActiveSubject] = useState("mathematics");
+  const [activeType, setActiveType] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
-  const { data: results = [], isLoading, isError } = useQuery({
-    queryKey: ["results", activeSubject],
-    queryFn: () => fetchResults(activeSubject),
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["public-results", activeType, search, page],
+    queryFn: () => fetchResults({
+      source_type: activeType || undefined,
+      search: search || undefined,
+      page,
+      page_size: pageSize,
+    }),
   });
 
-  const getLabel = (s: typeof subjects[0]) =>
+  const results = data?.items || [];
+  const pagination = data?.pagination;
+
+  const getLabel = (s: typeof sourceTypes[0]) =>
     lang === "ru" ? s.ru : lang === "en" ? s.en : s.uz;
 
-  const filtered = results.filter(
-    (r) => !search || r.name?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const title = lang === "ru" ? "Результаты олимпиад" : lang === "en" ? "Olympiad Results" : "Olimpiada natijalari";
+  const title = lang === "ru" ? "Результаты" : lang === "en" ? "Results" : "Natijalar";
   const desc = lang === "ru"
-    ? "Таблица лидеров по предметам — посмотрите результаты участников"
+    ? "Таблица результатов олимпиад и тестов — посмотрите результаты участников"
     : lang === "en"
-    ? "Leaderboard by subject — see participant results"
-    : "Fan bo'yicha reytinglar — ishtirokchilar natijalarini ko'ring";
+    ? "Olympiad and test results — see participant scores"
+    : "Olimpiada va test natijalari — ishtirokchilar natijalarini ko'ring";
 
   return (
     <div className="min-h-screen bg-background">
@@ -77,7 +83,7 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* Subject tabs */}
+        {/* Filters */}
         <section className="py-6 border-b border-border bg-background sticky top-[calc(4rem+var(--announcement-h,0px))] z-30 backdrop-blur-sm bg-background/80">
           <div className="container mx-auto px-4">
             <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
@@ -87,19 +93,19 @@ export default function ResultsPage() {
                 <Input
                   placeholder={lang === "ru" ? "Поиск по имени..." : lang === "en" ? "Search by name..." : "Ism bo'yicha qidirish..."}
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                   className="pl-9 bg-background"
                 />
               </div>
 
-              {/* Subject buttons */}
+              {/* Type filter buttons */}
               <div className="flex flex-wrap gap-2">
-                {subjects.map((s) => (
+                {sourceTypes.map((s) => (
                   <button
                     key={s.key}
-                    onClick={() => setActiveSubject(s.key)}
+                    onClick={() => { setActiveType(s.key); setPage(1); }}
                     className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                      activeSubject === s.key
+                      activeType === s.key
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "bg-muted text-muted-foreground hover:text-foreground hover:bg-accent"
                     }`}
@@ -126,7 +132,7 @@ export default function ResultsPage() {
                   {lang === "ru" ? "Ошибка загрузки" : lang === "en" ? "Failed to load" : "Yuklab bo'lmadi"}
                 </p>
               </div>
-            ) : filtered.length === 0 ? (
+            ) : results.length === 0 ? (
               <div className="flex flex-col items-center py-20 gap-4">
                 <Medal className="h-16 w-16 text-muted-foreground/20" />
                 <p className="text-muted-foreground text-lg">
@@ -134,59 +140,106 @@ export default function ResultsPage() {
                 </p>
               </div>
             ) : (
-              <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-b border-border hover:bg-transparent">
-                      <TableHead className="w-16 text-center text-xs uppercase tracking-wider text-muted-foreground">
-                        {lang === "ru" ? "Место" : lang === "en" ? "Rank" : "O'rin"}
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
-                        {lang === "ru" ? "Участник" : lang === "en" ? "Participant" : "Ishtirokchi"}
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
-                        {lang === "ru" ? "Страна/Регион" : lang === "en" ? "Country/Region" : "Viloyat"}
-                      </TableHead>
-                      <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
-                        {lang === "ru" ? "Балл" : lang === "en" ? "Score" : "Ball"}
-                      </TableHead>
-                      <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
-                        {lang === "ru" ? "Медаль" : lang === "en" ? "Medal" : "Medal"}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((r, idx) => (
-                      <TableRow
-                        key={`${r.rank}-${r.name}-${idx}`}
-                        className={`border-b border-border transition-colors hover:bg-muted/50 ${r.rank <= 3 ? "bg-amber-500/[0.02]" : ""}`}
-                      >
-                        <TableCell className={`text-center ${rankStyle(r.rank)}`}>
-                          {r.rank <= 3 ? ["🥇", "🥈", "🥉"][r.rank - 1] : `#${r.rank}`}
-                        </TableCell>
-                        <TableCell className="font-medium text-foreground">{r.name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{r.country}</TableCell>
-                        <TableCell className="text-center font-semibold text-foreground">{r.score}</TableCell>
-                        <TableCell className="text-center">
-                          {r.medal ? (
-                            <Badge
-                              variant="outline"
-                              className={`${medalConfig[r.medal]?.cls || "bg-muted text-muted-foreground"} text-xs`}
-                            >
-                              {medalConfig[r.medal]?.icon} {r.medal}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground/30 text-sm">—</span>
-                          )}
-                        </TableCell>
+              <>
+                <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border hover:bg-transparent">
+                        <TableHead className="w-16 text-center text-xs uppercase tracking-wider text-muted-foreground">
+                          #
+                        </TableHead>
+                        <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
+                          {lang === "ru" ? "Участник" : lang === "en" ? "Participant" : "Ishtirokchi"}
+                        </TableHead>
+                        <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
+                          {lang === "ru" ? "Тест/Олимпиада" : lang === "en" ? "Test/Olympiad" : "Test/Olimpiada"}
+                        </TableHead>
+                        <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
+                          {lang === "ru" ? "Балл" : lang === "en" ? "Score" : "Ball"}
+                        </TableHead>
+                        <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
+                          %
+                        </TableHead>
+                        <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
+                          {lang === "ru" ? "Оценка" : lang === "en" ? "Grade" : "Baho"}
+                        </TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <div className="px-6 py-3 border-t border-border text-xs text-muted-foreground">
-                  {lang === "ru" ? `Всего участников: ${filtered.length}` : lang === "en" ? `Total participants: ${filtered.length}` : `Jami ishtirokchilar: ${filtered.length}`}
+                    </TableHeader>
+                    <TableBody>
+                      {results.map((r, idx) => {
+                        const rowNum = (page - 1) * pageSize + idx + 1;
+                        return (
+                          <TableRow
+                            key={`${r.id}-${r.source_type}`}
+                            className={`border-b border-border transition-colors hover:bg-muted/50 ${rowNum <= 3 ? "bg-amber-500/[0.02]" : ""}`}
+                          >
+                            <TableCell className={`text-center ${rankStyle(rowNum)}`}>
+                              {rowNum <= 3 ? ["🥇", "🥈", "🥉"][rowNum - 1] : `#${rowNum}`}
+                            </TableCell>
+                            <TableCell className="font-medium text-foreground">
+                              {r.participant_display_name}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="text-sm text-foreground">{r.source_title}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {r.source_type === "olympiad"
+                                    ? (lang === "ru" ? "Олимпиада" : lang === "en" ? "Olympiad" : "Olimpiada")
+                                    : (lang === "ru" ? "Мок-тест" : lang === "en" ? "Mock Test" : "Mock test")}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center font-semibold text-foreground">
+                              {r.score}/{r.max_score}
+                            </TableCell>
+                            <TableCell className="text-center text-muted-foreground">
+                              {r.percentage.toFixed(1)}%
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {r.grade_label ? (
+                                <Badge
+                                  variant="outline"
+                                  className={`${getGradeStyle(r.grade_label)} text-xs`}
+                                >
+                                  {r.grade_label}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground/30 text-sm">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                  <div className="px-6 py-3 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
+                    <span>
+                      {lang === "ru" ? `Всего: ${pagination?.total || 0}` : lang === "en" ? `Total: ${pagination?.total || 0}` : `Jami: ${pagination?.total || 0}`}
+                    </span>
+                    {pagination && pagination.total_pages > 1 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setPage(Math.max(1, page - 1))}
+                          disabled={page <= 1}
+                          className="p-1 rounded hover:bg-muted disabled:opacity-30"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <span className="text-sm">
+                          {page} / {pagination.total_pages}
+                        </span>
+                        <button
+                          onClick={() => setPage(Math.min(pagination.total_pages, page + 1))}
+                          disabled={page >= pagination.total_pages}
+                          className="p-1 rounded hover:bg-muted disabled:opacity-30"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </section>

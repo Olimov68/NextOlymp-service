@@ -25,6 +25,7 @@ type Content struct {
 	CoverImage  string        `gorm:"size:500" json:"cover_image"`
 	Type        ContentType   `gorm:"size:30;not null" json:"type"`
 	Status      ContentStatus `gorm:"size:20;default:draft;not null" json:"status"`
+	ViewCount   int           `gorm:"default:0;not null" json:"view_count"`
 	PublishedAt *time.Time    `json:"published_at,omitempty"`
 	CreatedByID *uint         `gorm:"index" json:"created_by_id,omitempty"`
 	CreatedAt   time.Time     `gorm:"autoCreateTime" json:"created_at"`

@@ -13,7 +13,12 @@ import (
 	// Panel auth
 	panelauth "github.com/nextolympservice/go-backend/internal/panel/auth"
 
+	// Public modules
+	publicnews "github.com/nextolympservice/go-backend/internal/public/news"
+	publicresults "github.com/nextolympservice/go-backend/internal/public/results"
+
 	// User modules
+	userdiscussion "github.com/nextolympservice/go-backend/internal/user/discussion"
 	userbalance "github.com/nextolympservice/go-backend/internal/user/balance"
 	usercerts "github.com/nextolympservice/go-backend/internal/user/certificates"
 	userdevices "github.com/nextolympservice/go-backend/internal/user/devices"
@@ -100,6 +105,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	userResultsHandler := userresults.NewHandler(db)
 	devicesHandler := userdevices.NewHandler(sessionMgr)
 	leaderboardHandler := userleaderboard.NewHandler(db)
+	discussionHandler := userdiscussion.NewHandler(userdiscussion.NewService(userdiscussion.NewRepository(db)))
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -178,6 +184,29 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		})
 	})
 
+	// ============================================================
+	// PUBLIC API — /api/v1/public/... (auth talab qilinmaydi)
+	// ============================================================
+	publicAPI := api.Group("/public")
+	{
+		// Public News
+		pNewsHandler := publicnews.NewHandler(publicnews.NewService(publicnews.NewRepository(db)))
+		pNewsGroup := publicAPI.Group("/news")
+		{
+			pNewsGroup.GET("", pNewsHandler.List)
+			pNewsGroup.GET("/:id", pNewsHandler.GetByID)
+			pNewsGroup.GET("/slug/:slug", pNewsHandler.GetBySlug)
+		}
+
+		// Public Results
+		pResultsHandler := publicresults.NewHandler(publicresults.NewService(publicresults.NewRepository(db)))
+		pResultsGroup := publicAPI.Group("/results")
+		{
+			pResultsGroup.GET("", pResultsHandler.List)
+			pResultsGroup.GET("/source/:source_type/:source_id", pResultsHandler.GetBySource)
+		}
+	}
+
 	protected := api.Group("")
 	protected.Use(middleware.AuthRequired(jwtManager, db))
 	{
@@ -246,12 +275,22 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			cg.GET("/:id", certsHandler.GetByID)
 		}
 
-		// Feedback
+		// Feedback (ichki support uchun saqlanadi)
 		fg := userAPI.Group("/feedback")
 		{
 			fg.POST("", feedbackHandler.Create)
 			fg.GET("", feedbackHandler.List)
 			fg.GET("/:id", feedbackHandler.GetByID)
+		}
+
+		// Discussion — umumiy muhokama
+		discg := userAPI.Group("/discussion")
+		{
+			discg.GET("/messages", discussionHandler.List)
+			discg.POST("/messages", discussionHandler.Create)
+			discg.PUT("/messages/:id", discussionHandler.Update)
+			discg.DELETE("/messages/:id", discussionHandler.Delete)
+			discg.GET("/state", discussionHandler.GetMyState)
 		}
 
 		// Exam — test topshirish

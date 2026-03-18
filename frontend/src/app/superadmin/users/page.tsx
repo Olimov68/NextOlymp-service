@@ -1,16 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUsers, getUser, createUser, blockUser, unblockUser, verifyUser, deleteUser } from "@/lib/superadmin-api";
+import {
+  getUsers, getUser, createUser, blockUser, unblockUser,
+  verifyUser, rejectUser, deleteUser, getPendingUsers,
+} from "@/lib/superadmin-api";
 import { normalizeList } from "@/lib/normalizeList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Trash2, ShieldOff, Shield, ChevronLeft, ChevronRight, Eye, Plus, CheckCircle, Loader2 } from "lucide-react";
+import {
+  Search, Trash2, ShieldOff, Shield, ChevronLeft, ChevronRight,
+  Eye, Plus, CheckCircle, XCircle, Loader2, Clock, UserCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 import { regions } from "@/lib/regions";
 
@@ -21,7 +28,9 @@ interface User {
   region: string;
   grade: number;
   status: string;
+  verification_status: string;
   is_profile_completed: boolean;
+  is_telegram_linked: boolean;
   created_at: string;
 }
 
@@ -32,8 +41,22 @@ interface UserDetail extends User {
   district: string;
   birth_date: string;
   updated_at: string;
-  is_telegram_linked: boolean;
+  verification_note: string;
+  verified_at: string;
 }
+
+const verificationBadge = (status: string) => {
+  switch (status) {
+    case "telegram_verified":
+      return <Badge className="bg-blue-600 text-white text-[10px]">Telegram</Badge>;
+    case "admin_verified":
+      return <Badge className="bg-green-600 text-white text-[10px]">Admin</Badge>;
+    case "rejected":
+      return <Badge className="bg-red-600 text-white text-[10px]">Rad etilgan</Badge>;
+    default:
+      return <Badge variant="secondary" className="text-[10px]">Kutilmoqda</Badge>;
+  }
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -41,6 +64,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [verificationFilter, setVerificationFilter] = useState("");
   const [regionFilter, setRegionFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [viewUser, setViewUser] = useState<UserDetail | null>(null);
@@ -49,12 +73,23 @@ export default function UsersPage() {
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [creating, setCreating] = useState(false);
+  const [tab, setTab] = useState<"all" | "pending">("all");
+  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [verifyDialog, setVerifyDialog] = useState<{ id: number; action: "verify" | "reject" } | null>(null);
+  const [verifyNote, setVerifyNote] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
   const limit = 20;
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await getUsers({ page, page_size: limit, search, status: statusFilter || undefined, region: regionFilter || undefined });
+      const res = await getUsers({
+        page, page_size: limit, search,
+        status: statusFilter || undefined,
+        verification_status: verificationFilter || undefined,
+        region: regionFilter || undefined,
+      });
       const list = normalizeList(res);
       setUsers(list);
       setTotal(res.pagination?.total || res?.data?.total || 0);
@@ -64,7 +99,22 @@ export default function UsersPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchUsers(); }, [page, search, statusFilter, regionFilter]);
+  const fetchPending = async () => {
+    setPendingLoading(true);
+    try {
+      const res = await getPendingUsers();
+      const list = normalizeList(res);
+      setPendingUsers(list);
+    } catch {
+      setPendingUsers([]);
+    }
+    setPendingLoading(false);
+  };
+
+  useEffect(() => {
+    if (tab === "all") fetchUsers();
+    else fetchPending();
+  }, [page, search, statusFilter, verificationFilter, regionFilter, tab]);
 
   const handleViewUser = async (id: number) => {
     setViewLoading(true);
@@ -88,15 +138,26 @@ export default function UsersPage() {
     }
   };
 
-  const handleVerify = async (id: number) => {
+  const handleVerifyAction = async () => {
+    if (!verifyDialog) return;
+    setActionLoading(true);
     try {
-      await verifyUser(id);
-      toast.success("Foydalanuvchi tasdiqlandi");
-      fetchUsers();
+      if (verifyDialog.action === "verify") {
+        await verifyUser(verifyDialog.id, { note: verifyNote });
+        toast.success("Foydalanuvchi tasdiqlandi");
+      } else {
+        await rejectUser(verifyDialog.id, { note: verifyNote });
+        toast.success("Foydalanuvchi rad etildi");
+      }
+      setVerifyDialog(null);
+      setVerifyNote("");
       setViewUser(null);
+      if (tab === "all") fetchUsers();
+      else fetchPending();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "Xatolik");
     }
+    setActionLoading(false);
   };
 
   const handleDelete = async (id: number) => {
@@ -148,101 +209,188 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Qidirish..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="pl-10 bg-muted border-border" />
-        </div>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(!v || v === "all" ? "" : v); setPage(1); }}>
-          <SelectTrigger className="w-[150px] bg-muted border-border"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Hammasi</SelectItem>
-            <SelectItem value="active">Faol</SelectItem>
-            <SelectItem value="blocked">Bloklangan</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={regionFilter} onValueChange={(v) => { setRegionFilter(!v || v === "all" ? "" : v); setPage(1); }}>
-          <SelectTrigger className="w-[180px] bg-muted border-border"><SelectValue placeholder="Viloyat" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Hammasi</SelectItem>
-            {regions.map((r) => (
-              <SelectItem key={r} value={r}>{r}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <Button variant={tab === "all" ? "default" : "outline"} size="sm" onClick={() => setTab("all")}>
+          Hammasi
+        </Button>
+        <Button variant={tab === "pending" ? "default" : "outline"} size="sm" onClick={() => setTab("pending")}>
+          <Clock className="h-4 w-4 mr-1" />
+          Tasdiqlash kutilmoqda
+          {pendingUsers.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-full">
+              {pendingUsers.length}
+            </span>
+          )}
+        </Button>
       </div>
 
-      {/* Table */}
-      <div className="border border-border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border hover:bg-accent">
-              <TableHead>ID</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Ism</TableHead>
-              <TableHead>Viloyat</TableHead>
-              <TableHead>Sinf</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Yaratilgan</TableHead>
-              <TableHead>Amallar</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Yuklanmoqda...</TableCell></TableRow>
-            ) : users.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Foydalanuvchi topilmadi</TableCell></TableRow>
-            ) : users.map((u) => (
-              <TableRow key={u.id} className="border-border hover:bg-accent">
-                <TableCell>{u.id}</TableCell>
-                <TableCell className="font-medium">{u.username}</TableCell>
-                <TableCell>{u.full_name || "—"}</TableCell>
-                <TableCell>{u.region || "—"}</TableCell>
-                <TableCell>{u.grade || "—"}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1.5">
-                    <Badge className={u.status === "active" ? "bg-green-600" : "bg-red-600"}>{u.status}</Badge>
-                    {!u.is_profile_completed && (
-                      <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Tasdiqlanmagan</Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{new Date(u.created_at).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => handleViewUser(u.id)} title="Ko'rish">
-                      <Eye className="w-4 h-4 text-blue-400" />
-                    </Button>
-                    {!u.is_profile_completed && (
-                      <Button size="sm" variant="ghost" onClick={() => handleVerify(u.id)} title="Tasdiqlash">
-                        <CheckCircle className="w-4 h-4 text-emerald-400" />
-                      </Button>
-                    )}
-                    <Button size="sm" variant="ghost" onClick={() => handleBlock(u.id, u.status === "blocked")} title={u.status === "blocked" ? "Blokdan chiqarish" : "Bloklash"}>
-                      {u.status === "blocked" ? <Shield className="w-4 h-4 text-green-400" /> : <ShieldOff className="w-4 h-4 text-yellow-400" />}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(u.id)} title="O'chirish">
-                      <Trash2 className="w-4 h-4 text-red-400" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Jami: {total}</span>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}><ChevronLeft className="w-4 h-4" /></Button>
-            <span className="px-3 py-1 text-sm">{page} / {totalPages}</span>
-            <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}><ChevronRight className="w-4 h-4" /></Button>
+      {tab === "all" && (
+        <>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input placeholder="Qidirish..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-10 bg-muted border-border" />
+            </div>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(!v || v === "all" ? "" : v); setPage(1); }}>
+              <SelectTrigger className="w-[150px] bg-muted border-border"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Hammasi</SelectItem>
+                <SelectItem value="active">Faol</SelectItem>
+                <SelectItem value="blocked">Bloklangan</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={verificationFilter} onValueChange={(v) => { setVerificationFilter(!v || v === "all" ? "" : v); setPage(1); }}>
+              <SelectTrigger className="w-[180px] bg-muted border-border"><SelectValue placeholder="Tasdiqlash" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Hammasi</SelectItem>
+                <SelectItem value="pending">Kutilmoqda</SelectItem>
+                <SelectItem value="telegram_verified">Telegram</SelectItem>
+                <SelectItem value="admin_verified">Admin</SelectItem>
+                <SelectItem value="rejected">Rad etilgan</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={regionFilter} onValueChange={(v) => { setRegionFilter(!v || v === "all" ? "" : v); setPage(1); }}>
+              <SelectTrigger className="w-[180px] bg-muted border-border"><SelectValue placeholder="Viloyat" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Hammasi</SelectItem>
+                {regions.map((r) => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Users Table */}
+          <div className="border border-border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-accent">
+                  <TableHead>ID</TableHead>
+                  <TableHead>Username</TableHead>
+                  <TableHead>Ism</TableHead>
+                  <TableHead>Viloyat</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Tasdiqlash</TableHead>
+                  <TableHead>Sana</TableHead>
+                  <TableHead>Amallar</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Yuklanmoqda...</TableCell></TableRow>
+                ) : users.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Foydalanuvchi topilmadi</TableCell></TableRow>
+                ) : users.map((u) => (
+                  <TableRow key={u.id} className="border-border hover:bg-accent">
+                    <TableCell>{u.id}</TableCell>
+                    <TableCell className="font-medium">{u.username}</TableCell>
+                    <TableCell>{u.full_name || "\u2014"}</TableCell>
+                    <TableCell>{u.region || "\u2014"}</TableCell>
+                    <TableCell>
+                      <Badge className={`${u.status === "active" ? "bg-green-600" : "bg-red-600"} text-white text-[10px]`}>{u.status}</Badge>
+                    </TableCell>
+                    <TableCell>{verificationBadge(u.verification_status)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => handleViewUser(u.id)} title="Ko'rish">
+                          <Eye className="w-4 h-4 text-blue-400" />
+                        </Button>
+                        {(u.verification_status === "pending" || u.verification_status === "rejected") && (
+                          <>
+                            <Button size="sm" variant="ghost" onClick={() => setVerifyDialog({ id: u.id, action: "verify" })} title="Tasdiqlash">
+                              <CheckCircle className="w-4 h-4 text-emerald-400" />
+                            </Button>
+                            {u.verification_status === "pending" && (
+                              <Button size="sm" variant="ghost" onClick={() => setVerifyDialog({ id: u.id, action: "reject" })} title="Rad etish">
+                                <XCircle className="w-4 h-4 text-red-400" />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => handleBlock(u.id, u.status === "blocked")} title={u.status === "blocked" ? "Blokdan chiqarish" : "Bloklash"}>
+                          {u.status === "blocked" ? <Shield className="w-4 h-4 text-green-400" /> : <ShieldOff className="w-4 h-4 text-yellow-400" />}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleDelete(u.id)} title="O'chirish">
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Jami: {total}</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}><ChevronLeft className="w-4 h-4" /></Button>
+                <span className="px-3 py-1 text-sm">{page} / {totalPages}</span>
+                <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}><ChevronRight className="w-4 h-4" /></Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Pending Tab */}
+      {tab === "pending" && (
+        <div className="border border-border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border">
+                <TableHead>ID</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Ism</TableHead>
+                <TableHead>Viloyat</TableHead>
+                <TableHead>Telegram</TableHead>
+                <TableHead>Sana</TableHead>
+                <TableHead>Amallar</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingLoading ? (
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Yuklanmoqda...</TableCell></TableRow>
+              ) : pendingUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <UserCheck className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
+                    Tasdiqlash kutayotgan foydalanuvchilar yo&apos;q
+                  </TableCell>
+                </TableRow>
+              ) : pendingUsers.map((u) => (
+                <TableRow key={u.id} className="border-border hover:bg-accent">
+                  <TableCell>{u.id}</TableCell>
+                  <TableCell className="font-medium">{u.username}</TableCell>
+                  <TableCell>{u.full_name || "\u2014"}</TableCell>
+                  <TableCell>{u.region || "\u2014"}</TableCell>
+                  <TableCell>
+                    <Badge variant={u.is_telegram_linked ? "default" : "secondary"} className="text-[10px]">
+                      {u.is_telegram_linked ? "Ulangan" : "Yo'q"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-7 text-xs"
+                        onClick={() => setVerifyDialog({ id: u.id, action: "verify" })}>
+                        <CheckCircle className="w-3.5 h-3.5 mr-1" /> Tasdiqlash
+                      </Button>
+                      <Button size="sm" variant="destructive" className="h-7 text-xs"
+                        onClick={() => setVerifyDialog({ id: u.id, action: "reject" })}>
+                        <XCircle className="w-3.5 h-3.5 mr-1" /> Rad etish
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -283,43 +431,76 @@ export default function UsersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-muted-foreground text-xs">ID</Label><p className="text-sm">{viewUser.id}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Username</Label><p className="text-sm">{viewUser.username}</p></div>
-                <div><Label className="text-muted-foreground text-xs">To&apos;liq ism</Label><p className="text-sm">{viewUser.full_name || "—"}</p></div>
-                <div><Label className="text-muted-foreground text-xs">Email</Label><p className="text-sm">{viewUser.email || "—"}</p></div>
-                <div><Label className="text-muted-foreground text-xs">Telefon</Label><p className="text-sm">{viewUser.phone || "—"}</p></div>
-                <div><Label className="text-muted-foreground text-xs">Viloyat</Label><p className="text-sm">{viewUser.region || "—"}</p></div>
-                <div><Label className="text-muted-foreground text-xs">Tuman</Label><p className="text-sm">{viewUser.district || "—"}</p></div>
-                <div><Label className="text-muted-foreground text-xs">Maktab</Label><p className="text-sm">{viewUser.school || "—"}</p></div>
-                <div><Label className="text-muted-foreground text-xs">Sinf</Label><p className="text-sm">{viewUser.grade || "—"}</p></div>
-                <div><Label className="text-muted-foreground text-xs">Tug&apos;ilgan sana</Label><p className="text-sm">{viewUser.birth_date ? new Date(viewUser.birth_date).toLocaleDateString() : "—"}</p></div>
+                <div><Label className="text-muted-foreground text-xs">To&apos;liq ism</Label><p className="text-sm">{viewUser.full_name || "\u2014"}</p></div>
+                <div><Label className="text-muted-foreground text-xs">Viloyat</Label><p className="text-sm">{viewUser.region || "\u2014"}</p></div>
+                <div><Label className="text-muted-foreground text-xs">Tuman</Label><p className="text-sm">{viewUser.district || "\u2014"}</p></div>
+                <div><Label className="text-muted-foreground text-xs">Maktab</Label><p className="text-sm">{viewUser.school || "\u2014"}</p></div>
+                <div><Label className="text-muted-foreground text-xs">Sinf</Label><p className="text-sm">{viewUser.grade || "\u2014"}</p></div>
+                <div><Label className="text-muted-foreground text-xs">Tug&apos;ilgan sana</Label><p className="text-sm">{viewUser.birth_date ? new Date(viewUser.birth_date).toLocaleDateString() : "\u2014"}</p></div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Status</Label>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <Badge className={viewUser.status === "active" ? "bg-green-600" : "bg-red-600"}>{viewUser.status}</Badge>
-                    {viewUser.is_profile_completed ? (
-                      <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">Tasdiqlangan</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Tasdiqlanmagan</Badge>
-                    )}
-                  </div>
+                  <Badge className={`${viewUser.status === "active" ? "bg-green-600" : "bg-red-600"} text-white`}>{viewUser.status}</Badge>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Tasdiqlash</Label>
+                  {verificationBadge(viewUser.verification_status)}
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Telegram</Label>
-                  <p className="text-sm">{viewUser.is_telegram_linked ? "✅ Ulangan" : "❌ Ulanmagan"}</p>
+                  <p className="text-sm">{viewUser.is_telegram_linked ? "Ulangan" : "Ulanmagan"}</p>
                 </div>
+                {viewUser.verification_note && (
+                  <div className="col-span-2"><Label className="text-muted-foreground text-xs">Izoh</Label><p className="text-sm">{viewUser.verification_note}</p></div>
+                )}
+                {viewUser.verified_at && (
+                  <div><Label className="text-muted-foreground text-xs">Tasdiqlangan</Label><p className="text-sm">{new Date(viewUser.verified_at).toLocaleString()}</p></div>
+                )}
                 <div><Label className="text-muted-foreground text-xs">Yaratilgan</Label><p className="text-sm">{new Date(viewUser.created_at).toLocaleString()}</p></div>
               </div>
 
-              {/* Verify button in detail view */}
-              {!viewUser.is_profile_completed && (
-                <div className="pt-2 border-t border-border">
-                  <Button onClick={() => handleVerify(viewUser.id)} className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700">
-                    <CheckCircle className="h-4 w-4" />
-                    Foydalanuvchini tasdiqlash
+              {(viewUser.verification_status === "pending" || viewUser.verification_status === "rejected") && (
+                <div className="pt-2 border-t border-border flex gap-2">
+                  <Button onClick={() => setVerifyDialog({ id: viewUser.id, action: "verify" })} className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700">
+                    <CheckCircle className="h-4 w-4" /> Tasdiqlash
                   </Button>
+                  {viewUser.verification_status === "pending" && (
+                    <Button onClick={() => setVerifyDialog({ id: viewUser.id, action: "reject" })} variant="destructive" className="flex-1 gap-2">
+                      <XCircle className="h-4 w-4" /> Rad etish
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Verify/Reject Confirm Dialog */}
+      <Dialog open={!!verifyDialog} onOpenChange={() => { setVerifyDialog(null); setVerifyNote(""); }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>
+              {verifyDialog?.action === "verify" ? "Foydalanuvchini tasdiqlash" : "Foydalanuvchini rad etish"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm text-muted-foreground">Izoh (ixtiyoriy)</Label>
+              <Textarea placeholder="Izoh yozing..." value={verifyNote} onChange={(e) => setVerifyNote(e.target.value)} rows={3} />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => { setVerifyDialog(null); setVerifyNote(""); }}>Bekor qilish</Button>
+              <Button
+                onClick={handleVerifyAction}
+                disabled={actionLoading}
+                className={verifyDialog?.action === "verify" ? "bg-green-600 hover:bg-green-700" : ""}
+                variant={verifyDialog?.action === "reject" ? "destructive" : "default"}
+              >
+                {actionLoading && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                {verifyDialog?.action === "verify" ? "Tasdiqlash" : "Rad etish"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

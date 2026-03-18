@@ -9,7 +9,7 @@ import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Calendar, Newspaper } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Newspaper } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface NewsItem {
@@ -21,6 +21,7 @@ interface NewsItem {
   cover_image: string;
   type: "news" | "announcement";
   status: string;
+  view_count: number;
   published_at: string;
   created_at: string;
 }
@@ -41,7 +42,7 @@ export default function NewsDetailPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    api.get(`/news/${id}`)
+    api.get(`/public/news/${id}`)
       .then(res => setItem(res.data?.data))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -88,6 +89,12 @@ export default function NewsDetailPage() {
                   <Calendar className="h-3.5 w-3.5" />
                   {new Date(item.published_at || item.created_at).toLocaleDateString("uz-UZ", { year: "numeric", month: "long", day: "numeric" })}
                 </span>
+                {item.view_count > 0 && (
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Eye className="h-3.5 w-3.5" />
+                    {item.view_count}
+                  </span>
+                )}
               </div>
 
               {/* Title */}

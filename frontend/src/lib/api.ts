@@ -144,19 +144,26 @@ export interface NewsItem {
   image: string;
   cover_image: string;
   body: string;
+  slug: string;
   type: string;
   status: string;
+  view_count: number;
   published_at: string;
   created_at: string;
 }
 
 export interface ResultEntry {
-  rank: number;
-  name: string;
-  country: string;
+  id: number;
+  source_type: string;
+  source_id: number;
+  source_title: string;
+  participant_display_name: string;
   score: number;
-  medal: string;
-  subject: string;
+  max_score: number;
+  percentage: number;
+  grade_label: string;
+  rank: number;
+  created_at: string;
 }
 
 export interface User {
@@ -165,6 +172,7 @@ export interface User {
   status: string;
   is_profile_completed: boolean;
   is_telegram_linked: boolean;
+  verification_status: string;
   created_at?: string;
 }
 
@@ -302,10 +310,13 @@ export const fetchOlympiads = (): Promise<Olympiad[]> => api.get("/olympiads").t
 export const fetchOlympiad = (id: number): Promise<Olympiad> => api.get(`/olympiads/${id}`).then((r) => r.data.data);
 export const fetchAnnouncements = (): Promise<Announcement[]> => api.get("/announcements").then((r) => r.data.data);
 export const fetchAnnouncementItem = (id: number): Promise<Announcement> => api.get(`/announcements/${id}`).then((r) => r.data.data);
-export const fetchNews = (): Promise<NewsItem[]> => api.get("/news").then((r) => r.data.data);
-export const fetchNewsItem = (id: number): Promise<NewsItem> => api.get(`/news/${id}`).then((r) => r.data.data);
-export const fetchResults = (subject?: string): Promise<ResultEntry[]> =>
-  api.get("/results", { params: subject ? { subject } : {} }).then((r) => r.data.data);
+export const fetchNews = (params?: { type?: string; search?: string; page?: number; page_size?: number }): Promise<{ items: NewsItem[]; pagination: any }> =>
+  api.get("/public/news", { params }).then((r) => r.data.data);
+export const fetchNewsItem = (id: number): Promise<NewsItem> => api.get(`/public/news/${id}`).then((r) => r.data.data);
+export const fetchResults = (params?: { source_type?: string; subject?: string; search?: string; page?: number; page_size?: number }): Promise<{ items: ResultEntry[]; pagination: any }> =>
+  api.get("/public/results", { params }).then((r) => r.data.data);
+export const fetchResultsBySource = (sourceType: string, sourceId: number, params?: Record<string, any>): Promise<{ items: ResultEntry[]; pagination: any }> =>
+  api.get(`/public/results/source/${sourceType}/${sourceId}`, { params }).then((r) => r.data.data);
 export const fetchUsers = (): Promise<User[]> => api.get("/users").then((r) => r.data.data);
 
 // Auth API

@@ -70,6 +70,8 @@ func AuthRequired(jwt *utils.JWTManager, db *gorm.DB) gin.HandlerFunc {
 		c.Set("userStatus", user.Status)
 		c.Set("isProfileCompleted", user.IsProfileCompleted)
 		c.Set("isTelegramLinked", user.IsTelegramLinked)
+		c.Set("verificationStatus", string(user.VerificationStatus))
+		c.Set("isVerified", user.IsVerified())
 		c.Set("sessionID", session.ID)
 
 		c.Next()
@@ -102,20 +104,33 @@ func TelegramRequired() gin.HandlerFunc {
 	}
 }
 
-// FullAccessRequired — hammasi tugallangan user uchun
-// auth + profile + telegram
+// VerificationRequired — user tasdiqlangan bo'lishi kerak (telegram YOKI admin verified)
+func VerificationRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		isVerified, exists := c.Get("isVerified")
+		if !exists || !isVerified.(bool) {
+			response.Forbidden(c, "Hisobingiz hali tasdiqlanmagan. Telegram orqali tasdiqlang yoki admin tasdiqini kuting")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+// FullAccessRequired — to'liq access: profile + verification (telegram yoki admin)
+// Telegram linked shart EMAS — admin verified bo'lsa ham yetadi
 func FullAccessRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		isProfileCompleted, _ := c.Get("isProfileCompleted")
-		isTelegramLinked, _ := c.Get("isTelegramLinked")
+		isVerified, _ := c.Get("isVerified")
 
 		if !isProfileCompleted.(bool) {
 			response.Forbidden(c, "Profile must be completed")
 			c.Abort()
 			return
 		}
-		if !isTelegramLinked.(bool) {
-			response.Forbidden(c, "Telegram account must be linked")
+		if !isVerified.(bool) {
+			response.Forbidden(c, "Hisobingiz hali tasdiqlanmagan")
 			c.Abort()
 			return
 		}

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchNews } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Calendar, Newspaper } from "lucide-react";
+import { ArrowRight, Calendar, Eye, Newspaper } from "lucide-react";
 import Link from "next/link";
 
 const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "https://nextolymp.uz/api/v1").replace(/\/api\/v1$/, "");
@@ -16,13 +16,14 @@ function getImageUrl(url: string | undefined | null): string | null {
 }
 
 export function NewsSection() {
-  const { data: news, isLoading } = useQuery({
-    queryKey: ["news"],
-    queryFn: fetchNews,
+  const { data, isLoading } = useQuery({
+    queryKey: ["public-news"],
+    queryFn: () => fetchNews({ page_size: 6 }),
   });
   const { t, lang } = useI18n();
 
   if (isLoading) return null;
+  const news = data?.items;
   if (!news?.length) return null;
 
   const localeMap = { uz: "uz-UZ", ru: "ru-RU", en: "en-US" };
@@ -41,7 +42,7 @@ export function NewsSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {news.slice(0, 6).map((n) => {
+          {news.map((n) => {
             const imgUrl = getImageUrl(n.cover_image || n.image);
             return (
               <Link key={n.id} href={`/news/${n.id}`}>
@@ -60,13 +61,21 @@ export function NewsSection() {
                     )}
                   </div>
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(n.published_at || n.created_at).toLocaleDateString(localeMap[lang] || "uz-UZ", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(n.published_at || n.created_at).toLocaleDateString(localeMap[lang] || "uz-UZ", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                      {n.view_count > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {n.view_count}
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-semibold text-foreground mb-2">{n.title}</h3>
                     <p className="text-sm text-muted-foreground line-clamp-3">

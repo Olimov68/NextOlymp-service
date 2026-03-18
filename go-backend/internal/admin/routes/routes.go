@@ -9,6 +9,7 @@ import (
 
 	admincertificates "github.com/nextolympservice/go-backend/internal/admin/certificates"
 	admindashboard "github.com/nextolympservice/go-backend/internal/admin/dashboard"
+	admindiscussion "github.com/nextolympservice/go-backend/internal/admin/discussion"
 	adminfeedback "github.com/nextolympservice/go-backend/internal/admin/feedback"
 	adminnews "github.com/nextolympservice/go-backend/internal/admin/news"
 	admintests "github.com/nextolympservice/go-backend/internal/admin/tests"
@@ -26,6 +27,7 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 	certsHandler := admincertificates.NewHandler(db)
 	feedbackHandler := adminfeedback.NewHandler(db)
 	resultsHandler := adminfeedback.NewResultsHandler(db)
+	discussionHandler := admindiscussion.NewHandler(admindiscussion.NewRepository(db))
 	uploadHandler := panelupload.NewHandler(cfg)
 
 	// Admin group
@@ -67,9 +69,12 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 		ug := admin.Group("/users")
 		{
 			ug.GET("", middleware.PermissionRequired(db, "users.view"), usersHandler.List)
+			ug.GET("/pending-verification", middleware.PermissionRequired(db, "users.view"), usersHandler.PendingVerification)
 			ug.GET("/:id", middleware.PermissionRequired(db, "users.view"), usersHandler.GetByID)
 			ug.PATCH("/:id/block", middleware.PermissionRequired(db, "users.block"), usersHandler.Block)
 			ug.PATCH("/:id/unblock", middleware.PermissionRequired(db, "users.block"), usersHandler.Unblock)
+			ug.PATCH("/:id/verify", middleware.PermissionRequired(db, "users.block"), usersHandler.Verify)
+			ug.PATCH("/:id/reject", middleware.PermissionRequired(db, "users.block"), usersHandler.Reject)
 		}
 
 		// News
@@ -95,6 +100,20 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 			fbG.GET("", middleware.PermissionRequired(db, "news.view"), feedbackHandler.List)
 			fbG.GET("/:id", middleware.PermissionRequired(db, "news.view"), feedbackHandler.GetByID)
 			fbG.PUT("/:id/reply", middleware.PermissionRequired(db, "news.update"), feedbackHandler.Reply)
+		}
+
+		// Discussion moderation
+		discG := admin.Group("/discussion")
+		{
+			discG.GET("/messages", discussionHandler.ListMessages)
+			discG.DELETE("/messages/:id", discussionHandler.DeleteMessage)
+			discG.PATCH("/messages/:id/hide", discussionHandler.HideMessage)
+			discG.PATCH("/messages/:id/unhide", discussionHandler.UnhideMessage)
+			discG.GET("/users", discussionHandler.ListUsers)
+			discG.PATCH("/users/:id/mute", discussionHandler.MuteUser)
+			discG.PATCH("/users/:id/unmute", discussionHandler.UnmuteUser)
+			discG.PATCH("/users/:id/block", discussionHandler.BlockUser)
+			discG.PATCH("/users/:id/unblock", discussionHandler.UnblockUser)
 		}
 
 		// Upload

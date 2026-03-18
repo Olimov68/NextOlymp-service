@@ -20,6 +20,7 @@ type ContentResponse struct {
 	CoverImage  string     `json:"cover_image"`
 	Type        string     `json:"type"`
 	PublishedAt *time.Time `json:"published_at,omitempty"`
+	ViewCount   int        `json:"view_count"`
 	CreatedAt   time.Time  `json:"created_at"`
 }
 
@@ -45,6 +46,7 @@ func ToContentResponse(c *models.Content) ContentResponse {
 		CoverImage:  c.CoverImage,
 		Type:        string(c.Type),
 		PublishedAt: c.PublishedAt,
+		ViewCount:   c.ViewCount,
 		CreatedAt:   c.CreatedAt,
 	}
 }

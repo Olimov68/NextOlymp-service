@@ -75,6 +75,9 @@ func Migrate(db *gorm.DB) error {
 		&models.Feedback{},
 		&models.Notification{},
 		&models.NotificationPreference{},
+		// Discussion
+		&models.DiscussionMessage{},
+		&models.DiscussionUserState{},
 		// Finance
 		&models.Payment{},
 		&models.Balance{},

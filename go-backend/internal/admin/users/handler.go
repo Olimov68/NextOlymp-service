@@ -3,6 +3,7 @@ package adminusers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextolympservice/go-backend/internal/models"
@@ -40,12 +41,13 @@ func (h *Handler) List(c *gin.Context) {
 	items := make([]gin.H, len(list))
 	for i, u := range list {
 		items[i] = gin.H{
-			"id":                   u.ID,
-			"username":             u.Username,
-			"status":               u.Status,
-			"is_profile_completed": u.IsProfileCompleted,
-			"is_telegram_linked":   u.IsTelegramLinked,
-			"created_at":           u.CreatedAt,
+			"id":                    u.ID,
+			"username":              u.Username,
+			"status":                u.Status,
+			"is_profile_completed":  u.IsProfileCompleted,
+			"is_telegram_linked":    u.IsTelegramLinked,
+			"verification_status":   u.VerificationStatus,
+			"created_at":            u.CreatedAt,
 		}
 	}
 
@@ -101,4 +103,108 @@ func (h *Handler) Unblock(c *gin.Context) {
 		return
 	}
 	response.Success(c, http.StatusOK, "User unblocked", nil)
+}
+
+// Verify — admin foydalanuvchini tasdiqlaydi
+// PATCH /api/v1/admin/users/:id/verify
+func (h *Handler) Verify(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid ID", nil)
+		return
+	}
+
+	var req struct {
+		Note string `json:"note"`
+	}
+	c.ShouldBindJSON(&req)
+
+	staffID, _ := c.Get("staffID")
+	var staffIDPtr *uint
+	if sid, ok := staffID.(uint); ok {
+		staffIDPtr = &sid
+	}
+
+	now := time.Now()
+	if err := h.repo.db.Model(&models.User{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"verification_status":  models.VerificationAdminVerified,
+		"verified_at":          &now,
+		"verified_by_staff_id": staffIDPtr,
+		"verification_note":    req.Note,
+		"is_profile_completed": true,
+		"status":               models.UserStatusActive,
+	}).Error; err != nil {
+		response.InternalError(c)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Foydalanuvchi tasdiqlandi", nil)
+}
+
+// Reject — admin foydalanuvchini rad etadi
+// PATCH /api/v1/admin/users/:id/reject
+func (h *Handler) Reject(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid ID", nil)
+		return
+	}
+
+	var req struct {
+		Note string `json:"note"`
+	}
+	c.ShouldBindJSON(&req)
+
+	staffID, _ := c.Get("staffID")
+	var staffIDPtr *uint
+	if sid, ok := staffID.(uint); ok {
+		staffIDPtr = &sid
+	}
+
+	if err := h.repo.db.Model(&models.User{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"verification_status":  models.VerificationRejected,
+		"verified_by_staff_id": staffIDPtr,
+		"verification_note":    req.Note,
+	}).Error; err != nil {
+		response.InternalError(c)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Foydalanuvchi rad etildi", nil)
+}
+
+// PendingVerification — tasdiqlash kutayotgan userlar
+// GET /api/v1/admin/users/pending-verification
+func (h *Handler) PendingVerification(c *gin.Context) {
+	var list []models.User
+	var total int64
+
+	q := h.repo.db.Model(&models.User{}).
+		Where("verification_status = ?", models.VerificationPending).
+		Where("is_profile_completed = ?", true).
+		Where("status = ?", models.UserStatusActive)
+
+	q.Count(&total)
+	q.Preload("Profile").Order("created_at ASC").Limit(50).Find(&list)
+
+	items := make([]gin.H, len(list))
+	for i, u := range list {
+		item := gin.H{
+			"id":                    u.ID,
+			"username":              u.Username,
+			"verification_status":   u.VerificationStatus,
+			"is_telegram_linked":    u.IsTelegramLinked,
+			"created_at":            u.CreatedAt,
+		}
+		if u.Profile != nil {
+			item["full_name"] = u.Profile.FirstName + " " + u.Profile.LastName
+			item["region"] = u.Profile.Region
+			item["grade"] = u.Profile.Grade
+		}
+		items[i] = item
+	}
+
+	response.Success(c, http.StatusOK, "Pending verification users", gin.H{
+		"data": items, "total": total,
+	})
 }

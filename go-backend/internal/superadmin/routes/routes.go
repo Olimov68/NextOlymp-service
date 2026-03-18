@@ -10,6 +10,7 @@ import (
 	saaudit "github.com/nextolympservice/go-backend/internal/superadmin/audit"
 	sacerts "github.com/nextolympservice/go-backend/internal/superadmin/certificates"
 	sadashboard "github.com/nextolympservice/go-backend/internal/superadmin/dashboard"
+	admindiscussion "github.com/nextolympservice/go-backend/internal/admin/discussion"
 	safeedback "github.com/nextolympservice/go-backend/internal/superadmin/feedback"
 	samocktests "github.com/nextolympservice/go-backend/internal/superadmin/mocktests"
 	sanews "github.com/nextolympservice/go-backend/internal/superadmin/news"
@@ -45,6 +46,7 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 	auditHandler := saaudit.NewHandler(db)
 	settingsHandler := sasettings.NewHandler(db)
 	promosHandler := sapromos.NewHandler(db)
+	saDiscussionHandler := admindiscussion.NewHandler(admindiscussion.NewRepository(db))
 
 	// Superadmin group
 	sa := api.Group("/superadmin")
@@ -70,11 +72,13 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 		uG := sa.Group("/users")
 		{
 			uG.GET("", usersHandler.List)
+			uG.GET("/pending-verification", usersHandler.PendingVerification)
 			uG.POST("", usersHandler.Create)
 			uG.GET("/:id", usersHandler.GetByID)
 			uG.PATCH("/:id/block", usersHandler.Block)
 			uG.PATCH("/:id/unblock", usersHandler.Unblock)
 			uG.PATCH("/:id/verify", usersHandler.Verify)
+			uG.PATCH("/:id/reject", usersHandler.Reject)
 			uG.DELETE("/:id", usersHandler.Delete)
 		}
 
@@ -198,6 +202,20 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 
 		// Audit logs
 		sa.GET("/audit-logs", auditHandler.List)
+
+		// Discussion moderation
+		discG := sa.Group("/discussion")
+		{
+			discG.GET("/messages", saDiscussionHandler.ListMessages)
+			discG.DELETE("/messages/:id", saDiscussionHandler.DeleteMessage)
+			discG.PATCH("/messages/:id/hide", saDiscussionHandler.HideMessage)
+			discG.PATCH("/messages/:id/unhide", saDiscussionHandler.UnhideMessage)
+			discG.GET("/users", saDiscussionHandler.ListUsers)
+			discG.PATCH("/users/:id/mute", saDiscussionHandler.MuteUser)
+			discG.PATCH("/users/:id/unmute", saDiscussionHandler.UnmuteUser)
+			discG.PATCH("/users/:id/block", saDiscussionHandler.BlockUser)
+			discG.PATCH("/users/:id/unblock", saDiscussionHandler.UnblockUser)
+		}
 
 		// Global settings
 		sG := sa.Group("/settings")

@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Trophy, Newspaper, Medal, UserCircle, LogOut, Home,
-  ClipboardCheck, Award, Wallet, Bell, MessageSquare,
+  ClipboardCheck, Award, Wallet, Bell, MessagesSquare,
   Menu, X, LayoutDashboard, BarChart3
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -21,7 +21,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const mustCompleteProfile = nextStep === "complete_profile";
   const mustLinkTelegram = nextStep === "link_telegram";
-  const mustCompleteStep = mustCompleteProfile || mustLinkTelegram;
+  const waitVerification = nextStep === "wait_verification";
+  const verificationRejected = nextStep === "verification_rejected";
+  const mustCompleteStep = mustCompleteProfile || mustLinkTelegram || waitVerification || verificationRejected;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -63,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: "/dashboard/certificates", label: "Sertifikatlar", icon: Award, module: "certificates" },
     { href: "/dashboard/balance", label: "Balans", icon: Wallet, module: "balance" },
     { href: "/dashboard/notifications", label: "Bildirishnomalar", icon: Bell, module: "notifications" },
-    { href: "/dashboard/feedback", label: "Fikr-mulohazalar", icon: MessageSquare, module: "feedback" },
+    { href: "/dashboard/discussion", label: "Muhokama", icon: MessagesSquare, module: "discussion" },
     { href: "/dashboard/profile", label: t("dashboard.profile"), icon: UserCircle, module: "profile" },
   ];
 
@@ -173,7 +175,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
           <span className="font-semibold text-foreground">NextOly</span>
         </header>
-        <main className="p-4 md:p-6 overflow-auto">{children}</main>
+        <main className="p-4 md:p-6 overflow-auto">
+          {waitVerification && (
+            <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+              <div className="text-3xl mb-3">&#9203;</div>
+              <h2 className="text-lg font-bold text-foreground mb-2">Hisobingiz tekshirilmoqda</h2>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Profilingiz admin tomonidan tasdiqlanishi kutilmoqda. Bu jarayon odatda qisqa vaqt oladi.
+                Telegram orqali ham tasdiqlashingiz mumkin.
+              </p>
+            </div>
+          )}
+          {verificationRejected && (
+            <div className="mb-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+              <div className="text-3xl mb-3">&#10060;</div>
+              <h2 className="text-lg font-bold text-foreground mb-2">Hisobingiz rad etildi</h2>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Afsuski, hisobingiz admin tomonidan tasdiqlanmadi. Agar bu xato deb hisoblasangiz, admin bilan bog&apos;laning.
+              </p>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );

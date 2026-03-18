@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Search, Newspaper, ArrowRight } from "lucide-react";
+import { Calendar, Eye, Search, Newspaper, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface NewsItem {
@@ -20,6 +20,7 @@ interface NewsItem {
   cover_image: string;
   type: "news" | "announcement";
   status: string;
+  view_count: number;
   published_at: string;
   created_at: string;
 }
@@ -38,10 +39,10 @@ export default function NewsPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    api.get("/news?page=1&page_size=50")
+    api.get("/public/news?page=1&page_size=50")
       .then(res => {
         const d = res.data?.data;
-        const arr = Array.isArray(d) ? d : d?.data || [];
+        const arr = d?.items || (Array.isArray(d) ? d : []);
         setItems(arr);
       })
       .catch(() => setItems([]))
@@ -123,6 +124,9 @@ export default function NewsPage() {
                       <div className="p-5 flex flex-col flex-1">
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
                           <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(item.published_at || item.created_at).toLocaleDateString("uz-UZ")}</span>
+                          {item.view_count > 0 && (
+                            <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{item.view_count}</span>
+                          )}
                         </div>
                         <h3 className="font-bold text-foreground text-base line-clamp-2 mb-2 group-hover:text-primary transition-colors">{item.title}</h3>
                         {item.excerpt && <p className="text-sm text-muted-foreground line-clamp-2 flex-1 mb-4">{item.excerpt}</p>}

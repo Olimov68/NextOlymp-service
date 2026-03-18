@@ -40,12 +40,13 @@ type LoginResponse struct {
 }
 
 type UserResponse struct {
-	ID                 uint               `json:"id"`
-	Username           string             `json:"username"`
-	Status             models.UserStatus  `json:"status"`
-	IsProfileCompleted bool               `json:"is_profile_completed"`
-	IsTelegramLinked   bool               `json:"is_telegram_linked"`
-	CreatedAt          string             `json:"created_at"`
+	ID                  uint                      `json:"id"`
+	Username            string                    `json:"username"`
+	Status              models.UserStatus         `json:"status"`
+	IsProfileCompleted  bool                      `json:"is_profile_completed"`
+	IsTelegramLinked    bool                      `json:"is_telegram_linked"`
+	VerificationStatus  models.VerificationStatus `json:"verification_status"`
+	CreatedAt           string                    `json:"created_at"`
 }
 
 type MeResponse struct {
@@ -69,12 +70,13 @@ type ProfileResponse struct {
 // ToUserResponse converts User model to response DTO
 func ToUserResponse(u *models.User) UserResponse {
 	return UserResponse{
-		ID:                 u.ID,
-		Username:           u.Username,
-		Status:             u.Status,
-		IsProfileCompleted: u.IsProfileCompleted,
-		IsTelegramLinked:   u.IsTelegramLinked,
-		CreatedAt:          u.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		ID:                  u.ID,
+		Username:            u.Username,
+		Status:              u.Status,
+		IsProfileCompleted:  u.IsProfileCompleted,
+		IsTelegramLinked:    u.IsTelegramLinked,
+		VerificationStatus:  u.VerificationStatus,
+		CreatedAt:           u.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 }
 
@@ -83,10 +85,20 @@ func DetermineNextStep(u *models.User) string {
 	if !u.IsProfileCompleted {
 		return "complete_profile"
 	}
+	// Verification tekshirish — telegram verified yoki admin verified bo'lsa dashboard
+	if u.IsVerified() {
+		return "dashboard"
+	}
+	// Telegram hali ulanmagan — link_telegram bosqichi
 	if !u.IsTelegramLinked {
 		return "link_telegram"
 	}
-	return "dashboard"
+	// Rejected
+	if u.VerificationStatus == models.VerificationRejected {
+		return "verification_rejected"
+	}
+	// Pending — profile tugallangan, telegram ulangan, lekin hali tasdiqlanmagan
+	return "wait_verification"
 }
 
 type ChangePasswordRequest struct {
