@@ -6,9 +6,10 @@ import { useAuth } from "@/lib/auth-context";
 import { ExamHeader } from "@/components/exam/ExamHeader";
 import { QuestionDisplay } from "@/components/exam/QuestionDisplay";
 import { QuestionNavigator } from "@/components/exam/QuestionNavigator";
+import { AntiCheatWarningModal } from "@/components/exam/AntiCheatWarningModal";
+import { AntiCheatKickedOutModal } from "@/components/exam/AntiCheatKickedOutModal";
 import { useExamSession, ExamQuestion } from "@/hooks/useExamSession";
 import { useAntiCheat } from "@/hooks/useAntiCheat";
-import { toast } from "sonner";
 import { Loader2, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://nextolymp.uz/api/v1";
@@ -121,13 +122,30 @@ export default function ExamPage() {
 
   // Anti-cheat hook
   const antiCheat = useAntiCheat({
+    enabled: !!examData,
+    maxFullscreenViolations: 5,
+    maxTabSwitchViolations: 5,
+    maxCopyPasteViolations: 4,
+    onKickedOut: () => examSession.finishExam(),
+    // Backend reporting
     attemptId: examData?.attempt_id || 0,
     attemptType: examType === "olympiad" ? "olympiad" : "mock_test",
-    enabled: !!examData,
     apiUrl: API_URL,
     token: token || "",
     onAutoSubmit: () => examSession.finishExam(),
   });
+
+  // Request fullscreen when exam data loads
+  useEffect(() => {
+    if (examData && !loading) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        antiCheat.requestFullscreen();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [examData, loading]);
 
   // Finish confirmation
   const handleFinishClick = useCallback(() => {
@@ -200,7 +218,7 @@ export default function ExamPage() {
             onClick={() => router.push("/dashboard/results")}
             className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors font-semibold"
           >
-            Natijalarni ko'rish
+            Natijalarni ko&apos;rish
           </button>
         </div>
       </div>
@@ -222,8 +240,8 @@ export default function ExamPage() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 max-w-7xl mx-auto w-full">
-        {/* Question area */}
-        <div className="flex-1 min-w-0">
+        {/* Question area - prevent text selection on question content */}
+        <div className="flex-1 min-w-0 select-none">
           <QuestionDisplay
             question={examSession.currentQuestion}
             questionIndex={examSession.currentIndex}
@@ -254,8 +272,27 @@ export default function ExamPage() {
         </div>
       </div>
 
+      {/* Anti-cheat Warning Modal */}
+      {antiCheat.warning && !antiCheat.isKickedOut && (
+        <AntiCheatWarningModal
+          message={antiCheat.warning.message}
+          type={antiCheat.warning.type}
+          current={antiCheat.warning.current}
+          max={antiCheat.warning.max}
+          onDismiss={antiCheat.dismissWarning}
+        />
+      )}
+
+      {/* Anti-cheat Kicked Out Modal */}
+      {antiCheat.isKickedOut && (
+        <AntiCheatKickedOutModal
+          reason={antiCheat.kickReason}
+          violations={antiCheat.violations}
+        />
+      )}
+
       {/* Confirm dialog */}
-      {showConfirmDialog && (
+      {showConfirmDialog && !antiCheat.isKickedOut && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center gap-3 mb-4">
