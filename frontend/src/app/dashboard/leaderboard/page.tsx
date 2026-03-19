@@ -129,7 +129,7 @@ function MyRankCard({ myRank }: { myRank: MyRankInfo | null }) {
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
             <Target className="h-5 w-5 text-green-300 mx-auto mb-1" />
-            <p className="text-white font-bold text-lg">{myRank.percentage.toFixed(1)}%</p>
+            <p className="text-white font-bold text-lg">{(myRank.percentage ?? 0).toFixed(1)}%</p>
             <p className="text-blue-200 text-xs">Aniqlik</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
@@ -348,7 +348,7 @@ function LeaderboardTable({
                   </td>
                   <td className="px-4 py-3 text-right hidden sm:table-cell">
                     <span className="text-sm text-muted-foreground">
-                      {entry.percentage.toFixed(1)}%
+                      {(entry.percentage ?? 0).toFixed(1)}%
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right hidden sm:table-cell">
