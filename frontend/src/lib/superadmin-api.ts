@@ -177,7 +177,8 @@ export const getPromoCodeStats = () => get("/payments/promo-codes/stats");
 // ============================================
 // Permissions
 // ============================================
-export const getPermissions = (params?: Record<string, unknown>) => get("/permissions", params);
+export const getPermissions = (params?: Record<string, unknown>) =>
+  saApi.get("/panel/auth/permissions", { params }).then((r) => r.data?.data?.permissions ?? r.data?.data ?? r.data);
 export const seedPermissions = () => post("/permissions/seed");
 export const getStaffPermissions = (staffId: number) => get(`/permissions/staff/${staffId}`);
 export const assignPermissions = (staffId: number, data: { permission_ids: number[] }) =>
