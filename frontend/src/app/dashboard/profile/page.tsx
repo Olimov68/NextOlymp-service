@@ -582,12 +582,12 @@ function ProfileForm({
   const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "https://nextolymp.uz";
 
   return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader>
+    <Card className="border border-white/10 bg-card/50 backdrop-blur-sm shadow-xl rounded-2xl">
+      <CardHeader className="pb-4">
         <div className="flex items-center gap-4">
           {/* Photo */}
           <div className="relative group">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary overflow-hidden">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 text-primary overflow-hidden border-2 border-white/10">
               {photoUrl ? (
                 <img
                   src={photoUrl.startsWith("blob:") ? photoUrl : `${apiBase}${photoUrl}`}
@@ -595,13 +595,13 @@ function ProfileForm({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <UserCircle className="h-8 w-8" />
+                <UserCircle className="h-10 w-10 text-muted-foreground" />
               )}
             </div>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity ${
+              className={`absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 transition-opacity ${
                 isNewProfile && !selectedPhoto ? "opacity-100" : "opacity-0 group-hover:opacity-100"
               }`}
               disabled={photoMutation.isPending}
@@ -621,15 +621,17 @@ function ProfileForm({
             />
           </div>
           <div>
-            <CardTitle className="text-lg">@{user.username}</CardTitle>
+            <CardTitle className="text-lg font-semibold">@{user.username}</CardTitle>
             <p className="text-sm text-muted-foreground">
-              {isNewProfile ? "2-qadam: Profilni to'ldiring" : "Shaxsiy ma'lumotlar"}
+              {isNewProfile ? "Rasm va ma'lumotlarni kiriting" : "Shaxsiy ma'lumotlar"}
             </p>
             {isNewProfile && !selectedPhoto && (
-              <p className="text-xs text-red-500 mt-1">Rasmingizni yuklang *</p>
+              <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                <Camera className="h-3 w-3" /> Rasmingizni yuklang
+              </p>
             )}
             {isNewProfile && selectedPhoto && (
-              <p className="text-xs text-green-500 mt-1">Rasm tanlandi</p>
+              <p className="text-xs text-emerald-400 mt-1">✓ Rasm tanlandi</p>
             )}
           </div>
         </div>
@@ -717,13 +719,17 @@ function ProfileForm({
             </Select>
           </div>
 
-          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 gap-2" disabled={mutation.isPending}>
+          <Button
+            type="submit"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all gap-2"
+            disabled={mutation.isPending}
+          >
             {mutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Save className="h-4 w-4" />
             )}
-            {mutation.isPending ? "Saqlanmoqda..." : (isNewProfile ? "Profilni yaratish" : "Saqlash")}
+            {mutation.isPending ? "Saqlanmoqda..." : (isNewProfile ? "Davom etish →" : "Saqlash")}
           </Button>
 
           {success && (
@@ -761,11 +767,25 @@ export default function ProfilePage() {
 
   const isNewProfile = !profileCompleted;
 
-  // When profile is not yet completed, show only the profile form (no tabs)
+  // When profile is not yet completed, show premium onboarding
   if (isNewProfile) {
     return (
-      <div className="max-w-lg mx-auto">
-        <h1 className="text-2xl font-bold text-foreground mb-6">{t("profile.title")}</h1>
+      <div className="max-w-xl mx-auto py-4">
+        {/* Premium header */}
+        <div className="text-center mb-8">
+          <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-2xl shadow-lg shadow-blue-500/25 mb-4">
+            NO
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Profilni to&apos;ldiring</h1>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Testlar va olimpiadalarda qatnashish uchun ma&apos;lumotlaringizni kiriting
+          </p>
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <div className="h-2 w-8 rounded-full bg-blue-500" />
+            <div className="h-2 w-8 rounded-full bg-blue-500/30" />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">2-qadam: Shaxsiy ma&apos;lumotlar</p>
+        </div>
         <ProfileForm isNewProfile onProfileCompleted={() => setProfileCompleted(true)} />
       </div>
     );
