@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogIn, UserPlus, LogOut, LayoutDashboard, Trophy, Newspaper, BarChart3, Home, Handshake, Globe, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard, Trophy, Newspaper, BarChart3, Home, Handshake, Globe, ChevronDown, ArrowRight } from "lucide-react";
+import { mediaUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -101,6 +102,21 @@ export function Header() {
           {/* Auth buttons - desktop only */}
           {user ? (
             <div className="hidden sm:flex items-center gap-2">
+              {user.avatar_url ? (
+                <Link href="/dashboard" className="flex items-center gap-2">
+                  <img
+                    src={mediaUrl(user.avatar_url)}
+                    alt={user.username}
+                    className="h-8 w-8 rounded-full object-cover border border-white/10"
+                  />
+                </Link>
+              ) : (
+                <Link href="/dashboard" className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                    {user.username?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                </Link>
+              )}
               <Link href="/dashboard">
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <LayoutDashboard className="h-4 w-4" />
@@ -119,18 +135,12 @@ export function Header() {
           ) : (
             <div className="hidden sm:flex items-center gap-2">
               <Link href="/login">
-                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
-                  <LogIn className="h-4 w-4" />
-                  {t("nav.login")}
-                </Button>
-              </Link>
-              <Link href="/register">
                 <Button
                   size="sm"
                   className="gap-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 shadow-lg shadow-blue-500/25 border-0"
                 >
-                  <UserPlus className="h-4 w-4" />
-                  {t("nav.register")}
+                  Boshlash
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
@@ -177,18 +187,12 @@ export function Header() {
                 {!user && (
                   <div className="flex flex-col gap-2 mt-4 px-1">
                     <Link href="/login" onClick={() => setOpen(false)}>
-                      <Button variant="outline" size="sm" className="w-full gap-1.5">
-                        <LogIn className="h-4 w-4" />
-                        {t("nav.login")}
-                      </Button>
-                    </Link>
-                    <Link href="/register" onClick={() => setOpen(false)}>
                       <Button
                         size="sm"
                         className="w-full gap-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0"
                       >
-                        <UserPlus className="h-4 w-4" />
-                        {t("nav.register")}
+                        Boshlash
+                        <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
                   </div>

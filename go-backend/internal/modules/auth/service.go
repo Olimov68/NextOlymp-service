@@ -3,6 +3,8 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/nextolympservice/go-backend/internal/models"
@@ -19,6 +21,7 @@ type Service struct {
 	telegramSender TelegramSender
 	botURL         string
 	botName        string
+	googleClientID string
 }
 
 // TelegramSender — Telegram orqali xabar yuborish interfeysi
@@ -54,6 +57,11 @@ func (s *Service) SetTelegramSender(sender TelegramSender, botURL, botName strin
 	s.telegramSender = sender
 	s.botURL = botURL
 	s.botName = botName
+}
+
+// SetGoogleClientID — Google OAuth client ID ni sozlash
+func (s *Service) SetGoogleClientID(clientID string) {
+	s.googleClientID = clientID
 }
 
 // SessionInfo — login/register da sessiya yaratish uchun kerakli ma'lumotlar
@@ -419,4 +427,126 @@ func (s *Service) Logout(userID uint, sessionID uint) {
 			s.sessionMgr.InvalidateAllSessions(userID)
 		}
 	}
+}
+
+// GoogleAuth — Google ID token orqali login/register
+func (s *Service) GoogleAuth(req *GoogleAuthRequest, sessionInfo *SessionInfo) (*GoogleAuthResponse, error) {
+	// 1. Google tokenni tekshirish
+	tokenInfo, err := utils.VerifyGoogleIDToken(req.IDToken, s.googleClientID)
+	if err != nil {
+		return nil, fmt.Errorf("Google autentifikatsiya xatoligi: %w", err)
+	}
+
+	var user *models.User
+	isNew := false
+
+	// 2. GoogleID bo'yicha qidirish
+	user, err = s.repo.GetByGoogleID(tokenInfo.Sub)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("foydalanuvchini qidirishda xatolik: %w", err)
+	}
+
+	// 3. Google ID topilmasa, email bo'yicha qidirish
+	if user == nil {
+		user, err = s.repo.GetByEmail(tokenInfo.Email)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("foydalanuvchini qidirishda xatolik: %w", err)
+		}
+
+		// 4. Email topildi, lekin GoogleID yo'q — bog'lash
+		if user != nil {
+			user.GoogleID = tokenInfo.Sub
+			user.AvatarURL = tokenInfo.Picture
+			if user.FullName == "" {
+				user.FullName = tokenInfo.Name
+			}
+			if err := s.repo.UpdateUser(user); err != nil {
+				return nil, fmt.Errorf("foydalanuvchini yangilashda xatolik: %w", err)
+			}
+		}
+	}
+
+	// 5. Umuman topilmasa — yangi foydalanuvchi yaratish
+	if user == nil {
+		isNew = true
+
+		// Email prefixidan username yaratish
+		username := strings.Split(tokenInfo.Email, "@")[0]
+		// Username validatsiya va unikallik tekshiruvi
+		baseUsername := username
+		exists, _ := s.repo.UsernameExists(username)
+		for exists {
+			username = fmt.Sprintf("%s%d", baseUsername, rand.Intn(9000)+1000)
+			exists, _ = s.repo.UsernameExists(username)
+		}
+
+		now := time.Now()
+		user = &models.User{
+			Username:           username,
+			PasswordHash:       "",
+			GoogleID:           tokenInfo.Sub,
+			Email:              tokenInfo.Email,
+			FullName:           tokenInfo.Name,
+			AvatarURL:          tokenInfo.Picture,
+			Status:             models.UserStatusActive,
+			IsProfileCompleted: false,
+			IsTelegramLinked:   false,
+			IsVerified:         true,
+			VerificationMethod: "google",
+			VerifiedAt:         &now,
+		}
+
+		if err := s.repo.CreateUser(user); err != nil {
+			return nil, fmt.Errorf("foydalanuvchi yaratishda xatolik: %w", err)
+		}
+	}
+
+	// 6. Status tekshirish
+	if user.Status == models.UserStatusBlocked {
+		return nil, errors.New("Hisobingiz bloklangan")
+	}
+	if user.Status == models.UserStatusDeleted {
+		return nil, errors.New("Hisob o'chirilgan")
+	}
+
+	// 7. Sessiya yaratish
+	var sessionID uint
+	if s.sessionMgr != nil && sessionInfo != nil {
+		expiresAt := time.Now().Add(168 * time.Hour)
+		session, err := s.sessionMgr.CreateSession(user.ID, "user", "", sessionInfo.IPAddress, sessionInfo.UserAgent, expiresAt)
+		if err != nil {
+			return nil, fmt.Errorf("sessiya yaratishda xatolik: %w", err)
+		}
+		sessionID = session.ID
+
+		// Yangi qurilmadan kirish bildirishnomasi
+		if s.notifier != nil && !isNew {
+			s.notifier.NewLogin(user.ID, session.DeviceName, session.IPAddress)
+		}
+	}
+
+	// 8. JWT tokenlarni yaratish
+	accessToken, refreshToken, err := s.jwt.GenerateTokenPair(user.ID, user.Username, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("token yaratishda xatolik: %w", err)
+	}
+
+	// Sessiya token hash ni yangilash
+	if s.sessionMgr != nil && sessionID > 0 {
+		s.sessionMgr.UpdateSessionTokenByID(sessionID, refreshToken)
+	}
+
+	// 9. Next step aniqlash
+	nextStep := DetermineNextStep(user, s.isTelegramEnabled())
+
+	return &GoogleAuthResponse{
+		User: ToUserResponse(user),
+		Tokens: TokenPair{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+			TokenType:    "Bearer",
+		},
+		NextStep: nextStep,
+		IsNew:    isNew,
+	}, nil
 }
