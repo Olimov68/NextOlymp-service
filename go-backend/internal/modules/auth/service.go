@@ -455,7 +455,7 @@ func (s *Service) GoogleAuth(req *GoogleAuthRequest, sessionInfo *SessionInfo) (
 
 		// 4. Email topildi, lekin GoogleID yo'q — bog'lash
 		if user != nil {
-			user.GoogleID = tokenInfo.Sub
+			user.GoogleID = &tokenInfo.Sub
 			user.AvatarURL = tokenInfo.Picture
 			if user.FullName == "" {
 				user.FullName = tokenInfo.Name
@@ -484,8 +484,8 @@ func (s *Service) GoogleAuth(req *GoogleAuthRequest, sessionInfo *SessionInfo) (
 		user = &models.User{
 			Username:           username,
 			PasswordHash:       "",
-			GoogleID:           tokenInfo.Sub,
-			Email:              tokenInfo.Email,
+			GoogleID:           &tokenInfo.Sub,
+			Email:              &tokenInfo.Email,
 			FullName:           tokenInfo.Name,
 			AvatarURL:          tokenInfo.Picture,
 			Status:             models.UserStatusActive,

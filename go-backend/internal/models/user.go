@@ -16,8 +16,8 @@ type User struct {
 	ID                 uint       `gorm:"primaryKey" json:"id"`
 	Username           string     `gorm:"uniqueIndex;size:50" json:"username"`
 	PasswordHash       string     `gorm:"size:255" json:"-"`
-	GoogleID           string     `gorm:"uniqueIndex;size:255" json:"google_id,omitempty"`
-	Email              string     `gorm:"uniqueIndex;size:255" json:"email,omitempty"`
+	GoogleID           *string    `gorm:"uniqueIndex;size:255" json:"google_id,omitempty"`
+	Email              *string    `gorm:"uniqueIndex;size:255" json:"email,omitempty"`
 	FullName           string     `gorm:"size:200" json:"full_name,omitempty"`
 	AvatarURL          string     `gorm:"size:500" json:"avatar_url,omitempty"`
 	Status             UserStatus `gorm:"size:20;default:active;not null" json:"status"`

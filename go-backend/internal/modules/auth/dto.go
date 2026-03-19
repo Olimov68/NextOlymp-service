@@ -85,7 +85,7 @@ func ToUserResponse(u *models.User) UserResponse {
 	return UserResponse{
 		ID:                 u.ID,
 		Username:           u.Username,
-		Email:              u.Email,
+		Email:              ptrStr(u.Email),
 		FullName:           u.FullName,
 		AvatarURL:          u.AvatarURL,
 		Status:             u.Status,
@@ -93,6 +93,13 @@ func ToUserResponse(u *models.User) UserResponse {
 		IsTelegramLinked:   u.IsTelegramLinked,
 		CreatedAt:          u.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	}
+}
+
+func ptrStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // DetermineNextStep returns the next step for the user.

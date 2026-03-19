@@ -111,6 +111,10 @@ func Migrate(db *gorm.DB) error {
 
 	log.Println("Database migration completed")
 
+	// Fix: bo'sh google_id va email stringlarni NULL ga o'zgartirish
+	db.Exec("UPDATE \"user\" SET google_id = NULL WHERE google_id = ''")
+	db.Exec("UPDATE \"user\" SET email = NULL WHERE email = ''")
+
 	// Verify tables were created
 	var count int64
 	db.Raw("SELECT COUNT(*) FROM pg_class WHERE relkind='r' AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')").Scan(&count)
