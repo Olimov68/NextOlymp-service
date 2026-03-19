@@ -1,34 +1,13 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import Link from "next/link";
-import {
-  Search,
-  Clock,
-  FileText,
-  BookOpen,
-  Zap,
-  FlaskConical,
-  Leaf,
-  Monitor,
-  Trophy,
-  ClipboardCheck,
-} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Search, ClipboardCheck } from "lucide-react";
 import { listMockTests } from "@/lib/user-api";
-import type { MockExam } from "@/lib/api";
-
-const subjectIcons: Record<string, React.ElementType> = {
-  Mathematics: Zap,
-  Physics: BookOpen,
-  Chemistry: FlaskConical,
-  Biology: Leaf,
-  Informatics: Monitor,
-};
+import AssessmentCard from "@/components/assessment/AssessmentCard";
+import type { AssessmentBase } from "@/lib/assessment-types";
 
 const subjectOptions = [
   { value: "", label: "Barcha fanlar" },
@@ -45,36 +24,93 @@ const paidOptions = [
   { value: "paid", label: "Pullik" },
 ];
 
+const gradeOptions = [
+  { value: "", label: "Barcha sinflar" },
+  ...Array.from({ length: 7 }, (_, i) => ({
+    value: String(i + 5),
+    label: `${i + 5}-sinf`,
+  })),
+];
+
+const languageOptions = [
+  { value: "", label: "Barcha tillar" },
+  { value: "uz", label: "O\u2018zbek" },
+  { value: "ru", label: "Rus" },
+  { value: "en", label: "Ingliz" },
+];
+
+function mapToAssessment(o: Record<string, any>): AssessmentBase {
+  return {
+    id: o.id,
+    title: o.title ?? "",
+    slug: o.slug ?? "",
+    description: o.description ?? "",
+    subject: o.subject ?? "",
+    grade: o.grade ?? 0,
+    language: o.language ?? "",
+    start_time: o.start_time ?? o.start_date ?? undefined,
+    end_time: o.end_time ?? o.end_date ?? undefined,
+    duration_minutes: o.duration_minutes ?? 0,
+    total_questions: o.total_questions ?? o.questions_count ?? 0,
+    rules: o.rules ?? "",
+    status: o.status ?? "",
+    is_paid: typeof o.is_paid === "boolean" ? o.is_paid : (o.price != null && o.price > 0),
+    price: o.price ?? 0,
+    banner_url: o.banner_url ?? "",
+    icon_url: o.icon_url ?? "",
+    registration_start_time: o.registration_start_time,
+    registration_end_time: o.registration_end_time,
+    max_seats: o.max_seats ?? 0,
+    shuffle_questions: o.shuffle_questions ?? false,
+    shuffle_answers: o.shuffle_answers ?? false,
+    auto_submit: o.auto_submit ?? false,
+    allow_retake: o.allow_retake ?? false,
+    show_result_immediately: o.show_result_immediately ?? false,
+    give_certificate: o.give_certificate ?? false,
+    manual_review: o.manual_review ?? false,
+    admin_approval: o.admin_approval ?? false,
+    registered_count: o.registered_count,
+    participants_count: o.participants_count,
+    created_at: o.created_at ?? "",
+    updated_at: o.updated_at ?? "",
+  };
+}
+
+function isFree(o: AssessmentBase): boolean {
+  return !o.is_paid || !o.price;
+}
+
 function LoadingSkeleton() {
   return (
     <div className="space-y-6">
       <div>
         <Skeleton className="h-8 w-48 mb-2" />
-        <Skeleton className="h-4 w-72" />
+        <Skeleton className="h-4 w-80" />
       </div>
       <div className="flex flex-wrap gap-3">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-10 w-36" />
         <Skeleton className="h-10 w-28" />
+        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-10 w-32" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Card key={i} className="border-0 shadow-sm">
+          <Card key={i} className="border border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <Skeleton className="h-12 w-12 rounded-xl" />
                 <Skeleton className="h-5 w-20 rounded-full" />
               </div>
               <Skeleton className="h-5 w-3/4 mb-2" />
-              <Skeleton className="h-4 w-full mb-1" />
-              <Skeleton className="h-4 w-2/3 mb-4" />
-              <div className="flex gap-4 mb-4">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-1/2 mb-3" />
+              <div className="space-y-2 mb-4">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-3 w-24" />
               </div>
-              <div className="flex items-center justify-between pt-3">
+              <div className="flex items-center justify-between pt-3 border-t border-border">
                 <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="h-8 w-20 rounded-md" />
+                <Skeleton className="h-8 w-24 rounded-md" />
               </div>
             </CardContent>
           </Card>
@@ -84,21 +120,26 @@ function LoadingSkeleton() {
   );
 }
 
+const selectClasses =
+  "rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30";
+
 export default function MockTestsListPage() {
-  const [mockTests, setMockTests] = useState<MockExam[]>([]);
+  const [mockTests, setMockTests] = useState<AssessmentBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
   const [paidFilter, setPaidFilter] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("");
+  const [languageFilter, setLanguageFilter] = useState("");
 
   useEffect(() => {
     listMockTests({ page: 1, page_size: 100 })
       .then((data) => {
-        let list: MockExam[] = [];
+        let list: any[] = [];
         if (Array.isArray(data)) list = data;
         else if ((data as any)?.data && Array.isArray((data as any).data)) list = (data as any).data;
         else if ((data as any)?.items && Array.isArray((data as any).items)) list = (data as any).items;
-        setMockTests(list);
+        setMockTests(list.map(mapToAssessment));
       })
       .catch((err) => {
         console.error("Mock tests load error:", err);
@@ -111,11 +152,13 @@ export default function MockTestsListPage() {
     return mockTests.filter((m) => {
       if (search && !m.title.toLowerCase().includes(search.toLowerCase())) return false;
       if (subjectFilter && m.subject !== subjectFilter) return false;
-      if (paidFilter === "free" && m.price !== 0) return false;
-      if (paidFilter === "paid" && m.price === 0) return false;
+      if (paidFilter === "free" && !isFree(m)) return false;
+      if (paidFilter === "paid" && isFree(m)) return false;
+      if (gradeFilter && m.grade !== Number(gradeFilter)) return false;
+      if (languageFilter && m.language !== languageFilter) return false;
       return true;
     });
-  }, [mockTests, search, subjectFilter, paidFilter]);
+  }, [mockTests, search, subjectFilter, paidFilter, gradeFilter, languageFilter]);
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -123,6 +166,7 @@ export default function MockTestsListPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <ClipboardCheck className="h-6 w-6 text-green-600" />
@@ -145,113 +189,43 @@ export default function MockTestsListPage() {
           />
         </div>
 
-        <select
-          value={subjectFilter}
-          onChange={(e) => setSubjectFilter(e.target.value)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-        >
+        <select value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} className={selectClasses}>
           {subjectOptions.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
+            <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
 
-        <select
-          value={paidFilter}
-          onChange={(e) => setPaidFilter(e.target.value)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-        >
+        <select value={paidFilter} onChange={(e) => setPaidFilter(e.target.value)} className={selectClasses}>
           {paidOptions.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
+            <option key={p.value} value={p.value}>{p.label}</option>
+          ))}
+        </select>
+
+        <select value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)} className={selectClasses}>
+          {gradeOptions.map((g) => (
+            <option key={g.value} value={g.value}>{g.label}</option>
+          ))}
+        </select>
+
+        <select value={languageFilter} onChange={(e) => setLanguageFilter(e.target.value)} className={selectClasses}>
+          {languageOptions.map((l) => (
+            <option key={l.value} value={l.value}>{l.label}</option>
           ))}
         </select>
       </div>
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <ClipboardCheck className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground font-medium">Mock testlar topilmadi</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">
-            Boshqa filtrlarni sinab ko&apos;ring
-          </p>
+        <div className="flex flex-col items-center py-16 text-muted-foreground">
+          <ClipboardCheck className="h-12 w-12 mb-4 opacity-20" />
+          <p className="font-medium">Mock testlar topilmadi</p>
+          <p className="text-sm mt-1 opacity-70">Boshqa filtrlarni sinab ko&apos;ring</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((m) => {
-            const Icon = subjectIcons[m.subject] || Trophy;
-            return (
-              <Card
-                key={m.id}
-                className="border-0 shadow-sm hover:shadow-md transition-shadow h-full"
-              >
-                <CardContent className="p-6 flex flex-col h-full">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="h-12 w-12 rounded-xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center text-green-600">
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <Badge className="bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-0 font-medium">
-                      {m.subject}
-                    </Badge>
-                  </div>
-
-                  <h3 className="font-semibold text-foreground mb-2">{m.title}</h3>
-
-                  {m.description && (
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                      {m.description}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {m.duration_minutes} daqiqa
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="h-3 w-3" />
-                      {m.questions_count} savol
-                    </div>
-                  </div>
-
-                  {m.assessment_method && (
-                    <div className="mb-2">
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {m.assessment_method === "standard"
-                          ? "Standart baholash"
-                          : m.assessment_method === "rasch"
-                          ? "Rasch baholash"
-                          : m.assessment_method}
-                      </Badge>
-                    </div>
-                  )}
-
-                  <div className="mt-auto pt-3 flex items-center justify-between">
-                    {m.price === 0 ? (
-                      <Badge className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-0">
-                        Bepul
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 border-0">
-                        {m.price.toLocaleString()} so&apos;m
-                      </Badge>
-                    )}
-                    <Link href={`/dashboard/mock-tests/${m.id}`}>
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        Batafsil
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {filtered.map((m) => (
+            <AssessmentCard key={m.id} assessment={m} examType="mock_test" />
+          ))}
         </div>
       )}
     </div>
