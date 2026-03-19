@@ -87,9 +87,16 @@ func (h *Handler) Create(c *gin.Context) {
 	certNumber := h.certGen.GenerateCertificateNumber(req.SubjectName)
 	verifyCode := h.certGen.GenerateVerificationCode()
 
+	// Mock Rasch uchun grade hisoblash
+	grade := req.Grade
+	if req.CertificateType == models.CertTypeMockRasch && grade == "" {
+		grade = models.CalculateGrade(req.ScaledScore)
+	}
+
 	cert := &models.Certificate{
 		UserID:            req.UserID,
 		TemplateID:        req.TemplateID,
+		CertificateType:   req.CertificateType,
 		SourceType:        models.CertificateSourceType(req.SourceType),
 		SourceID:          req.SourceID,
 		CertificateNumber: certNumber,
@@ -99,10 +106,22 @@ func (h *Handler) Create(c *gin.Context) {
 		ClassName:         req.ClassName,
 		SubjectName:       req.SubjectName,
 		Score:             req.Score,
+		ScaledScore:       req.ScaledScore,
 		MaxScore:          req.MaxScore,
 		Percentage:        req.Percentage,
+		Grade:             grade,
+		Rank:              req.Rank,
 		Status:            models.CertStatusActive,
 		IssuedAt:          time.Now(),
+	}
+
+	// ValidUntil — mock_rasch uchun 3 yil, olympiad uchun cheksiz
+	if req.ValidYears > 0 {
+		validUntil := time.Now().AddDate(req.ValidYears, 0, 0)
+		cert.ValidUntil = &validUntil
+	} else if req.CertificateType == models.CertTypeMockRasch {
+		validUntil := time.Now().AddDate(3, 0, 0) // default 3 yil
+		cert.ValidUntil = &validUntil
 	}
 
 	if err := h.repo.Create(cert); err != nil {

@@ -19,11 +19,17 @@ func (r *Repository) List(params ListParams) ([]models.Certificate, int64, error
 	var list []models.Certificate
 	var total int64
 	q := r.db.Model(&models.Certificate{})
+	if params.CertificateType != "" {
+		q = q.Where("certificate_type = ?", params.CertificateType)
+	}
 	if params.SourceType != "" {
 		q = q.Where("source_type = ?", params.SourceType)
 	}
 	if params.Status != "" {
 		q = q.Where("status = ?", params.Status)
+	}
+	if params.Grade != "" {
+		q = q.Where("grade = ?", params.Grade)
 	}
 	if params.UserID != "" {
 		uid, err := strconv.ParseUint(params.UserID, 10, 32)

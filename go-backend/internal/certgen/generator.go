@@ -104,7 +104,11 @@ func (g *CertGenerator) Generate(cert *models.Certificate, tmpl *models.Certific
 
 	// Default layout agar bo'sh bo'lsa
 	if len(layout) == 0 {
-		layout = g.defaultLayout(orientation)
+		if cert.CertificateType == "mock_rasch" {
+			layout = g.defaultMockRaschLayout(orientation)
+		} else {
+			layout = g.defaultLayout(orientation)
+		}
 	}
 
 	// Dinamik ma'lumotlarni tayyorlash
@@ -113,12 +117,20 @@ func (g *CertGenerator) Generate(cert *models.Certificate, tmpl *models.Certific
 		"subject":            cert.SubjectName,
 		"class_name":         cert.ClassName,
 		"score":              formatFloat(cert.Score),
+		"scaled_score":       formatFloat(cert.ScaledScore),
 		"max_score":          formatFloat(cert.MaxScore),
 		"percentage":         formatFloat(cert.Percentage) + "%",
+		"grade":              cert.Grade,
 		"issued_at":          cert.IssuedAt.Format("02.01.2006"),
 		"certificate_number": cert.CertificateNumber,
 		"verification_code":  cert.VerificationCode,
 		"title":              cert.Title,
+	}
+	if cert.ValidUntil != nil {
+		data["valid_until"] = cert.ValidUntil.Format("02.01.2006")
+	}
+	if cert.Rank != nil {
+		data["rank"] = fmt.Sprintf("%d", *cert.Rank)
 	}
 
 	// Har bir fieldni joylash
@@ -287,6 +299,30 @@ func (g *CertGenerator) defaultLayout(orientation string) map[string]FieldLayout
 		"certificate_number": {X: 30, Y: 195, FontSize: 9, FontColor: "#999999", TextAlign: "left", Visible: true},
 		"verification_code":  {X: 30, Y: 200, FontSize: 9, FontColor: "#999999", TextAlign: "left", Visible: true},
 		"qr_code":            {X: 250, Y: 170, Width: 30, Height: 30, Visible: true},
+	}
+}
+
+// defaultMockRaschLayout — milliy sertifikat uslubidagi layout (portrait)
+func (g *CertGenerator) defaultMockRaschLayout(orientation string) map[string]FieldLayout {
+	// A4 portrait: 210 x 297 mm
+	centerX := 105.0
+	if orientation == "L" {
+		centerX = 148.5
+	}
+
+	return map[string]FieldLayout{
+		"title":              {X: centerX, Y: 45, FontSize: 16, FontColor: "#1a1a2e", TextAlign: "center", FontWeight: "bold", Visible: true, Uppercase: true},
+		"certificate_number": {X: 170, Y: 65, FontSize: 10, FontColor: "#333333", TextAlign: "right", Visible: true},
+		"full_name":          {X: centerX, Y: 95, FontSize: 22, FontColor: "#000000", TextAlign: "center", FontWeight: "bold", Visible: true},
+		"subject":            {X: 130, Y: 115, FontSize: 14, FontColor: "#333333", TextAlign: "left", Visible: true},
+		"class_name":         {X: 130, Y: 125, FontSize: 12, FontColor: "#555555", TextAlign: "left", Visible: true},
+		"scaled_score":       {X: 130, Y: 140, FontSize: 16, FontColor: "#d4380d", TextAlign: "left", FontWeight: "bold", Visible: true},
+		"percentage":         {X: 130, Y: 152, FontSize: 14, FontColor: "#333333", TextAlign: "left", Visible: true},
+		"grade":              {X: 130, Y: 166, FontSize: 20, FontColor: "#0050b3", TextAlign: "left", FontWeight: "bold", Visible: true},
+		"issued_at":          {X: 40, Y: 260, FontSize: 10, FontColor: "#333333", TextAlign: "left", Visible: true},
+		"valid_until":        {X: 130, Y: 260, FontSize: 10, FontColor: "#333333", TextAlign: "left", Visible: true},
+		"verification_code":  {X: 40, Y: 270, FontSize: 8, FontColor: "#999999", TextAlign: "left", Visible: true},
+		"qr_code":            {X: 85, Y: 272, Width: 25, Height: 25, Visible: true},
 	}
 }
 

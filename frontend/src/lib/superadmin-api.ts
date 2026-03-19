@@ -131,6 +131,18 @@ export const getCertificates = (params?: Record<string, unknown>) => get("/certi
 export const getCertificate = (id: number) => get(`/certificates/${id}`);
 export const createCertificate = (data: Record<string, unknown>) => post("/certificates", data);
 export const updateCertificate = (id: number, data: Record<string, unknown>) => put(`/certificates/${id}`, data);
+export const regenerateCertificate = (id: number) => post(`/certificates/${id}/regenerate`);
+export const revokeCertificate = (id: number) => post(`/certificates/${id}/revoke`);
+export const downloadCertificatePDF = async (id: number) => {
+  const res = await saApi.get(`/superadmin/certificates/${id}/download`, { responseType: 'blob' });
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `certificate_${id}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
 
 // Certificate Templates
 export const getCertTemplates = (params?: Record<string, unknown>) => get("/certificate-templates", params);

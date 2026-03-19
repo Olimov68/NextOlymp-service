@@ -33,6 +33,7 @@ const navItems = [
   { href: "/superadmin/mock-tests", label: "Mock testlar", icon: GraduationCap },
   { href: "/superadmin/news", label: "Yangiliklar", icon: Newspaper },
   { href: "/superadmin/certificates", label: "Sertifikatlar", icon: Award },
+  { href: "/superadmin/certificate-templates", label: "Shablon", icon: FileText },
   { href: "/superadmin/chat", label: "Chat moderatsiya", icon: MessageCircle },
   { href: "/superadmin/results", label: "Natijalar", icon: FileText },
   { href: "/superadmin/payments", label: "To'lovlar", icon: CreditCard },

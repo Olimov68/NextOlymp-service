@@ -51,11 +51,19 @@ export interface Certificate {
   source_type: string;
   source_id: number;
   source_title: string;
+  certificate_type: string;
   score: number;
+  max_score: number;
   percentage: number;
+  scaled_score: number;
+  grade: string;
+  rank: number;
   verification_code: string;
   certificate_number: string;
   issued_at: string;
+  valid_until: string;
+  status: string;
+  pdf_url: string;
   created_at: string;
 }
 
@@ -458,4 +466,18 @@ export const listCertificates = (): Promise<Certificate[]> =>
 
 export const getCertificate = (id: number): Promise<Certificate> =>
   api.get(`/user/certificates/${id}`).then((r) => r.data.data ?? r.data);
+
+export const downloadMyCertificatePDF = async (id: number) => {
+  const res = await api.get(`/user/certificates/${id}/download`, {
+    responseType: "blob",
+  });
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `certificate_${id}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
 

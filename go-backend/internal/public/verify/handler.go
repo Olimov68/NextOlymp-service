@@ -19,18 +19,23 @@ func NewHandler(db *gorm.DB) *Handler {
 }
 
 type VerifyResponse struct {
-	CertificateNumber string `json:"certificate_number"`
-	VerificationCode  string `json:"verification_code"`
-	Title             string `json:"title"`
-	FullName          string `json:"full_name"`
-	SubjectName       string `json:"subject_name"`
-	ClassName         string `json:"class_name"`
+	CertificateNumber string  `json:"certificate_number"`
+	VerificationCode  string  `json:"verification_code"`
+	CertificateType   string  `json:"certificate_type"`
+	Title             string  `json:"title"`
+	FullName          string  `json:"full_name"`
+	SubjectName       string  `json:"subject_name"`
+	ClassName         string  `json:"class_name"`
 	Score             float64 `json:"score"`
+	ScaledScore       float64 `json:"scaled_score"`
 	MaxScore          float64 `json:"max_score"`
 	Percentage        float64 `json:"percentage"`
-	Status            string `json:"status"`
-	IssuedAt          string `json:"issued_at"`
-	SourceType        string `json:"source_type"`
+	Grade             string  `json:"grade"`
+	Rank              *int    `json:"rank,omitempty"`
+	Status            string  `json:"status"`
+	IssuedAt          string  `json:"issued_at"`
+	ValidUntil        string  `json:"valid_until,omitempty"`
+	SourceType        string  `json:"source_type"`
 }
 
 // VerifyCertificate GET /api/v1/certificates/verify/:code
@@ -58,16 +63,24 @@ func (h *Handler) VerifyCertificate(c *gin.Context) {
 	resp := VerifyResponse{
 		CertificateNumber: cert.CertificateNumber,
 		VerificationCode:  cert.VerificationCode,
+		CertificateType:   cert.CertificateType,
 		Title:             cert.Title,
 		FullName:          cert.FullName,
 		SubjectName:       cert.SubjectName,
 		ClassName:         cert.ClassName,
 		Score:             cert.Score,
+		ScaledScore:       cert.ScaledScore,
 		MaxScore:          cert.MaxScore,
 		Percentage:        cert.Percentage,
+		Grade:             cert.Grade,
+		Rank:              cert.Rank,
 		Status:            cert.Status,
 		IssuedAt:          cert.IssuedAt.Format("02.01.2006"),
 		SourceType:        string(cert.SourceType),
+	}
+
+	if cert.ValidUntil != nil {
+		resp.ValidUntil = cert.ValidUntil.Format("02.01.2006")
 	}
 
 	response.Success(c, http.StatusOK, "Sertifikat topildi", resp)
