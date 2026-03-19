@@ -17,7 +17,7 @@ import {
   ArrowLeft, Plus, Pencil, Trash2, Loader2, ListChecks, CheckCircle2, Circle,
   Trophy, Users, Settings, ClipboardList, BarChart3, Info, DollarSign,
   Calendar, Clock, Globe, BookOpen, Send, SendHorizonal,
-  Image as ImageIcon, X, Upload,
+  Image as ImageIcon, X, Upload, ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -34,6 +34,7 @@ import { normalizeList } from "@/lib/normalizeList";
 import AssessmentForm from "@/components/assessment/AssessmentForm";
 import RegistrationsTable from "@/components/assessment/RegistrationsTable";
 import ResultsTable from "@/components/assessment/ResultsTable";
+import AntiCheatLogsTab from "@/components/assessment/AntiCheatLogsTab";
 
 // ========== Types ==========
 
@@ -67,7 +68,7 @@ interface QuestionForm {
   options: (Option & { image_url: string })[];
 }
 
-type Tab = "general" | "questions" | "registrations" | "participants" | "results" | "settings";
+type Tab = "general" | "questions" | "registrations" | "participants" | "results" | "settings" | "logs";
 
 const defaultOptions: (Option & { image_url: string })[] = [
   { label: "A", text: "", is_correct: false, order_num: 0, image_url: "" },
@@ -475,6 +476,7 @@ export default function OlympiadDetailPage() {
     { key: "participants", label: "Ishtirokchilar", icon: <Users className="w-4 h-4" /> },
     { key: "results", label: "Natijalar", icon: <BarChart3 className="w-4 h-4" /> },
     { key: "settings", label: "Sozlamalar", icon: <Settings className="w-4 h-4" /> },
+    { key: "logs", label: "Loglar", icon: <ShieldAlert className="w-4 h-4" /> },
   ];
 
   // ========== Render ==========
@@ -795,6 +797,11 @@ export default function OlympiadDetailPage() {
             Saqlash
           </Button>
         </div>
+      )}
+
+      {/* ========== Tab: Loglar ========== */}
+      {tab === "logs" && (
+        <AntiCheatLogsTab sourceType="olympiad" sourceId={Number(id)} />
       )}
 
       {/* ========== Dialogs ========== */}

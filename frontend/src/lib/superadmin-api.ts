@@ -230,6 +230,12 @@ export const updateChatSettings = (data: Record<string, unknown>) => put("/chat/
 export const getChatModerationLogs = (params?: Record<string, unknown>) => get("/chat/moderation-logs", params);
 
 // ============================================
+// Anti-Cheat Violations
+// ============================================
+export const getAntiCheatViolations = (params?: Record<string, unknown>) => get("/anticheat/violations", params);
+export const getAntiCheatStats = (params?: Record<string, unknown>) => get("/anticheat/violations/stats", params);
+
+// ============================================
 // Upload
 // ============================================
 export const uploadImage = async (file: File): Promise<{ url: string }> => {
