@@ -7,7 +7,7 @@ type CompleteProfileRequest struct {
 	Gender     string `form:"gender" json:"gender" binding:"required,oneof=male female"`
 	Region     string `form:"region" json:"region" binding:"required,min=2,max=100"`
 	District   string `form:"district" json:"district" binding:"required,min=2,max=100"`
-	SchoolName string `form:"school_name" json:"school_name" binding:"required,min=2,max=200"`
+	SchoolName string `form:"school_name" json:"school_name" binding:"required,min=1,max=200"`
 	Grade      int    `form:"grade" json:"grade" binding:"required,min=1,max=12"`
 }
 
@@ -18,6 +18,6 @@ type UpdateProfileRequest struct {
 	Gender     string `form:"gender" json:"gender" binding:"omitempty,oneof=male female"`
 	Region     string `form:"region" json:"region" binding:"omitempty,min=2,max=100"`
 	District   string `form:"district" json:"district" binding:"omitempty,min=2,max=100"`
-	SchoolName string `form:"school_name" json:"school_name" binding:"omitempty,min=2,max=200"`
+	SchoolName string `form:"school_name" json:"school_name" binding:"omitempty,min=1,max=200"`
 	Grade      int    `form:"grade" json:"grade" binding:"omitempty,min=1,max=12"`
 }
