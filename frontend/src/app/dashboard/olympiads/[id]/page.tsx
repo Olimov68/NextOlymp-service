@@ -193,7 +193,7 @@ export default function OlympiadDetailPage() {
       await joinOlympiad(Number(id));
       setPhase("ready");
     } catch (e: any) {
-      const msg = e?.response?.data?.error || "";
+      const msg = e?.response?.data?.message || e?.response?.data?.error || "";
       if (msg.includes("already")) setPhase("ready");
       else toast.error(msg || "Xatolik yuz berdi");
     }
@@ -211,7 +211,7 @@ export default function OlympiadDetailPage() {
       setPhase("exam");
       startTimer((attempt as any).duration_minutes || olympiad?.duration_minutes || 60);
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || "Test boshlashda xatolik");
+      toast.error(e?.response?.data?.message || e?.response?.data?.error || "Test boshlashda xatolik");
     }
   };
 
