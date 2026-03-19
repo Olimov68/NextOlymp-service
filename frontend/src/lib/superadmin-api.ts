@@ -72,6 +72,13 @@ export const getOlympiad = (id: number) => get(`/olympiads/${id}`);
 export const createOlympiad = (data: Record<string, unknown>) => post("/olympiads", data);
 export const updateOlympiad = (id: number, data: Record<string, unknown>) => put(`/olympiads/${id}`, data);
 export const deleteOlympiad = (id: number) => del(`/olympiads/${id}`);
+export const getOlympiadRegistrations = (id: number, params?: Record<string, unknown>) => get(`/olympiads/${id}/registrations`, params);
+export const getOlympiadParticipants = (id: number, params?: Record<string, unknown>) => get(`/olympiads/${id}/participants`, params);
+export const getOlympiadResults = (id: number, params?: Record<string, unknown>) => get(`/olympiads/${id}/results`, params);
+export const approveOlympiadResult = (olympiadId: number, resultId: number) => post(`/olympiads/${olympiadId}/results/${resultId}/approve`);
+export const duplicateOlympiad = (id: number) => post(`/olympiads/${id}/duplicate`);
+export const publishOlympiad = (id: number) => patch(`/olympiads/${id}/publish`);
+export const unpublishOlympiad = (id: number) => patch(`/olympiads/${id}/unpublish`);
 
 // ============================================
 // Mock Tests
@@ -81,6 +88,13 @@ export const getMockTest = (id: number) => get(`/mock-tests/${id}`);
 export const createMockTest = (data: Record<string, unknown>) => post("/mock-tests", data);
 export const updateMockTest = (id: number, data: Record<string, unknown>) => put(`/mock-tests/${id}`, data);
 export const deleteMockTest = (id: number) => del(`/mock-tests/${id}`);
+export const getMockTestRegistrations = (id: number, params?: Record<string, unknown>) => get(`/mock-tests/${id}/registrations`, params);
+export const getMockTestParticipants = (id: number, params?: Record<string, unknown>) => get(`/mock-tests/${id}/participants`, params);
+export const getMockTestResults = (id: number, params?: Record<string, unknown>) => get(`/mock-tests/${id}/results`, params);
+export const approveMockTestResult = (mockTestId: number, resultId: number) => post(`/mock-tests/${mockTestId}/results/${resultId}/approve`);
+export const duplicateMockTest = (id: number) => post(`/mock-tests/${id}/duplicate`);
+export const publishMockTest = (id: number) => patch(`/mock-tests/${id}/publish`);
+export const unpublishMockTest = (id: number) => patch(`/mock-tests/${id}/unpublish`);
 
 // ============================================
 // Questions
