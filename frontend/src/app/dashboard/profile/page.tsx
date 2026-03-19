@@ -292,8 +292,11 @@ function BalanceTab() {
     id: number; amount: number; type: string; description: string; created_at: string;
   }>>([]);
   const [loading, setLoading] = useState(true);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoMsg, setPromoMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
-  useEffect(() => {
+  const loadData = () => {
     Promise.all([
       import("@/lib/user-api").then((m) => m.getBalance()),
       import("@/lib/user-api").then((m) => m.getTransactions()),
@@ -304,7 +307,28 @@ function BalanceTab() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  const handlePromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoMsg(null);
+    try {
+      const { applyPromoCode } = await import("@/lib/user-api");
+      const res = await applyPromoCode({ code: promoCode.trim() });
+      setPromoMsg({ type: "ok", text: res?.message || `Promo kod muvaffaqiyatli qo'llanildi!` });
+      setPromoCode("");
+      loadData(); // balansni yangilash
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setPromoMsg({ type: "err", text: msg || "Promo kod noto'g'ri yoki muddati o'tgan" });
+    } finally {
+      setPromoLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -322,6 +346,33 @@ function BalanceTab() {
         <p className="text-white text-3xl font-bold">
           {Number(balance).toLocaleString()} so&apos;m
         </p>
+      </div>
+
+      {/* Promo code */}
+      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5">
+        <h3 className="text-sm font-semibold text-white mb-3">Promo kod</h3>
+        <form onSubmit={handlePromo} className="flex gap-2">
+          <input
+            value={promoCode}
+            onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoMsg(null); }}
+            placeholder="Kodni kiriting"
+            className={inputClass + " flex-1 uppercase tracking-widest"}
+            disabled={promoLoading}
+          />
+          <button
+            type="submit"
+            disabled={promoLoading || !promoCode.trim()}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all disabled:opacity-40 flex items-center gap-1.5"
+          >
+            {promoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Qo&apos;llash
+          </button>
+        </form>
+        {promoMsg && (
+          <p className={`text-xs mt-2 ${promoMsg.type === "ok" ? "text-emerald-400" : "text-red-400"}`}>
+            {promoMsg.text}
+          </p>
+        )}
       </div>
 
       {/* Transactions */}
