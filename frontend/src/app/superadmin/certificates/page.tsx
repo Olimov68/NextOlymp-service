@@ -188,16 +188,25 @@ export default function CertificatesPage() {
   const handleCreate = async () => {
     try {
       const payload: Record<string, unknown> = {
-        ...form,
         user_id: Number(form.user_id),
+        certificate_type: form.certificate_type,
+        source_type: form.source_type,
         source_id: Number(form.source_id),
-        template_id: Number(form.template_id),
+        title: form.title,
+        full_name: form.full_name,
+        class_name: form.class_name,
+        subject_name: form.subject_name,
         score: Number(form.score),
         max_score: Number(form.max_score),
         percentage: Number(form.percentage),
         scaled_score: Number(form.scaled_score),
+        grade: form.grade,
         valid_years: Number(form.valid_years),
       };
+      // template_id faqat tanlangan bo'lsa yuboriladi
+      if (Number(form.template_id) > 0) {
+        payload.template_id = Number(form.template_id);
+      }
       await createCertificate(payload);
       setShowCreate(false);
       setForm(emptyForm);
