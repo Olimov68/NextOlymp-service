@@ -38,8 +38,28 @@ type Olympiad struct {
 	IsPaid         bool           `gorm:"default:false;not null" json:"is_paid"`
 	Price          *float64       `json:"price,omitempty"`
 	CreatedByID    *uint          `gorm:"index" json:"created_by_id,omitempty"`
-	CreatedAt      time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt      time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+
+	// Media
+	BannerURL string `gorm:"size:500" json:"banner_url"`
+	IconURL   string `gorm:"size:500" json:"icon_url"`
+
+	// Ro'yxatdan o'tish oralig'i
+	RegistrationStartTime *time.Time `json:"registration_start_time,omitempty"`
+	RegistrationEndTime   *time.Time `json:"registration_end_time,omitempty"`
+	MaxSeats              int        `gorm:"default:0" json:"max_seats"` // 0 = cheksiz
+
+	// Sozlamalar
+	ShuffleQuestions       bool `gorm:"default:false" json:"shuffle_questions"`
+	ShuffleAnswers         bool `gorm:"default:false" json:"shuffle_answers"`
+	AutoSubmit             bool `gorm:"default:true" json:"auto_submit"`
+	AllowRetake            bool `gorm:"default:false" json:"allow_retake"`
+	ShowResultImmediately  bool `gorm:"default:true" json:"show_result_immediately"`
+	GiveCertificate        bool `gorm:"default:false" json:"give_certificate"`
+	ManualReview           bool `gorm:"default:false" json:"manual_review"`
+	AdminApproval          bool `gorm:"default:false" json:"admin_approval"`
+
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 type OlympiadRegistration struct {

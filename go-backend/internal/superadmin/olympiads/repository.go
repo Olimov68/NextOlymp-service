@@ -26,6 +26,15 @@ func (r *Repository) List(params ListParams) ([]models.Olympiad, int64, error) {
 	if params.Search != "" {
 		q = q.Where("title ILIKE ? OR description ILIKE ?", "%"+params.Search+"%", "%"+params.Search+"%")
 	}
+	if params.Grade != nil {
+		q = q.Where("grade = ?", *params.Grade)
+	}
+	if params.Language != "" {
+		q = q.Where("language = ?", params.Language)
+	}
+	if params.IsPaid != nil {
+		q = q.Where("is_paid = ?", *params.IsPaid)
+	}
 	q.Count(&total)
 	offset := (params.Page - 1) * params.PageSize
 	err := q.Order("created_at DESC").Offset(offset).Limit(params.PageSize).Find(&list).Error

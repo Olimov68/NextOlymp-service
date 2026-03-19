@@ -28,6 +28,15 @@ func (r *Repository) ListOlympiads(params TestListParams) ([]models.Olympiad, in
 	if params.Subject != "" {
 		q = q.Where("subject = ?", params.Subject)
 	}
+	if params.Grade > 0 {
+		q = q.Where("grade = ?", params.Grade)
+	}
+	if params.Language != "" {
+		q = q.Where("language = ?", params.Language)
+	}
+	if params.IsPaid != nil {
+		q = q.Where("is_paid = ?", *params.IsPaid)
+	}
 	q.Count(&total)
 	offset := (params.Page - 1) * params.PageSize
 	err := q.Order("created_at DESC").Offset(offset).Limit(params.PageSize).Find(&list).Error
@@ -73,6 +82,15 @@ func (r *Repository) ListMockTests(params TestListParams) ([]models.MockTest, in
 	}
 	if params.Subject != "" {
 		q = q.Where("subject = ?", params.Subject)
+	}
+	if params.Grade > 0 {
+		q = q.Where("grade = ?", params.Grade)
+	}
+	if params.Language != "" {
+		q = q.Where("language = ?", params.Language)
+	}
+	if params.IsPaid != nil {
+		q = q.Where("is_paid = ?", *params.IsPaid)
 	}
 	q.Count(&total)
 	offset := (params.Page - 1) * params.PageSize

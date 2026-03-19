@@ -76,6 +76,22 @@ func (s *Service) CreateOlympiad(req *CreateOlympiadRequest, createdByID uint) (
 		IsPaid:         req.IsPaid,
 		Price:          req.Price,
 		CreatedByID:    &createdByID,
+
+		BannerURL: req.BannerURL,
+		IconURL:   req.IconURL,
+
+		RegistrationStartTime: req.RegistrationStartTime,
+		RegistrationEndTime:   req.RegistrationEndTime,
+		MaxSeats:              req.MaxSeats,
+
+		ShuffleQuestions:      req.ShuffleQuestions,
+		ShuffleAnswers:        req.ShuffleAnswers,
+		AutoSubmit:            req.AutoSubmit,
+		AllowRetake:           req.AllowRetake,
+		ShowResultImmediately: req.ShowResultImmediately,
+		GiveCertificate:       req.GiveCertificate,
+		ManualReview:          req.ManualReview,
+		AdminApproval:         req.AdminApproval,
 	}
 
 	if err := s.repo.CreateOlympiad(o); err != nil {
@@ -140,6 +156,45 @@ func (s *Service) UpdateOlympiad(id uint, req *UpdateOlympiadRequest) (*Olympiad
 	}
 	if req.Price != nil {
 		fields["price"] = *req.Price
+	}
+	if req.BannerURL != nil {
+		fields["banner_url"] = *req.BannerURL
+	}
+	if req.IconURL != nil {
+		fields["icon_url"] = *req.IconURL
+	}
+	if req.RegistrationStartTime != nil {
+		fields["registration_start_time"] = req.RegistrationStartTime
+	}
+	if req.RegistrationEndTime != nil {
+		fields["registration_end_time"] = req.RegistrationEndTime
+	}
+	if req.MaxSeats != nil {
+		fields["max_seats"] = *req.MaxSeats
+	}
+	if req.ShuffleQuestions != nil {
+		fields["shuffle_questions"] = *req.ShuffleQuestions
+	}
+	if req.ShuffleAnswers != nil {
+		fields["shuffle_answers"] = *req.ShuffleAnswers
+	}
+	if req.AutoSubmit != nil {
+		fields["auto_submit"] = *req.AutoSubmit
+	}
+	if req.AllowRetake != nil {
+		fields["allow_retake"] = *req.AllowRetake
+	}
+	if req.ShowResultImmediately != nil {
+		fields["show_result_immediately"] = *req.ShowResultImmediately
+	}
+	if req.GiveCertificate != nil {
+		fields["give_certificate"] = *req.GiveCertificate
+	}
+	if req.ManualReview != nil {
+		fields["manual_review"] = *req.ManualReview
+	}
+	if req.AdminApproval != nil {
+		fields["admin_approval"] = *req.AdminApproval
 	}
 
 	if err := s.repo.UpdateOlympiad(id, fields); err != nil {
@@ -222,14 +277,33 @@ func (s *Service) CreateMockTest(req *CreateMockTestRequest, createdByID uint) (
 		Subject:            req.Subject,
 		Grade:              req.Grade,
 		Language:            req.Language,
+		StartTime:          req.StartTime,
+		EndTime:            req.EndTime,
 		DurationMins:       req.DurationMins,
 		TotalQuestions:     req.TotalQuestions,
+		Rules:              req.Rules,
 		ScoringType:        scoringType,
 		ScalingFormulaType: scalingFormulaType,
 		Status:             status,
 		IsPaid:             req.IsPaid,
 		Price:              req.Price,
 		CreatedByID:        &createdByID,
+
+		BannerURL: req.BannerURL,
+		IconURL:   req.IconURL,
+
+		RegistrationStartTime: req.RegistrationStartTime,
+		RegistrationEndTime:   req.RegistrationEndTime,
+		MaxSeats:              req.MaxSeats,
+
+		ShuffleQuestions:      req.ShuffleQuestions,
+		ShuffleAnswers:        req.ShuffleAnswers,
+		AutoSubmit:            req.AutoSubmit,
+		AllowRetake:           req.AllowRetake,
+		ShowResultImmediately: req.ShowResultImmediately,
+		GiveCertificate:       req.GiveCertificate,
+		ManualReview:          req.ManualReview,
+		AdminApproval:         req.AdminApproval,
 	}
 
 	if err := s.repo.CreateMockTest(m); err != nil {
@@ -270,11 +344,20 @@ func (s *Service) UpdateMockTest(id uint, req *UpdateMockTestRequest) (*MockTest
 	if req.Language != nil {
 		fields["language"] = *req.Language
 	}
+	if req.StartTime != nil {
+		fields["start_time"] = req.StartTime
+	}
+	if req.EndTime != nil {
+		fields["end_time"] = req.EndTime
+	}
 	if req.DurationMins != nil {
 		fields["duration_mins"] = *req.DurationMins
 	}
 	if req.TotalQuestions != nil {
 		fields["total_questions"] = *req.TotalQuestions
+	}
+	if req.Rules != nil {
+		fields["rules"] = *req.Rules
 	}
 	if req.ScoringType != nil {
 		if !assessment.IsValidScoringType(*req.ScoringType) {
@@ -296,6 +379,45 @@ func (s *Service) UpdateMockTest(id uint, req *UpdateMockTestRequest) (*MockTest
 	}
 	if req.Price != nil {
 		fields["price"] = *req.Price
+	}
+	if req.BannerURL != nil {
+		fields["banner_url"] = *req.BannerURL
+	}
+	if req.IconURL != nil {
+		fields["icon_url"] = *req.IconURL
+	}
+	if req.RegistrationStartTime != nil {
+		fields["registration_start_time"] = req.RegistrationStartTime
+	}
+	if req.RegistrationEndTime != nil {
+		fields["registration_end_time"] = req.RegistrationEndTime
+	}
+	if req.MaxSeats != nil {
+		fields["max_seats"] = *req.MaxSeats
+	}
+	if req.ShuffleQuestions != nil {
+		fields["shuffle_questions"] = *req.ShuffleQuestions
+	}
+	if req.ShuffleAnswers != nil {
+		fields["shuffle_answers"] = *req.ShuffleAnswers
+	}
+	if req.AutoSubmit != nil {
+		fields["auto_submit"] = *req.AutoSubmit
+	}
+	if req.AllowRetake != nil {
+		fields["allow_retake"] = *req.AllowRetake
+	}
+	if req.ShowResultImmediately != nil {
+		fields["show_result_immediately"] = *req.ShowResultImmediately
+	}
+	if req.GiveCertificate != nil {
+		fields["give_certificate"] = *req.GiveCertificate
+	}
+	if req.ManualReview != nil {
+		fields["manual_review"] = *req.ManualReview
+	}
+	if req.AdminApproval != nil {
+		fields["admin_approval"] = *req.AdminApproval
 	}
 
 	if err := s.repo.UpdateMockTest(id, fields); err != nil {

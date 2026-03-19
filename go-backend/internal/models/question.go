@@ -12,6 +12,7 @@ type Question struct {
 	Difficulty string    `gorm:"size:20;default:medium;not null" json:"difficulty"` // easy | medium | hard
 	Points     float64   `gorm:"default:1;not null" json:"points"`
 	OrderNum   int       `gorm:"default:0;not null" json:"order_num"`
+	RaschB     *float64  `json:"rasch_b,omitempty"`                        // Rasch difficulty parameter
 	IsActive   bool      `gorm:"default:true;not null" json:"is_active"`
 	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt  time.Time `gorm:"autoUpdateTime" json:"updated_at"`

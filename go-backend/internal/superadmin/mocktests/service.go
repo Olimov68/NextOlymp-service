@@ -47,19 +47,56 @@ func (s *Service) Create(req *CreateRequest, staffID uint) (*models.MockTest, er
 	}
 
 	m := &models.MockTest{
-		Title:          req.Title,
-		Slug:           slug,
-		Description:    req.Description,
-		Subject:        req.Subject,
-		Grade:          req.Grade,
-		Language:       lang,
-		DurationMins:   req.DurationMins,
-		TotalQuestions: req.TotalQuestions,
-		ScoringType:    scoring,
-		Status:         status,
-		IsPaid:         req.IsPaid,
-		Price:          req.Price,
-		CreatedByID:    &staffID,
+		Title:                 req.Title,
+		Slug:                  slug,
+		Description:           req.Description,
+		Subject:               req.Subject,
+		Grade:                 req.Grade,
+		Language:              lang,
+		DurationMins:          req.DurationMins,
+		TotalQuestions:        req.TotalQuestions,
+		Rules:                 req.Rules,
+		ScoringType:           scoring,
+		Status:                status,
+		IsPaid:                req.IsPaid,
+		Price:                 req.Price,
+		CreatedByID:           &staffID,
+		BannerURL:             req.BannerURL,
+		IconURL:               req.IconURL,
+		MaxSeats:              req.MaxSeats,
+		ShuffleQuestions:      req.ShuffleQuestions,
+		ShuffleAnswers:        req.ShuffleAnswers,
+		AutoSubmit:            req.AutoSubmit,
+		AllowRetake:           req.AllowRetake,
+		ShowResultImmediately: req.ShowResultImmediately,
+		GiveCertificate:       req.GiveCertificate,
+		ManualReview:          req.ManualReview,
+		AdminApproval:         req.AdminApproval,
+	}
+
+	if req.StartTime != nil {
+		t, err := time.Parse(time.RFC3339, *req.StartTime)
+		if err == nil {
+			m.StartTime = &t
+		}
+	}
+	if req.EndTime != nil {
+		t, err := time.Parse(time.RFC3339, *req.EndTime)
+		if err == nil {
+			m.EndTime = &t
+		}
+	}
+	if req.RegistrationStartTime != nil {
+		t, err := time.Parse(time.RFC3339, *req.RegistrationStartTime)
+		if err == nil {
+			m.RegistrationStartTime = &t
+		}
+	}
+	if req.RegistrationEndTime != nil {
+		t, err := time.Parse(time.RFC3339, *req.RegistrationEndTime)
+		if err == nil {
+			m.RegistrationEndTime = &t
+		}
 	}
 
 	if err := s.repo.Create(m); err != nil {
@@ -102,6 +139,66 @@ func (s *Service) Update(id uint, req *UpdateRequest) (*models.MockTest, error) 
 	}
 	if req.Price != nil {
 		fields["price"] = *req.Price
+	}
+	if req.Rules != nil {
+		fields["rules"] = *req.Rules
+	}
+	if req.BannerURL != nil {
+		fields["banner_url"] = *req.BannerURL
+	}
+	if req.IconURL != nil {
+		fields["icon_url"] = *req.IconURL
+	}
+	if req.MaxSeats != nil {
+		fields["max_seats"] = *req.MaxSeats
+	}
+	if req.ShuffleQuestions != nil {
+		fields["shuffle_questions"] = *req.ShuffleQuestions
+	}
+	if req.ShuffleAnswers != nil {
+		fields["shuffle_answers"] = *req.ShuffleAnswers
+	}
+	if req.AutoSubmit != nil {
+		fields["auto_submit"] = *req.AutoSubmit
+	}
+	if req.AllowRetake != nil {
+		fields["allow_retake"] = *req.AllowRetake
+	}
+	if req.ShowResultImmediately != nil {
+		fields["show_result_immediately"] = *req.ShowResultImmediately
+	}
+	if req.GiveCertificate != nil {
+		fields["give_certificate"] = *req.GiveCertificate
+	}
+	if req.ManualReview != nil {
+		fields["manual_review"] = *req.ManualReview
+	}
+	if req.AdminApproval != nil {
+		fields["admin_approval"] = *req.AdminApproval
+	}
+	if req.StartTime != nil {
+		t, err := time.Parse(time.RFC3339, *req.StartTime)
+		if err == nil {
+			fields["start_time"] = t
+		}
+	}
+	if req.EndTime != nil {
+		t, err := time.Parse(time.RFC3339, *req.EndTime)
+		if err == nil {
+			fields["end_time"] = t
+		}
+	}
+	if req.RegistrationStartTime != nil {
+		t, err := time.Parse(time.RFC3339, *req.RegistrationStartTime)
+		if err == nil {
+			fields["registration_start_time"] = t
+		}
+	}
+	if req.RegistrationEndTime != nil {
+		t, err := time.Parse(time.RFC3339, *req.RegistrationEndTime)
+		if err == nil {
+			fields["registration_end_time"] = t
+		}
 	}
 
 	if err := s.repo.Update(id, fields); err != nil {

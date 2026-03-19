@@ -23,6 +23,15 @@ func (r *Repository) List(params ListParams) ([]models.MockTest, int64, error) {
 	if params.Subject != "" {
 		q = q.Where("subject ILIKE ?", "%"+params.Subject+"%")
 	}
+	if params.Grade != 0 {
+		q = q.Where("grade = ?", params.Grade)
+	}
+	if params.Language != "" {
+		q = q.Where("language = ?", params.Language)
+	}
+	if params.IsPaid != nil {
+		q = q.Where("is_paid = ?", *params.IsPaid)
+	}
 	if params.Search != "" {
 		q = q.Where("title ILIKE ? OR description ILIKE ?", "%"+params.Search+"%", "%"+params.Search+"%")
 	}
