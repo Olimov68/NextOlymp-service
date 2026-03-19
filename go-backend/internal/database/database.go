@@ -105,13 +105,22 @@ func Migrate(db *gorm.DB) error {
 		&models.PaymeTransaction{},
 	)
 	if err != nil {
+		log.Printf("MIGRATION ERROR: %v", err)
 		return fmt.Errorf("migration failed: %w", err)
 	}
 
 	log.Println("Database migration completed")
 
+	// Verify tables were created
+	var count int64
+	db.Raw("SELECT COUNT(*) FROM pg_class WHERE relkind='r' AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')").Scan(&count)
+	log.Printf("Tables in public schema: %d", count)
+
 	// Auto-create superadmin if not exists
 	seedSuperAdmin(db)
+
+	// Auto-seed permissions if empty
+	seedPermissions(db)
 
 	return nil
 }
@@ -144,4 +153,54 @@ func seedSuperAdmin(db *gorm.DB) {
 	}
 
 	log.Printf("SuperAdmin created (username: superadmin, password: SuperAdmin123!)")
+}
+
+func seedPermissions(db *gorm.DB) {
+	var count int64
+	db.Model(&models.Permission{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	permissions := []models.Permission{
+		// Olympiads
+		{Code: "olympiads.view", Name: "Olimpiadalarni ko'rish", Module: "olympiads"},
+		{Code: "olympiads.create", Name: "Olimpiada yaratish", Module: "olympiads"},
+		{Code: "olympiads.edit", Name: "Olimpiada tahrirlash", Module: "olympiads"},
+		{Code: "olympiads.delete", Name: "Olimpiada o'chirish", Module: "olympiads"},
+		{Code: "olympiads.manage", Name: "Olimpiadalarni boshqarish", Module: "olympiads"},
+		// Mock tests
+		{Code: "mock_tests.view", Name: "Mock testlarni ko'rish", Module: "mock_tests"},
+		{Code: "mock_tests.create", Name: "Mock test yaratish", Module: "mock_tests"},
+		{Code: "mock_tests.edit", Name: "Mock test tahrirlash", Module: "mock_tests"},
+		{Code: "mock_tests.delete", Name: "Mock test o'chirish", Module: "mock_tests"},
+		{Code: "mock_tests.manage", Name: "Mock testlarni boshqarish", Module: "mock_tests"},
+		// Users
+		{Code: "users.view", Name: "Foydalanuvchilarni ko'rish", Module: "users"},
+		{Code: "users.edit", Name: "Foydalanuvchilarni tahrirlash", Module: "users"},
+		{Code: "users.block", Name: "Foydalanuvchilarni bloklash", Module: "users"},
+		{Code: "users.verify", Name: "Foydalanuvchilarni tasdiqlash", Module: "users"},
+		{Code: "users.manage", Name: "Foydalanuvchilarni boshqarish", Module: "users"},
+		// Chat
+		{Code: "chat.view", Name: "Chatni ko'rish", Module: "chat"},
+		{Code: "chat.moderate", Name: "Chat moderatsiya", Module: "chat"},
+		{Code: "chat.manage", Name: "Chatni boshqarish", Module: "chat"},
+		// Results
+		{Code: "results.view", Name: "Natijalarni ko'rish", Module: "results"},
+		{Code: "results.manage", Name: "Natijalarni boshqarish", Module: "results"},
+		// News
+		{Code: "news.view", Name: "Yangiliklar ko'rish", Module: "news"},
+		{Code: "news.create", Name: "Yangilik yaratish", Module: "news"},
+		{Code: "news.edit", Name: "Yangilik tahrirlash", Module: "news"},
+		{Code: "news.manage", Name: "Yangiliklar boshqarish", Module: "news"},
+		// Certificates
+		{Code: "certificates.view", Name: "Sertifikatlar ko'rish", Module: "certificates"},
+		{Code: "certificates.manage", Name: "Sertifikatlar boshqarish", Module: "certificates"},
+	}
+
+	for _, p := range permissions {
+		db.FirstOrCreate(&p, models.Permission{Code: p.Code})
+	}
+
+	log.Printf("Permissions seeded: %d permissions", len(permissions))
 }
