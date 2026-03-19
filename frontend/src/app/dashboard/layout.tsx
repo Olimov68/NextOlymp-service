@@ -57,13 +57,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const menuItems = [
     { href: "/dashboard", label: t("dashboard.olympiads"), icon: Trophy, module: "olympiads" },
     { href: "/dashboard/mock-tests", label: "Mock testlar", icon: ClipboardCheck, module: "mock-tests" },
-    { href: "/dashboard/news", label: t("dashboard.news"), icon: Newspaper, module: "news" },
     { href: "/dashboard/results", label: t("dashboard.results"), icon: Medal, module: "results" },
     { href: "/dashboard/leaderboard", label: "Reyting", icon: BarChart3, module: "leaderboard" },
     { href: "/dashboard/certificates", label: "Sertifikatlar", icon: Award, module: "certificates" },
-    { href: "/dashboard/balance", label: "Balans", icon: Wallet, module: "balance" },
-    { href: "/dashboard/notifications", label: "Bildirishnomalar", icon: Bell, module: "notifications" },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle, module: "chat" },
+    { href: "/dashboard/balance", label: "Balans", icon: Wallet, module: "balance" },
     { href: "/dashboard/profile", label: t("dashboard.profile"), icon: UserCircle, module: "profile" },
   ];
 
@@ -77,13 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const SidebarContent = () => (
     <>
       <div className="p-4 border-b border-border">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-sm shadow-lg shadow-blue-500/25">
-            N
-          </div>
-          <span className="text-lg font-bold text-foreground">NextOly</span>
-        </Link>
-        <div className="mt-3 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
             <UserCircle className="h-4 w-4 text-primary" />
           </div>
@@ -171,7 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-accent text-muted-foreground">
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-semibold text-foreground">NextOly</span>
+          <span className="font-semibold text-foreground">@{user.username}</span>
         </header>
         <main className="p-4 md:p-6 overflow-auto">{children}</main>
       </div>
