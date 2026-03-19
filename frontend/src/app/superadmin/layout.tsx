@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   GraduationCap,
+  Tag,
+  DollarSign,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -27,6 +29,8 @@ const navItems = [
   { href: "/superadmin/mock-tests", label: "Mock testlar", icon: GraduationCap },
   { href: "/superadmin/chat", label: "Chat moderatsiya", icon: MessageCircle },
   { href: "/superadmin/results", label: "Reyting", icon: FileText },
+  { href: "/superadmin/promo-codes", label: "Promo kodlar", icon: Tag },
+  { href: "/superadmin/revenue", label: "Tushumlar", icon: DollarSign },
   { href: "/superadmin/settings", label: "Sozlamalar", icon: Settings },
 ];
 
