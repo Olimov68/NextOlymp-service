@@ -234,7 +234,7 @@ export const fetchStats = (): Promise<Stats> =>
   api.get("/stats").then((r) => r.data?.data ?? r.data).catch(() => ({
     total_users: 0,
     total_olympiads: 0,
-    total_regions: 14,
+    total_regions: 12,
     total_mock_tests: 0,
   }));
 

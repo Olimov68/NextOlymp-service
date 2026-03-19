@@ -239,7 +239,7 @@ examsHandler := userexams.NewHandler(db)
 		response.Success(c, 200, "Stats", gin.H{
 			"total_users":      totalUsers,
 			"total_olympiads":  totalOlympiads,
-			"total_regions":    14,
+			"total_regions":    12,
 			"total_mock_tests": totalMockTests,
 		})
 	})
