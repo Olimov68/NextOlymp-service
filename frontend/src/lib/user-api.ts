@@ -310,18 +310,22 @@ export interface LeaderboardEntry {
   user_id: number;
   username: string;
   full_name: string;
+  first_name: string;
+  last_name: string;
   region: string;
-  total_score: number;
-  avg_percentage: number;
-  attempts_count: number;
+  score: number;
+  correct: number;
+  total: number;
+  percentage: number;
   medal: string;
 }
 
 export interface MyRankInfo {
   rank: number;
-  total_score: number;
-  avg_percentage: number;
-  attempts_count: number;
+  score: number;
+  correct: number;
+  total: number;
+  percentage: number;
   total_participants: number;
 }
 

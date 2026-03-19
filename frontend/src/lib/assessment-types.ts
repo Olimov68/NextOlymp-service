@@ -29,6 +29,8 @@ export interface AssessmentBase {
   give_certificate: boolean;
   manual_review: boolean;
   admin_approval: boolean;
+  min_score_for_certificate: number;
+  scoring_rules: string;
   registered_count?: number;
   participants_count?: number;
   created_at: string;
@@ -121,6 +123,9 @@ export interface AssessmentFormData {
   give_certificate: boolean;
   manual_review: boolean;
   admin_approval: boolean;
+  // Olympiad specific
+  min_score_for_certificate: number;
+  scoring_rules: string;
   // Mock test specific
   scoring_type?: string;
   scaling_formula_type?: string;

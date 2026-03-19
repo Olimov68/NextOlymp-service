@@ -216,3 +216,15 @@ export const getChatOnline = () => get("/chat/online");
 export const getChatSettings = () => get("/chat/settings");
 export const updateChatSettings = (data: Record<string, unknown>) => put("/chat/settings", data);
 export const getChatModerationLogs = (params?: Record<string, unknown>) => get("/chat/moderation-logs", params);
+
+// ============================================
+// Upload
+// ============================================
+export const uploadImage = async (file: File): Promise<{ url: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await saApi.post("/superadmin/upload/image", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data ?? res.data;
+};

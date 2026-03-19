@@ -124,18 +124,18 @@ function MyRankCard({ myRank }: { myRank: MyRankInfo | null }) {
         <div className="grid grid-cols-3 gap-4 mt-6">
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
             <Flame className="h-5 w-5 text-amber-300 mx-auto mb-1" />
-            <p className="text-white font-bold text-lg">{myRank.total_score}</p>
+            <p className="text-white font-bold text-lg">{myRank.score}</p>
             <p className="text-blue-200 text-xs">Umumiy ball</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
             <Target className="h-5 w-5 text-green-300 mx-auto mb-1" />
-            <p className="text-white font-bold text-lg">{myRank.avg_percentage.toFixed(1)}%</p>
+            <p className="text-white font-bold text-lg">{myRank.percentage.toFixed(1)}%</p>
             <p className="text-blue-200 text-xs">Aniqlik</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
             <Trophy className="h-5 w-5 text-purple-300 mx-auto mb-1" />
-            <p className="text-white font-bold text-lg">{myRank.attempts_count}</p>
-            <p className="text-blue-200 text-xs">Urinishlar</p>
+            <p className="text-white font-bold text-lg">{myRank.correct}/{myRank.total}</p>
+            <p className="text-blue-200 text-xs">To'g'ri/Jami</p>
           </div>
         </div>
       </div>
@@ -214,7 +214,7 @@ function TopPodium({ entries }: { entries: LeaderboardEntry[] }) {
 
               {/* Score */}
               <p className={`text-sm font-bold ${cfg.scoreColor}`}>
-                {cfg.entry.total_score} ball
+                {cfg.entry.score} ball
               </p>
 
               {/* Podium block */}
@@ -277,7 +277,7 @@ function LeaderboardTable({
                 Aniqlik
               </th>
               <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
-                Urinishlar
+                To'g'ri/Jami
               </th>
               <th className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-16">
                 Medal
@@ -343,17 +343,17 @@ function LeaderboardTable({
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className="text-sm font-semibold text-foreground">
-                      {entry.total_score}
+                      {entry.score}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right hidden sm:table-cell">
                     <span className="text-sm text-muted-foreground">
-                      {entry.avg_percentage.toFixed(1)}%
+                      {entry.percentage.toFixed(1)}%
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right hidden sm:table-cell">
                     <span className="text-sm text-muted-foreground">
-                      {entry.attempts_count}
+                      {entry.correct}/{entry.total}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">

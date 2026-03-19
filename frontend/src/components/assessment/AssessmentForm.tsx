@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import type { ExamType, AssessmentBase, AssessmentFormData } from "@/lib/assessment-types";
+import { uploadImage } from "@/lib/superadmin-api";
 
 interface AssessmentFormProps {
   examType: ExamType;
@@ -46,6 +47,8 @@ const emptyForm: AssessmentFormData = {
   give_certificate: false,
   manual_review: false,
   admin_approval: false,
+  min_score_for_certificate: 0,
+  scoring_rules: "",
   scoring_type: "classic",
   scaling_formula_type: "linear",
 };
@@ -97,6 +100,8 @@ export default function AssessmentForm({
         give_certificate: initialData.give_certificate ?? false,
         manual_review: initialData.manual_review ?? false,
         admin_approval: initialData.admin_approval ?? false,
+        min_score_for_certificate: (initialData as any)?.min_score_for_certificate ?? 0,
+        scoring_rules: (initialData as any)?.scoring_rules || "",
         scoring_type: (initialData as any)?.scoring_type || "classic",
         scaling_formula_type: (initialData as any)?.scaling_formula_type || "linear",
       });
@@ -204,22 +209,16 @@ export default function AssessmentForm({
           Rasm
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>Banner URL</Label>
-            <Input
-              placeholder="https://..."
-              value={form.banner_url}
-              onChange={(e) => update("banner_url", e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Ikon URL</Label>
-            <Input
-              placeholder="https://..."
-              value={form.icon_url}
-              onChange={(e) => update("icon_url", e.target.value)}
-            />
-          </div>
+          <ImageUploadField
+            label="Banner"
+            value={form.banner_url}
+            onChange={(url) => update("banner_url", url)}
+          />
+          <ImageUploadField
+            label="Ikon"
+            value={form.icon_url}
+            onChange={(url) => update("icon_url", url)}
+          />
         </div>
       </section>
 
@@ -467,6 +466,40 @@ export default function AssessmentForm({
         </section>
       )}
 
+      {/* Section: Ball tizimi (only for olympiad) */}
+      {!isMock && (
+        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+            Ball tizimi
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Sertifikat uchun minimal ball</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="0"
+                value={form.min_score_for_certificate}
+                onChange={(e) => update("min_score_for_certificate", parseInt(e.target.value) || 0)}
+              />
+            </div>
+            <div className="md:col-span-2 space-y-1.5">
+              <Label>Ball qoidalari (JSON)</Label>
+              <Textarea
+                placeholder='{"30":10,"28":8,"25":6}'
+                rows={3}
+                value={form.scoring_rules}
+                onChange={(e) => update("scoring_rules", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                JSON formatida ball qoidalarini kiriting. Kalit — to&apos;g&apos;ri javoblar soni, qiymat — beriladigan ball.
+                Masalan: {`{"30":10,"28":8,"25":6}`} — 30 ta to&apos;g&apos;ri javob uchun 10 ball, 28 ta uchun 8 ball.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Actions */}
       <div className="flex items-center justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel} disabled={loading}>
@@ -511,6 +544,88 @@ function ToggleRow({
           }`}
         />
       </button>
+    </div>
+  );
+}
+
+function ImageUploadField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError("");
+    try {
+      const result = await uploadImage(file);
+      onChange(result.url);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Rasm yuklashda xatolik");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+
+      {/* Preview */}
+      {value && (
+        <div className="relative inline-block">
+          <img
+            src={value}
+            alt={label}
+            className="h-24 w-auto rounded-lg border border-border object-cover"
+          />
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-sm"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
+      {/* File upload */}
+      <div className="flex items-center gap-2">
+        <label className="inline-flex items-center gap-2 cursor-pointer rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors">
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="h-4 w-4" />
+          )}
+          {uploading ? "Yuklanmoqda..." : "Rasm yuklash"}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+        </label>
+      </div>
+
+      {/* URL fallback */}
+      <Input
+        placeholder="yoki URL kiriting: https://..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
