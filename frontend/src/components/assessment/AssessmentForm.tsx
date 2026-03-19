@@ -466,39 +466,7 @@ export default function AssessmentForm({
         </section>
       )}
 
-      {/* Section: Ball tizimi (only for olympiad) */}
-      {!isMock && (
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-            Ball tizimi
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Sertifikat uchun minimal ball</Label>
-              <Input
-                type="number"
-                min={0}
-                placeholder="0"
-                value={form.min_score_for_certificate}
-                onChange={(e) => update("min_score_for_certificate", parseInt(e.target.value) || 0)}
-              />
-            </div>
-            <div className="md:col-span-2 space-y-1.5">
-              <Label>Ball qoidalari (JSON)</Label>
-              <Textarea
-                placeholder='{"30":10,"28":8,"25":6}'
-                rows={3}
-                value={form.scoring_rules}
-                onChange={(e) => update("scoring_rules", e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                JSON formatida ball qoidalarini kiriting. Kalit — to&apos;g&apos;ri javoblar soni, qiymat — beriladigan ball.
-                Masalan: {`{"30":10,"28":8,"25":6}`} — 30 ta to&apos;g&apos;ri javob uchun 10 ball, 28 ta uchun 8 ball.
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Ball tizimi olib tashlandi — baholash mezoni asosida hisoblanadi */}
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-3 pt-2">

@@ -5,7 +5,7 @@ type CreateQuestionRequest struct {
 	SourceType string                `json:"source_type" binding:"required,oneof=olympiad mock_test"`
 	SourceID   uint                  `json:"source_id" binding:"required,min=1"`
 	Text       string                `json:"text" binding:"required,min=1,max=5000"`
-	ImageURL   string                `json:"image_url" binding:"omitempty,url"`
+	ImageURL   string                `json:"image_url" binding:"omitempty"`
 	Difficulty string                `json:"difficulty" binding:"required,oneof=easy medium hard"`
 	Points     float64               `json:"points" binding:"required,min=0.5,max=100"`
 	OrderNum   int                   `json:"order_num" binding:"min=0"`
@@ -15,7 +15,7 @@ type CreateQuestionRequest struct {
 type CreateOptionRequest struct {
 	Label     string `json:"label" binding:"required,min=1,max=10"`
 	Text      string `json:"text" binding:"required,min=1,max=2000"`
-	ImageURL  string `json:"image_url" binding:"omitempty,url"`
+	ImageURL  string `json:"image_url" binding:"omitempty"`
 	IsCorrect bool   `json:"is_correct"`
 	OrderNum  int    `json:"order_num" binding:"min=0"`
 }
