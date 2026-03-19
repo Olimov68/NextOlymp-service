@@ -53,18 +53,28 @@ type Certificate struct {
 
 func (Certificate) TableName() string { return "certificate" }
 
-// CalculateGrade — scaled score bo'yicha daraja hisoblash
+// CalculateGrade — Rasch scaled score bo'yicha daraja hisoblash
+// 60 dan past = sertifikat berilmaydi
 func CalculateGrade(scaledScore float64) string {
 	switch {
-	case scaledScore >= 90:
+	case scaledScore >= 95:
 		return "A+"
-	case scaledScore >= 80:
+	case scaledScore >= 85:
 		return "A"
+	case scaledScore >= 78:
+		return "B+"
 	case scaledScore >= 70:
 		return "B"
+	case scaledScore >= 65:
+		return "C+"
 	case scaledScore >= 60:
 		return "C"
 	default:
-		return "D"
+		return "" // sertifikat berilmaydi
 	}
+}
+
+// IsEligibleForCertificate — sertifikat olish huquqi bormi
+func IsEligibleForCertificate(scaledScore float64) bool {
+	return scaledScore >= 60
 }

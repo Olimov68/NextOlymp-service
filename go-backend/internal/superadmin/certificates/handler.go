@@ -89,8 +89,16 @@ func (h *Handler) Create(c *gin.Context) {
 
 	// Mock Rasch uchun grade hisoblash
 	grade := req.Grade
-	if req.CertificateType == models.CertTypeMockRasch && grade == "" {
-		grade = models.CalculateGrade(req.ScaledScore)
+	if req.CertificateType == models.CertTypeMockRasch {
+		if grade == "" {
+			grade = models.CalculateGrade(req.ScaledScore)
+		}
+		// 60 dan past bo'lsa sertifikat berilmaydi
+		if !models.IsEligibleForCertificate(req.ScaledScore) {
+			response.Error(c, http.StatusBadRequest,
+				"Scaled score 60 dan past — sertifikat berilmaydi. Foydalanuvchi sertifikat olish uchun kamida 60 ball to'plashi kerak.", nil)
+			return
+		}
 	}
 
 	cert := &models.Certificate{

@@ -102,11 +102,13 @@ const gradeOptions = ["A+", "A", "B", "C", "D"];
 const statusOptions = ["active", "revoked"];
 
 function calcGrade(scaledScore: number): string {
-  if (scaledScore >= 90) return "A+";
-  if (scaledScore >= 80) return "A";
+  if (scaledScore >= 95) return "A+";
+  if (scaledScore >= 85) return "A";
+  if (scaledScore >= 78) return "B+";
   if (scaledScore >= 70) return "B";
+  if (scaledScore >= 65) return "C+";
   if (scaledScore >= 60) return "C";
-  return "D";
+  return ""; // sertifikat berilmaydi
 }
 
 function typeBadge(type: string) {
@@ -125,11 +127,13 @@ function gradeBadge(grade: string) {
   const map: Record<string, string> = {
     "A+": "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     A: "bg-green-600/20 text-green-400 border-green-600/30",
+    "B+": "bg-teal-600/20 text-teal-400 border-teal-600/30",
     B: "bg-blue-600/20 text-blue-400 border-blue-600/30",
+    "C+": "bg-orange-600/20 text-orange-300 border-orange-600/30",
     C: "bg-yellow-600/20 text-yellow-300 border-yellow-600/30",
-    D: "bg-gray-600/20 text-gray-400 border-gray-600/30",
   };
-  return <Badge className={map[grade] || "bg-gray-600/20 text-gray-400 border-gray-600/30"}>{grade || "-"}</Badge>;
+  if (!grade) return <Badge className="bg-red-600/20 text-red-400 border-red-600/30">Olmagan</Badge>;
+  return <Badge className={map[grade] || "bg-gray-600/20 text-gray-400 border-gray-600/30"}>{grade}</Badge>;
 }
 
 export default function CertificatesPage() {
