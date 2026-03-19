@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -18,87 +16,36 @@ import {
 } from "@/components/ui/table";
 import {
   Plus, Pencil, Trash2, Search, RefreshCw, Loader2, Trophy,
-  ListChecks, DollarSign,
+  Eye, DollarSign, Copy, Send, SendHorizonal,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   getOlympiads, createOlympiad, updateOlympiad, deleteOlympiad,
+  publishOlympiad, unpublishOlympiad, duplicateOlympiad,
 } from "@/lib/superadmin-api";
+import {
+  getAssessmentDisplayStatus, getStatusBadgeColor, getStatusLabel,
+} from "@/lib/assessment-types";
+import type { AssessmentBase, AssessmentFormData } from "@/lib/assessment-types";
 import { normalizeList } from "@/lib/normalizeList";
+import AssessmentForm from "@/components/assessment/AssessmentForm";
 
-interface Olympiad {
-  id: number;
-  title: string;
-  slug: string;
-  subject: string;
-  grade: number;
-  language: string;
-  start_time: string;
-  end_time: string;
-  duration_minutes: number;
-  total_questions: number;
-  status: string;
-  is_paid: boolean;
-  price?: number;
-  created_at: string;
+interface Olympiad extends AssessmentBase {
+  exam_type?: "olympiad";
 }
-
-interface OlympiadForm {
-  title: string;
-  description: string;
-  subject: string;
-  grade: string;
-  language: string;
-  start_time: string;
-  end_time: string;
-  duration_minutes: string;
-  total_questions: string;
-  rules: string;
-  status: string;
-  is_paid: boolean;
-  price: string;
-}
-
-const emptyForm: OlympiadForm = {
-  title: "",
-  description: "",
-  subject: "",
-  grade: "0",
-  language: "uz",
-  start_time: "",
-  end_time: "",
-  duration_minutes: "60",
-  total_questions: "20",
-  rules: "",
-  status: "draft",
-  is_paid: false,
-  price: "",
-};
-
-const statusColors: Record<string, string> = {
-  draft: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
-  published: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  active: "bg-green-500/10 text-green-600 border-green-500/20",
-  ended: "bg-gray-500/10 text-gray-500 border-gray-500/20",
-  archived: "bg-red-500/10 text-red-500 border-red-500/20",
-};
-
-const statusLabels: Record<string, string> = {
-  draft: "Qoralama",
-  published: "Nashr qilingan",
-  active: "Faol",
-  ended: "Tugagan",
-  archived: "Arxiv",
-};
 
 export default function SuperadminOlympiadsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<Olympiad[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [subjectFilter, setSubjectFilter] = useState("all");
+  const [gradeFilter, setGradeFilter] = useState("all");
+  const [languageFilter, setLanguageFilter] = useState("all");
+  const [paidFilter, setPaidFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [editItem, setEditItem] = useState<Olympiad | null>(null);
-  const [form, setForm] = useState<OlympiadForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
@@ -118,67 +65,63 @@ export default function SuperadminOlympiadsPage() {
 
   const openCreate = () => {
     setEditItem(null);
-    setForm(emptyForm);
     setOpen(true);
   };
 
   const openEdit = (item: Olympiad) => {
     setEditItem(item);
-    setForm({
-      title: item.title || "",
-      description: "",
-      subject: item.subject || "",
-      grade: String(item.grade || 0),
-      language: item.language || "uz",
-      start_time: item.start_time ? item.start_time.slice(0, 16) : "",
-      end_time: item.end_time ? item.end_time.slice(0, 16) : "",
-      duration_minutes: String(item.duration_minutes || 60),
-      total_questions: String(item.total_questions || 20),
-      rules: "",
-      status: item.status || "draft",
-      is_paid: item.is_paid || false,
-      price: item.price ? String(item.price) : "",
-    });
     setOpen(true);
   };
 
-  const buildPayload = () => ({
-    title: form.title,
-    description: form.description,
-    subject: form.subject,
-    grade: parseInt(form.grade) || 0,
-    language: form.language,
-    start_time: form.start_time ? new Date(form.start_time).toISOString() : undefined,
-    end_time: form.end_time ? new Date(form.end_time).toISOString() : undefined,
-    duration_minutes: parseInt(form.duration_minutes) || 60,
-    total_questions: parseInt(form.total_questions) || 20,
-    rules: form.rules,
-    status: form.status,
-    is_paid: form.is_paid,
-    price: form.is_paid && form.price ? parseFloat(form.price) : undefined,
-  });
+  const handleFormSubmit = async (formData: AssessmentFormData) => {
+    const payload: Record<string, unknown> = {
+      title: formData.title,
+      description: formData.description,
+      subject: formData.subject,
+      grade: formData.grade,
+      language: formData.language,
+      rules: formData.rules,
+      banner_url: formData.banner_url || undefined,
+      icon_url: formData.icon_url || undefined,
+      start_time: formData.start_time ? new Date(formData.start_time).toISOString() : undefined,
+      end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
+      registration_start_time: formData.registration_start_time ? new Date(formData.registration_start_time).toISOString() : undefined,
+      registration_end_time: formData.registration_end_time ? new Date(formData.registration_end_time).toISOString() : undefined,
+      duration_minutes: formData.duration_minutes,
+      total_questions: formData.total_questions,
+      max_seats: formData.max_seats,
+      status: formData.status,
+      is_paid: formData.is_paid,
+      price: formData.is_paid && formData.price ? formData.price : undefined,
+      shuffle_questions: formData.shuffle_questions,
+      shuffle_answers: formData.shuffle_answers,
+      auto_submit: formData.auto_submit,
+      allow_retake: formData.allow_retake,
+      show_result_immediately: formData.show_result_immediately,
+      give_certificate: formData.give_certificate,
+      manual_review: formData.manual_review,
+      admin_approval: formData.admin_approval,
+    };
 
-  const handleSave = async () => {
-    if (!form.title.trim() || !form.subject.trim()) {
+    if (!formData.title.trim() || !formData.subject.trim()) {
       toast.error("Sarlavha va fan majburiy");
       return;
     }
-    if (form.is_paid && (!form.price || parseFloat(form.price) <= 0)) {
+    if (formData.is_paid && (!formData.price || formData.price <= 0)) {
       toast.error("To'lovli olimpiada uchun narx kiritish majburiy");
       return;
     }
+
     setSaving(true);
     try {
       if (editItem) {
-        await updateOlympiad(editItem.id, buildPayload() as Record<string, unknown>);
+        await updateOlympiad(editItem.id, payload);
         toast.success("Olimpiada yangilandi");
       } else {
-        await createOlympiad(buildPayload() as Record<string, unknown>);
+        await createOlympiad(payload);
         toast.success("Olimpiada yaratildi");
       }
       setOpen(false);
-      setSearch("");
-      setStatusFilter("all");
       await load();
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
@@ -199,10 +142,51 @@ export default function SuperadminOlympiadsPage() {
     }
   };
 
+  const handlePublish = async (id: number) => {
+    try {
+      await publishOlympiad(id);
+      toast.success("Olimpiada nashr qilindi");
+      load();
+    } catch {
+      toast.error("Nashr qilib bo'lmadi");
+    }
+  };
+
+  const handleUnpublish = async (id: number) => {
+    try {
+      await unpublishOlympiad(id);
+      toast.success("Olimpiada nashrdan olindi");
+      load();
+    } catch {
+      toast.error("Nashrdan olib bo'lmadi");
+    }
+  };
+
+  const handleDuplicate = async (id: number) => {
+    try {
+      await duplicateOlympiad(id);
+      toast.success("Olimpiada nusxalandi");
+      load();
+    } catch {
+      toast.error("Nusxalab bo'lmadi");
+    }
+  };
+
+  // Derive unique subjects for filter
+  const subjects = Array.from(new Set(items.map(i => i.subject).filter(Boolean)));
+
   const filtered = items.filter(item => {
-    const matchSearch = !search || item.title.toLowerCase().includes(search.toLowerCase()) || item.subject.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search ||
+      item.title.toLowerCase().includes(search.toLowerCase()) ||
+      item.subject.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || item.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchSubject = subjectFilter === "all" || item.subject === subjectFilter;
+    const matchGrade = gradeFilter === "all" || String(item.grade) === gradeFilter;
+    const matchLanguage = languageFilter === "all" || item.language === languageFilter;
+    const matchPaid = paidFilter === "all" ||
+      (paidFilter === "paid" && item.is_paid) ||
+      (paidFilter === "free" && !item.is_paid);
+    return matchSearch && matchStatus && matchSubject && matchGrade && matchLanguage && matchPaid;
   });
 
   return (
@@ -224,7 +208,7 @@ export default function SuperadminOlympiadsPage() {
           <Input placeholder="Qidirish..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Barcha statuslar</SelectItem>
             <SelectItem value="draft">Qoralama</SelectItem>
@@ -232,6 +216,44 @@ export default function SuperadminOlympiadsPage() {
             <SelectItem value="active">Faol</SelectItem>
             <SelectItem value="ended">Tugagan</SelectItem>
             <SelectItem value="archived">Arxiv</SelectItem>
+          </SelectContent>
+        </Select>
+        {subjects.length > 0 && (
+          <Select value={subjectFilter} onValueChange={(v) => setSubjectFilter(v ?? "all")}>
+            <SelectTrigger className="w-40"><SelectValue placeholder="Fan" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Barcha fanlar</SelectItem>
+              {subjects.map(s => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <Select value={gradeFilter} onValueChange={(v) => setGradeFilter(v ?? "all")}>
+          <SelectTrigger className="w-36"><SelectValue placeholder="Sinf" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Barcha sinflar</SelectItem>
+            <SelectItem value="0">Umumiy</SelectItem>
+            {Array.from({ length: 11 }, (_, i) => i + 1).map(g => (
+              <SelectItem key={g} value={String(g)}>{g}-sinf</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={languageFilter} onValueChange={(v) => setLanguageFilter(v ?? "all")}>
+          <SelectTrigger className="w-32"><SelectValue placeholder="Til" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Barcha tillar</SelectItem>
+            <SelectItem value="uz">O&apos;zbek</SelectItem>
+            <SelectItem value="ru">Rus</SelectItem>
+            <SelectItem value="en">Ingliz</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={paidFilter} onValueChange={(v) => setPaidFilter(v ?? "all")}>
+          <SelectTrigger className="w-32"><SelectValue placeholder="To'lov" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Barchasi</SelectItem>
+            <SelectItem value="free">Bepul</SelectItem>
+            <SelectItem value="paid">Pullik</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" size="icon" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
@@ -253,6 +275,8 @@ export default function SuperadminOlympiadsPage() {
                 <TableHead>#</TableHead>
                 <TableHead>Sarlavha</TableHead>
                 <TableHead>Fan</TableHead>
+                <TableHead>Sinf</TableHead>
+                <TableHead>Til</TableHead>
                 <TableHead>Davomiyligi</TableHead>
                 <TableHead>To&apos;lov</TableHead>
                 <TableHead>Status</TableHead>
@@ -260,46 +284,96 @@ export default function SuperadminOlympiadsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((item, i) => (
-                <TableRow key={item.id}>
-                  <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                  <TableCell>
-                    <p className="font-medium text-foreground line-clamp-1">{item.title}</p>
-                    {item.grade > 0 && <p className="text-xs text-muted-foreground">{item.grade}-sinf</p>}
-                  </TableCell>
-                  <TableCell className="text-sm">{item.subject}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{item.duration_minutes} daqiqa</TableCell>
-                  <TableCell>
-                    {item.is_paid ? (
-                      <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-xs gap-1">
-                        <DollarSign className="h-3 w-3" />{item.price?.toLocaleString()} UZS
+              {filtered.map((item, i) => {
+                const displayStatus = getAssessmentDisplayStatus(item);
+                const langLabels: Record<string, string> = { uz: "O'zbek", ru: "Rus", en: "Ingliz" };
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                    <TableCell>
+                      <button
+                        className="text-left hover:underline"
+                        onClick={() => router.push(`/superadmin/olympiads/${item.id}`)}
+                      >
+                        <p className="font-medium text-foreground line-clamp-1">{item.title}</p>
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-sm">{item.subject}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {item.grade > 0 ? `${item.grade}-sinf` : "Umumiy"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {langLabels[item.language] || item.language}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{item.duration_minutes} daqiqa</TableCell>
+                    <TableCell>
+                      {item.is_paid ? (
+                        <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-xs gap-1">
+                          <DollarSign className="h-3 w-3" />{item.price?.toLocaleString()} UZS
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">Bepul</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`text-xs ${getStatusBadgeColor(displayStatus)}`}>
+                        {getStatusLabel(displayStatus)}
                       </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">Bepul</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`text-xs ${statusColors[item.status]}`}>
-                      {statusLabels[item.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link href={`/superadmin/olympiads/${item.id}/questions`}>
-                        <Button variant="ghost" size="icon" title="Savollar">
-                          <ListChecks className="h-4 w-4" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Ko'rish"
+                          onClick={() => router.push(`/superadmin/olympiads/${item.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      </Link>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteId(item.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        {item.status === "draft" ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Nashr qilish"
+                            onClick={() => handlePublish(item.id)}
+                          >
+                            <Send className="h-4 w-4 text-blue-500" />
+                          </Button>
+                        ) : item.status === "published" ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Nashrdan olish"
+                            onClick={() => handleUnpublish(item.id)}
+                          >
+                            <SendHorizonal className="h-4 w-4 text-amber-500" />
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Nusxalash"
+                          onClick={() => handleDuplicate(item.id)}
+                        >
+                          <Copy className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(item)} title="Tahrirlash">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteId(item.id)}
+                          title="O'chirish"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
@@ -307,103 +381,17 @@ export default function SuperadminOlympiadsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editItem ? "Olimpiadani tahrirlash" : "Yangi olimpiada yaratish"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-1.5">
-                <Label>Sarlavha *</Label>
-                <Input placeholder="Olimpiada nomi" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-              </div>
-              <div className="col-span-2 space-y-1.5">
-                <Label>Tavsif</Label>
-                <Textarea placeholder="Olimpiada haqida..." rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Fan *</Label>
-                <Input placeholder="Matematika, Fizika..." value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Sinf</Label>
-                <Input type="number" min={0} max={12} placeholder="0 = barcha sinflar" value={form.grade} onChange={e => setForm(f => ({ ...f, grade: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Til</Label>
-                <Select value={form.language} onValueChange={v => setForm(f => ({ ...f, language: v ?? 'uz' }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="uz">O&apos;zbek</SelectItem>
-                    <SelectItem value="ru">Rus</SelectItem>
-                    <SelectItem value="en">Ingliz</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Status</Label>
-                <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v ?? 'draft' }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Qoralama</SelectItem>
-                    <SelectItem value="published">Nashr qilish</SelectItem>
-                    <SelectItem value="active">Faol</SelectItem>
-                    <SelectItem value="ended">Tugatish</SelectItem>
-                    <SelectItem value="archived">Arxiv</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Boshlanish vaqti</Label>
-                <Input type="datetime-local" value={form.start_time} onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Tugash vaqti</Label>
-                <Input type="datetime-local" value={form.end_time} onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Davomiyligi (daqiqa) *</Label>
-                <Input type="number" min={1} value={form.duration_minutes} onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Savollar soni</Label>
-                <Input type="number" min={1} value={form.total_questions} onChange={e => setForm(f => ({ ...f, total_questions: e.target.value }))} />
-              </div>
-              <div className="col-span-2 space-y-1.5">
-                <Label>Qoidalar</Label>
-                <Textarea placeholder="Olimpiada qoidalari..." rows={2} value={form.rules} onChange={e => setForm(f => ({ ...f, rules: e.target.value }))} />
-              </div>
-              {/* Payment toggle */}
-              <div className="col-span-2 rounded-xl border border-border p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm text-foreground">To&apos;lovli olimpiada</p>
-                    <p className="text-xs text-muted-foreground">Foydalanuvchilar qatnashish uchun to&apos;lov qiladi</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, is_paid: !f.is_paid, price: !f.is_paid ? f.price : "" }))}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.is_paid ? "bg-primary" : "bg-muted"}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.is_paid ? "translate-x-6" : "translate-x-1"}`} />
-                  </button>
-                </div>
-                {form.is_paid && (
-                  <div className="space-y-1.5">
-                    <Label>Narx (UZS) *</Label>
-                    <Input type="number" min={0} placeholder="10000" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Bekor qilish</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {editItem ? "Saqlash" : "Yaratish"}
-            </Button>
-          </DialogFooter>
+          <AssessmentForm
+            examType="olympiad"
+            initialData={editItem || undefined}
+            onSubmit={handleFormSubmit}
+            onCancel={() => setOpen(false)}
+            loading={saving}
+          />
         </DialogContent>
       </Dialog>
 

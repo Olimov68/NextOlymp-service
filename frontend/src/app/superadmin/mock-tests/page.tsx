@@ -7,6 +7,9 @@ import {
   createMockTest,
   updateMockTest,
   deleteMockTest,
+  publishMockTest,
+  unpublishMockTest,
+  duplicateMockTest,
 } from "@/lib/superadmin-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +46,10 @@ import {
   ChevronRight,
   Loader2,
   ListChecks,
+  Eye,
+  Globe,
+  GlobeLock,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { normalizeList } from "@/lib/normalizeList";
@@ -56,6 +63,7 @@ interface MockTest {
   title: string;
   description: string;
   subject: string;
+  grade: number;
   language: string;
   scoring_type: string;
   participation_type: string;
@@ -71,6 +79,7 @@ const emptyForm = {
   title: "",
   description: "",
   subject: "matematika",
+  grade: 0,
   language: "uz",
   scoring_type: "simple",
   participation_type: "free",
@@ -89,6 +98,17 @@ const subjects = [
   { value: "ingliz_tili", label: "Ingliz tili" },
   { value: "biologiya", label: "Biologiya" },
   { value: "kimyo", label: "Kimyo" },
+];
+
+const grades = [
+  { value: "0", label: "Hammasi" },
+  { value: "5", label: "5-sinf" },
+  { value: "6", label: "6-sinf" },
+  { value: "7", label: "7-sinf" },
+  { value: "8", label: "8-sinf" },
+  { value: "9", label: "9-sinf" },
+  { value: "10", label: "10-sinf" },
+  { value: "11", label: "11-sinf" },
 ];
 
 const statuses = [
@@ -118,6 +138,16 @@ const subjectLabels: Record<string, string> = Object.fromEntries(
   subjects.map((s) => [s.value, s.label])
 );
 
+const languageLabels: Record<string, string> = Object.fromEntries(
+  languages.map((l) => [l.value, l.label])
+);
+
+const isPaidOptions = [
+  { value: "all", label: "Hammasi" },
+  { value: "free", label: "Bepul" },
+  { value: "paid", label: "Pullik" },
+];
+
 /* ------------------------------------------------------------------ */
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
@@ -130,25 +160,35 @@ export default function MockTestsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("");
+  const [languageFilter, setLanguageFilter] = useState("");
+  const [isPaidFilter, setIsPaidFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<MockTest | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
   const limit = 20;
 
   /* Fetch ---------------------------------------------------------- */
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await getMockTests({
+      const params: Record<string, unknown> = {
         page,
         page_size: limit,
-        search: search || undefined,
-        status: statusFilter || undefined,
-        subject: subjectFilter || undefined,
-      });
+      };
+      if (search) params.search = search;
+      if (statusFilter) params.status = statusFilter;
+      if (subjectFilter) params.subject = subjectFilter;
+      if (gradeFilter) params.grade = Number(gradeFilter);
+      if (languageFilter) params.language = languageFilter;
+      if (isPaidFilter === "free") params.is_paid = false;
+      else if (isPaidFilter === "paid") params.is_paid = true;
+
+      const res = await getMockTests(params);
       const list = normalizeList(res);
       setItems(list);
       setTotal(res?.pagination?.total || res?.data?.total || res?.total || list.length);
@@ -161,7 +201,44 @@ export default function MockTestsPage() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, statusFilter, subjectFilter]);
+  }, [page, search, statusFilter, subjectFilter, gradeFilter, languageFilter, isPaidFilter]);
+
+  /* Actions ------------------------------------------------------- */
+  const handlePublish = async (id: number) => {
+    setActionLoading(id);
+    try {
+      await publishMockTest(id);
+      toast.success("Mock test e'lon qilindi");
+      await fetchData();
+    } catch {
+      toast.error("E'lon qilib bo'lmadi");
+    }
+    setActionLoading(null);
+  };
+
+  const handleUnpublish = async (id: number) => {
+    setActionLoading(id);
+    try {
+      await unpublishMockTest(id);
+      toast.success("Mock test e'londan olindi");
+      await fetchData();
+    } catch {
+      toast.error("E'londan olib bo'lmadi");
+    }
+    setActionLoading(null);
+  };
+
+  const handleDuplicate = async (id: number) => {
+    setActionLoading(id);
+    try {
+      await duplicateMockTest(id);
+      toast.success("Mock test nusxalandi");
+      await fetchData();
+    } catch {
+      toast.error("Nusxalab bo'lmadi");
+    }
+    setActionLoading(null);
+  };
 
   /* CRUD ----------------------------------------------------------- */
   const openCreate = () => {
@@ -176,6 +253,7 @@ export default function MockTestsPage() {
       title: item.title || "",
       description: item.description || "",
       subject: item.subject || "matematika",
+      grade: item.grade || 0,
       language: item.language || "uz",
       scoring_type: item.scoring_type || "simple",
       participation_type: item.is_paid ? "paid" : (item.participation_type || "free"),
@@ -192,6 +270,7 @@ export default function MockTestsPage() {
     try {
       const payload: Record<string, unknown> = {
         ...form,
+        grade: Number(form.grade) || 0,
         price: form.participation_type === "paid" ? Number(form.price) : 0,
         duration_minutes: Number(form.duration_minutes),
         total_questions: Number(form.total_questions),
@@ -207,8 +286,11 @@ export default function MockTestsPage() {
       }
       setDialogOpen(false);
       setSearch("");
-      setStatusFilter("all");
-      setSubjectFilter("all");
+      setStatusFilter("");
+      setSubjectFilter("");
+      setGradeFilter("");
+      setLanguageFilter("");
+      setIsPaidFilter("");
       await fetchData();
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
@@ -297,6 +379,61 @@ export default function MockTestsPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select
+          value={gradeFilter || "all"}
+          onValueChange={(v) => {
+            setGradeFilter(!v || v === "all" || v === "0" ? "" : v ?? "");
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-[130px] bg-muted border-border">
+            <SelectValue placeholder="Sinf" />
+          </SelectTrigger>
+          <SelectContent>
+            {grades.map((g) => (
+              <SelectItem key={g.value} value={g.value}>
+                {g.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={languageFilter || "all"}
+          onValueChange={(v) => {
+            setLanguageFilter(!v || v === "all" ? "" : v ?? "");
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-[140px] bg-muted border-border">
+            <SelectValue placeholder="Til" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Hammasi</SelectItem>
+            {languages.map((l) => (
+              <SelectItem key={l.value} value={l.value}>
+                {l.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={isPaidFilter || "all"}
+          onValueChange={(v) => {
+            setIsPaidFilter(!v || v === "all" ? "" : v ?? "");
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-[130px] bg-muted border-border">
+            <SelectValue placeholder="Turi" />
+          </SelectTrigger>
+          <SelectContent>
+            {isPaidOptions.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -307,10 +444,11 @@ export default function MockTestsPage() {
               <TableHead>ID</TableHead>
               <TableHead>Sarlavha</TableHead>
               <TableHead>Fan</TableHead>
+              <TableHead>Sinf</TableHead>
+              <TableHead>Til</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Baholash</TableHead>
               <TableHead>Turi</TableHead>
-              <TableHead>Narxi</TableHead>
               <TableHead>Davomiyligi</TableHead>
               <TableHead>Savollar</TableHead>
               <TableHead>Amallar</TableHead>
@@ -319,25 +457,31 @@ export default function MockTestsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8">
+                <TableCell colSpan={11} className="text-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                   <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-30" />
                   Mock test topilmadi
                 </TableCell>
               </TableRow>
             ) : (
               items.map((item) => (
-                <TableRow key={item.id} className="border-border hover:bg-accent">
+                <TableRow
+                  key={item.id}
+                  className="border-border hover:bg-accent cursor-pointer"
+                  onClick={() => router.push(`/superadmin/mock-tests/${item.id}`)}
+                >
                   <TableCell>{item.id}</TableCell>
                   <TableCell className="font-medium max-w-[200px] truncate">
                     {item.title || "—"}
                   </TableCell>
                   <TableCell>{subjectLabels[item.subject] || item.subject}</TableCell>
+                  <TableCell>{item.grade ? `${item.grade}-sinf` : "—"}</TableCell>
+                  <TableCell>{languageLabels[item.language] || item.language}</TableCell>
                   <TableCell>
                     <Badge className={statusColors[item.status] || "bg-gray-600"}>
                       {statuses.find((s) => s.value === item.status)?.label || item.status}
@@ -351,35 +495,72 @@ export default function MockTestsPage() {
                       <Badge variant="secondary">Bepul</Badge>
                     )}
                   </TableCell>
-                  <TableCell>
-                    {item.is_paid || item.participation_type === "paid"
-                      ? `${item.price} so'm`
-                      : "—"}
-                  </TableCell>
                   <TableCell>{item.duration_minutes} min</TableCell>
+                  <TableCell>{item.total_questions}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.push(`/superadmin/mock-tests/${item.id}/questions`)
-                      }
-                    >
-                      Savollar
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => openEdit(item)}
+                        title="Batafsil"
+                        onClick={() => router.push(`/superadmin/mock-tests/${item.id}`)}
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
+                        title="Tahrirlash"
+                        onClick={() => openEdit(item)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      {item.status === "draft" ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="E'lon qilish"
+                          disabled={actionLoading === item.id}
+                          onClick={() => handlePublish(item.id)}
+                        >
+                          {actionLoading === item.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Globe className="w-4 h-4 text-green-400" />
+                          )}
+                        </Button>
+                      ) : item.status === "active" ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="E'londan olish"
+                          disabled={actionLoading === item.id}
+                          onClick={() => handleUnpublish(item.id)}
+                        >
+                          {actionLoading === item.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <GlobeLock className="w-4 h-4 text-yellow-400" />
+                          )}
+                        </Button>
+                      ) : null}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title="Nusxalash"
+                        disabled={actionLoading === item.id}
+                        onClick={() => handleDuplicate(item.id)}
+                      >
+                        {actionLoading === item.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-blue-400" />
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title="O'chirish"
                         onClick={() => setDeleteId(item.id)}
                       >
                         <Trash2 className="w-4 h-4 text-red-400" />
@@ -473,8 +654,27 @@ export default function MockTestsPage() {
               />
             </div>
 
-            {/* Language & Scoring type */}
+            {/* Grade & Language */}
             <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Sinf</Label>
+                <Select
+                  value={String(form.grade || 0)}
+                  onValueChange={(v) => setForm({ ...form, grade: Number(v) || 0 })}
+                >
+                  <SelectTrigger className="bg-muted border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Belgilanmagan</SelectItem>
+                    {grades.filter((g) => g.value !== "0").map((g) => (
+                      <SelectItem key={g.value} value={g.value}>
+                        {g.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5">
                 <Label>Til</Label>
                 <Select
@@ -493,26 +693,28 @@ export default function MockTestsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label>Baholash turi</Label>
-                <Select
-                  value={form.scoring_type}
-                  onValueChange={(v) =>
-                    setForm({ ...form, scoring_type: v ?? "simple" })
-                  }
-                >
-                  <SelectTrigger className="bg-muted border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {scoringTypes.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            </div>
+
+            {/* Scoring type */}
+            <div className="space-y-1.5">
+              <Label>Baholash turi</Label>
+              <Select
+                value={form.scoring_type}
+                onValueChange={(v) =>
+                  setForm({ ...form, scoring_type: v ?? "simple" })
+                }
+              >
+                <SelectTrigger className="bg-muted border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {scoringTypes.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Participation type & Price */}
