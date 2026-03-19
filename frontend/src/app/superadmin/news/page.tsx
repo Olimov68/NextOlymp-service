@@ -23,7 +23,7 @@ import { getNewsList, getNewsItem, createNews, updateNews, deleteNews } from "@/
 import { uploadPanelImage } from "@/lib/admin-api";
 import { normalizeList } from "@/lib/normalizeList";
 
-const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1").replace(/\/api\/v1$/, "");
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "https://nextolymp.uz/api/v1").replace(/\/api\/v1$/, "");
 function imageUrl(path: string) {
   if (!path) return "";
   if (path.startsWith("http")) return path;

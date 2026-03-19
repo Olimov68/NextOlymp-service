@@ -11,7 +11,7 @@ import { useAntiCheat } from "@/hooks/useAntiCheat";
 import { toast } from "sonner";
 import { Loader2, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://nextolymp.uz/api/v1";
 
 interface ExamData {
   attempt_id: number;

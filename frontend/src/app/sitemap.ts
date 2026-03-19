@@ -39,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic news pages
   let newsPages: MetadataRoute.Sitemap = [];
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"}/news?limit=100`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://nextolymp.uz/api/v1"}/news?limit=100`, {
       next: { revalidate: 3600 },
     });
     if (res.ok) {

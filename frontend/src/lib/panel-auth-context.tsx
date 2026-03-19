@@ -41,7 +41,7 @@ export function PanelAuthProvider({ children }: { children: ReactNode }) {
 
       // Load permissions from /panel/auth/me
       fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"}/panel/auth/me`,
+        `${process.env.NEXT_PUBLIC_API_URL || "https://nextolymp.uz/api/v1"}/panel/auth/me`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
