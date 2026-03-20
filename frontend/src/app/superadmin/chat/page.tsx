@@ -24,9 +24,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Trash2, Ban, ShieldOff, Power, PowerOff, Users, RefreshCw,
-  MessageCircle, Settings, ScrollText, Loader2, ChevronLeft, ChevronRight, Search,
+  MessageCircle, Settings, ScrollText, Loader2, Search,
   Reply, X, Send,
 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 
 interface ChatMsg {
@@ -528,20 +529,7 @@ export default function ChatModerationPage() {
             </Table>
           </div>
 
-          {msgTotalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Jami: {msgTotal}</span>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" disabled={msgPage <= 1} onClick={() => setMsgPage(msgPage - 1)}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <span className="px-3 py-1 text-sm">{msgPage} / {msgTotalPages}</span>
-                <Button size="sm" variant="outline" disabled={msgPage >= msgTotalPages} onClick={() => setMsgPage(msgPage + 1)}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination page={msgPage} totalPages={msgTotalPages} onPageChange={setMsgPage} total={msgTotal} />
         </div>
       )}
 
@@ -695,20 +683,7 @@ export default function ChatModerationPage() {
             </Table>
           </div>
 
-          {logsTotalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Jami: {logsTotal}</span>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" disabled={logsPage <= 1} onClick={() => setLogsPage(logsPage - 1)}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <span className="px-3 py-1 text-sm">{logsPage} / {logsTotalPages}</span>
-                <Button size="sm" variant="outline" disabled={logsPage >= logsTotalPages} onClick={() => setLogsPage(logsPage + 1)}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination page={logsPage} totalPages={logsTotalPages} onPageChange={setLogsPage} total={logsTotal} />
         </div>
       )}
 
@@ -799,7 +774,7 @@ export default function ChatModerationPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Turi</Label>
-              <Select value={banType} onValueChange={setBanType}>
+              <Select value={banType} onValueChange={(v) => setBanType(v ?? "temporary")}>
                 <SelectTrigger className="bg-muted border-border">
                   <SelectValue />
                 </SelectTrigger>

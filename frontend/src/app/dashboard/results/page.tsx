@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -34,6 +35,8 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   useEffect(() => {
     getMyResults()
@@ -54,6 +57,14 @@ export default function ResultsPage() {
       return true;
     });
   }, [results, typeFilter, subjectFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  useMemo(() => { setPage(1); }, [typeFilter, subjectFilter]);
 
   if (loading) {
     return (
@@ -165,7 +176,7 @@ export default function ResultsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r) => (
+                  {paginated.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>
                         <span className="text-sm font-medium text-foreground">
@@ -237,6 +248,7 @@ export default function ResultsPage() {
           )}
         </CardContent>
       </Card>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={filtered.length} />
     </div>
   );
 }

@@ -72,6 +72,7 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 			ug.GET("/:id", middleware.PermissionRequired(db, "users.view"), usersHandler.GetByID)
 			ug.PATCH("/:id/block", middleware.PermissionRequired(db, "users.block"), usersHandler.Block)
 			ug.PATCH("/:id/unblock", middleware.PermissionRequired(db, "users.block"), usersHandler.Unblock)
+			ug.DELETE("/:id", middleware.PermissionRequired(db, "users.delete"), usersHandler.Delete)
 		}
 
 		// News

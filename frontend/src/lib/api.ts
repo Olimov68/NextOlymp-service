@@ -437,10 +437,12 @@ export interface Question {
   id: number;
   text: string;
   image: string;
-  options: string[];
-  correctIdx: number;
+  type?: string;
+  options: { id?: number; text: string; image?: string; is_correct: boolean; order_num: number }[];
+  correctIdx?: number;
   points: number;
-  orderNum: number;
+  orderNum?: number;
+  order_num?: number;
 }
 export type OlympiadQuestion = Question;
 export interface MockExamSection {

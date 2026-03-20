@@ -17,13 +17,12 @@ import {
   Wallet,
   ArrowUpRight,
   ArrowDownLeft,
-  ChevronLeft,
-  ChevronRight,
   Plus,
   AlertCircle,
   CheckCircle2,
   Tag,
 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import {
   getBalance,
   getTransactions,
@@ -359,34 +358,7 @@ export default function BalancePage() {
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    Jami: {totalTxns} ta tranzaksiya
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page <= 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      {page} / {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={page >= totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={totalTxns} className="mt-4 pt-4 border-t" />
             </>
           )}
         </CardContent>

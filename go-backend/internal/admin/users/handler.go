@@ -12,10 +12,11 @@ import (
 
 type Handler struct {
 	repo *Repository
+	db   *gorm.DB
 }
 
 func NewHandler(db *gorm.DB) *Handler {
-	return &Handler{repo: NewRepository(db)}
+	return &Handler{repo: NewRepository(db), db: db}
 }
 
 // List — foydalanuvchilar ro'yxati
@@ -101,4 +102,62 @@ func (h *Handler) Unblock(c *gin.Context) {
 		return
 	}
 	response.Success(c, http.StatusOK, "User unblocked", nil)
+}
+
+// Delete — foydalanuvchini bazadan to'liq o'chirish
+// DELETE /api/v1/admin/users/:id
+func (h *Handler) Delete(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid ID", nil)
+		return
+	}
+
+	var user models.User
+	if err := h.db.First(&user, id).Error; err != nil {
+		response.NotFound(c, "Foydalanuvchi topilmadi")
+		return
+	}
+
+	tx := h.db.Begin()
+
+	// Barcha bog'liq jadvallarni raw SQL bilan o'chirish
+	tables := []string{
+		"session", "telegram_link",
+		"profile",
+		"chat_messages", "chat_bans",
+		"discussion_message", "discussion_user_state",
+		"notification", "notification_preference",
+		"promo_code_usage", "balance", "balance_transaction", "payment",
+		"certificate",
+		"ai_analysis",
+		"feedback",
+		"exam_violation",
+		"user_verifications",
+	}
+	for _, t := range tables {
+		tx.Exec("DELETE FROM \""+t+"\" WHERE user_id = ?", id)
+	}
+
+	// Olimpiada urinishlari (child -> parent)
+	tx.Exec("DELETE FROM olympiad_attempt_answer WHERE attempt_id IN (SELECT id FROM olympiad_attempt WHERE user_id = ?)", id)
+	tx.Exec("DELETE FROM anti_cheat_violations WHERE user_id = ?", id)
+	tx.Exec("DELETE FROM olympiad_attempt WHERE user_id = ?", id)
+	tx.Exec("DELETE FROM olympiad_registration WHERE user_id = ?", id)
+
+	// Mock test urinishlari (child -> parent)
+	tx.Exec("DELETE FROM mock_attempt_answer WHERE attempt_id IN (SELECT id FROM mock_attempt WHERE user_id = ?)", id)
+	tx.Exec("DELETE FROM mock_attempt WHERE user_id = ?", id)
+	tx.Exec("DELETE FROM mock_test_registration WHERE user_id = ?", id)
+
+	// User o'zi
+	tx.Exec("DELETE FROM \"user\" WHERE id = ?", id)
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		response.Error(c, http.StatusInternalServerError, "Foydalanuvchini o'chirishda xatolik")
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Foydalanuvchi bazadan to'liq o'chirildi", nil)
 }

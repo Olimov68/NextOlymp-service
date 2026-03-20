@@ -241,7 +241,7 @@ export default function AntiCheatLogsTab({ sourceType, sourceId }: Props) {
         <p className="text-sm text-muted-foreground">
           {stats?.total || 0} ta qoidabuzarlik
         </p>
-        <Select value={filterType} onValueChange={setFilterType}>
+        <Select value={filterType} onValueChange={(v) => setFilterType(v ?? "all")}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Barchasi" />
           </SelectTrigger>

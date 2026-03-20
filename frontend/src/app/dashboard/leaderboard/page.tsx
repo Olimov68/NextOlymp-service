@@ -16,13 +16,12 @@ import {
   Medal,
   Award,
   Crown,
-  ChevronLeft,
-  ChevronRight,
   User,
   MapPin,
   Target,
   Flame,
 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import {
   getLeaderboard,
   getMyRank,
@@ -558,61 +557,7 @@ export default function LeaderboardPage() {
           {/* Leaderboard Table */}
           <LeaderboardTable entries={entries} page={page} myRank={myRank} />
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Jami: {total} ta ishtirokchi
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                  className="flex items-center gap-1"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Oldingi
-                </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                    let pageNum: number;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (page <= 3) {
-                      pageNum = i + 1;
-                    } else if (page >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = page - 2 + i;
-                    }
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={page === pageNum ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setPage(pageNum)}
-                        className="w-9 h-9 p-0"
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="flex items-center gap-1"
-                >
-                  Keyingi
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} />
         </>
       )}
     </div>

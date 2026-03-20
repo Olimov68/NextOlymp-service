@@ -36,6 +36,13 @@ import {
   MinusCircle,
   Maximize,
   Minimize,
+  Sparkles,
+  Brain,
+  TrendingUp,
+  Lightbulb,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
 } from "lucide-react";
 import {
   getMockTest,
@@ -130,6 +137,12 @@ export default function MockTestDetailPage() {
 
   // Result state
   const [result, setResult] = useState<AttemptResult | null>(null);
+
+  // AI Analysis state
+  const [aiAnalysis, setAiAnalysis] = useState<import("@/lib/user-api").AIAnalysisResult | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [showAiAnalysis, setShowAiAnalysis] = useState(false);
 
   // ─── Load detail data ───────────────────────────────────────────────────
 
@@ -360,12 +373,35 @@ export default function MockTestDetailPage() {
     setResult(null);
     setAnswers({});
     setCurrentIdx(0);
+    setAiAnalysis(null);
+    setShowAiAnalysis(false);
+    setAiError("");
 
     try {
       const newAttempts = await getMyMockAttempts(id);
       setAttempts(Array.isArray(newAttempts) ? newAttempts : []);
     } catch {
       // silent
+    }
+  };
+
+  const handleAIAnalysis = async () => {
+    if (aiAnalysis) {
+      setShowAiAnalysis(!showAiAnalysis);
+      return;
+    }
+    if (!result) return;
+    setAiLoading(true);
+    setAiError("");
+    try {
+      const { getAIAnalysis } = await import("@/lib/user-api");
+      const data = await getAIAnalysis(result.attempt_id);
+      setAiAnalysis(data);
+      setShowAiAnalysis(true);
+    } catch (err: any) {
+      setAiError(err?.response?.data?.message || "AI tahlil yuklanmadi");
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -853,6 +889,149 @@ export default function MockTestDetailPage() {
                 </Button>
               </Link>
             </div>
+
+            {/* AI Tahlil */}
+            <div className="mt-6">
+              <button
+                onClick={handleAIAnalysis}
+                disabled={aiLoading}
+                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 hover:border-purple-500/50 text-foreground font-semibold transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+              >
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    AI tahlil qilinmoqda...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5 text-purple-400" />
+                    {aiAnalysis ? (showAiAnalysis ? "AI Tahlilni yashirish" : "AI Tahlilni ko\u2018rsatish") : "AI Tahlil olish"}
+                    {aiAnalysis && (showAiAnalysis ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                  </>
+                )}
+              </button>
+              {aiError && <p className="text-red-400 text-sm text-center mt-2">{aiError}</p>}
+            </div>
+
+            {/* AI Analysis Results */}
+            {showAiAnalysis && aiAnalysis && (
+              <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                {/* Overall Grade & Summary */}
+                <div className="rounded-2xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                        <Brain className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-foreground">AI Tahlil</h3>
+                        <p className="text-xs text-muted-foreground">Claude AI tomonidan tahlil qilingan</p>
+                      </div>
+                    </div>
+                    <div className={`text-3xl font-extrabold ${
+                      aiAnalysis.overall_grade?.startsWith("A") ? "text-green-400" :
+                      aiAnalysis.overall_grade?.startsWith("B") ? "text-blue-400" :
+                      aiAnalysis.overall_grade?.startsWith("C") ? "text-amber-400" : "text-red-400"
+                    }`}>
+                      {aiAnalysis.overall_grade}
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed">{aiAnalysis.summary}</p>
+                </div>
+
+                {/* Strengths & Weaknesses */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-2xl bg-green-500/5 border border-green-500/20 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUp className="h-5 w-5 text-green-400" />
+                      <h4 className="font-semibold text-green-600 dark:text-green-400">Kuchli tomonlar</h4>
+                    </div>
+                    <ul className="space-y-2">
+                      {aiAnalysis.strengths?.map((s, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <span className="text-green-400 mt-0.5">{"\u2713"}</span>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="rounded-2xl bg-red-500/5 border border-red-500/20 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Target className="h-5 w-5 text-red-400" />
+                      <h4 className="font-semibold text-red-600 dark:text-red-400">Yaxshilash kerak</h4>
+                    </div>
+                    <ul className="space-y-2">
+                      {aiAnalysis.weaknesses?.map((w, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <span className="text-red-400 mt-0.5">!</span>
+                          {w}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Question Analysis */}
+                {aiAnalysis.question_analysis?.length > 0 && (
+                  <div className="rounded-2xl bg-muted/50 border border-border p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <BookOpen className="h-5 w-5 text-blue-400" />
+                      <h4 className="font-semibold text-foreground">Xatolar tahlili</h4>
+                    </div>
+                    <div className="space-y-4">
+                      {aiAnalysis.question_analysis.map((qa, i) => (
+                        <div key={i} className="rounded-xl bg-background border border-border p-4">
+                          <p className="text-sm font-medium text-foreground mb-2">
+                            <span className="text-blue-400">#{qa.question_num}</span>{" "}
+                            {qa.question_text}
+                          </p>
+                          <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
+                            <div className="bg-red-500/10 rounded-lg px-3 py-1.5">
+                              <span className="text-red-400">Sizning javob:</span>{" "}
+                              <span className="text-muted-foreground">{qa.your_answer || "\u2014"}</span>
+                            </div>
+                            <div className="bg-green-500/10 rounded-lg px-3 py-1.5">
+                              <span className="text-green-400">To&apos;g&apos;ri javob:</span>{" "}
+                              <span className="text-muted-foreground">{qa.correct_answer}</span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            <Lightbulb className="h-4 w-4 inline-block text-amber-400 mr-1" />
+                            {qa.explanation}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                <div className="rounded-2xl bg-amber-500/5 border border-amber-500/20 p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-5 w-5 text-amber-400" />
+                    <h4 className="font-semibold text-amber-600 dark:text-amber-400">Tavsiyalar</h4>
+                  </div>
+                  <ul className="space-y-2">
+                    {aiAnalysis.recommendations?.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <span className="text-amber-400 font-bold mt-0.5">{i + 1}.</span>
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Motivation */}
+                {aiAnalysis.motivation && (
+                  <div className="rounded-2xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 p-5 text-center">
+                    <p className="text-lg text-foreground font-medium leading-relaxed italic">
+                      &ldquo;{aiAnalysis.motivation}&rdquo;
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">&mdash; AI Mentor</p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

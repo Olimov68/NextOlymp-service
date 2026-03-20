@@ -103,6 +103,8 @@ func Migrate(db *gorm.DB) error {
 		&models.UserVerification{},
 		// Payme transactions
 		&models.PaymeTransaction{},
+		// AI Analysis
+		&models.AIAnalysis{},
 	)
 	if err != nil {
 		log.Printf("MIGRATION ERROR: %v", err)

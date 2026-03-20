@@ -142,7 +142,7 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium text-foreground">{r.title}</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {r.date || new Date(r.created_at).toLocaleDateString("uz-UZ")}
+                        {(r as any).date || new Date(r.created_at).toLocaleDateString("uz-UZ")}
                       </p>
                     </div>
                   </div>

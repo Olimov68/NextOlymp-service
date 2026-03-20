@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Pagination } from "@/components/ui/pagination";
 import { Calendar, Newspaper, Search, ArrowRight } from "lucide-react";
 import { listNews } from "@/lib/user-api";
 
@@ -31,6 +32,8 @@ export default function DashboardNewsPage() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     listNews({ page: 1, page_size: 50 })
@@ -45,6 +48,14 @@ export default function DashboardNewsPage() {
   const filtered = items.filter(i =>
     !search || i.title.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  useMemo(() => { setPage(1); }, [search]);
 
   return (
     <div className="space-y-6">
@@ -78,7 +89,7 @@ export default function DashboardNewsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map(item => {
+          {paginated.map(item => {
             const img = getImageUrl(item.cover_image);
             return (
               <div key={item.id} className="group rounded-xl border border-border bg-card p-4 flex gap-4 hover:shadow-md transition-all">
@@ -114,6 +125,7 @@ export default function DashboardNewsPage() {
               </div>
             );
           })}
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={filtered.length} />
         </div>
       )}
     </div>

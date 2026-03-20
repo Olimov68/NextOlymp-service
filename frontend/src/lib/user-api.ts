@@ -306,7 +306,7 @@ export interface PromoApplyResponse {
 
 export const applyPromoCode = (data: {
   code: string;
-  amount: number;
+  amount?: number;
   source_type?: string;
 }): Promise<PromoApplyResponse> =>
   api.post("/user/balance/promo-code/apply", data).then((r) => r.data.data ?? r.data);
@@ -484,4 +484,27 @@ export const downloadMyCertificatePDF = async (id: number) => {
   link.remove();
   window.URL.revokeObjectURL(url);
 };
+
+// ─── AI Analysis ──────────────────────────────────────────────────────────────
+
+export interface AIQuestionReview {
+  question_num: number;
+  question_text: string;
+  your_answer: string;
+  correct_answer: string;
+  explanation: string;
+}
+
+export interface AIAnalysisResult {
+  overall_grade: string;
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  question_analysis: AIQuestionReview[];
+  recommendations: string[];
+  motivation: string;
+}
+
+export const getAIAnalysis = (attemptId: number): Promise<AIAnalysisResult> =>
+  api.get(`/user/exams/mock-tests/attempts/${attemptId}/ai-analysis`).then((r) => r.data.data ?? r.data);
 

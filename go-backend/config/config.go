@@ -19,7 +19,8 @@ type Config struct {
 	Telegram TelegramConfig
 	CORS     CORSConfig
 	Payme    PaymeConfig
-	Google   GoogleConfig
+	Google          GoogleConfig
+	AnthropicAPIKey string
 }
 
 type GoogleConfig struct {
@@ -158,6 +159,7 @@ func Load() (*Config, error) {
 		Google: GoogleConfig{
 			ClientID: getEnv("GOOGLE_CLIENT_ID", ""),
 		},
+		AnthropicAPIKey: getEnv("ANTHROPIC_API_KEY", ""),
 	}
 
 	if cfg.JWT.AccessSecret == "" || cfg.JWT.RefreshSecret == "" {

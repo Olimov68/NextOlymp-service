@@ -35,6 +35,7 @@ usermocktests "github.com/nextolympservice/go-backend/internal/user/mocktests"
 	usernotifs "github.com/nextolympservice/go-backend/internal/user/notifications"
 	userolympiads "github.com/nextolympservice/go-backend/internal/user/olympiads"
 	userpromos "github.com/nextolympservice/go-backend/internal/user/promocodes"
+	userai "github.com/nextolympservice/go-backend/internal/user/ai"
 	useranticheat "github.com/nextolympservice/go-backend/internal/user/anticheat"
 	userresults "github.com/nextolympservice/go-backend/internal/user/results"
 
@@ -126,6 +127,7 @@ examsHandler := userexams.NewHandler(db)
 	devicesHandler := userdevices.NewHandler(sessionMgr)
 	leaderboardHandler := userleaderboard.NewHandler(db)
 	anticheatHandler := useranticheat.NewHandler(db)
+	aiHandler := userai.NewHandler(db, cfg.AnthropicAPIKey)
 
 	// ─── Chat ─────────────────────────────────────────────────────
 	chatHub := chat.NewHub()
@@ -326,6 +328,8 @@ examsHandler := userexams.NewHandler(db)
 			eg.POST("/mock-tests/attempts/:attempt_id/finish", examsHandler.FinishMockTest)
 			eg.GET("/mock-tests/attempts/:attempt_id/result", examsHandler.GetMockAttemptResult)
 			eg.GET("/mock-tests/:id/my-attempts", examsHandler.GetMyMockAttempts)
+			// AI Analysis
+			eg.GET("/mock-tests/attempts/:attempt_id/ai-analysis", aiHandler.GetAIAnalysis)
 			// Olympiad topshirish
 			eg.POST("/olympiads/:id/start", examsHandler.StartOlympiad)
 			eg.POST("/olympiads/attempts/:attempt_id/answer", examsHandler.SubmitOlympiadAnswer)

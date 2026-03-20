@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { Pagination } from "@/components/ui/pagination";
 import { Search, Trophy } from "lucide-react";
 import { listOlympiads } from "@/lib/user-api";
 import AssessmentCard from "@/components/assessment/AssessmentCard";
@@ -77,6 +78,8 @@ function mapToAssessment(o: Record<string, any>): AssessmentBase {
     give_certificate: o.give_certificate ?? false,
     manual_review: o.manual_review ?? false,
     admin_approval: o.admin_approval ?? false,
+    min_score_for_certificate: o.min_score_for_certificate ?? 0,
+    scoring_rules: o.scoring_rules ?? "",
     registered_count: o.registered_count,
     participants_count: o.participants_count,
     created_at: o.created_at ?? "",
@@ -142,6 +145,8 @@ export default function OlympiadsListPage() {
   const [paidFilter, setPaidFilter] = useState("");
   const [gradeFilter, setGradeFilter] = useState("");
   const [languageFilter, setLanguageFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 12;
 
   useEffect(() => {
     listOlympiads({ page: 1, page_size: 100 })
@@ -171,6 +176,15 @@ export default function OlympiadsListPage() {
       return true;
     });
   }, [olympiads, search, subjectFilter, statusFilter, paidFilter, gradeFilter, languageFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  // Reset page when filters change
+  useMemo(() => { setPage(1); }, [search, subjectFilter, statusFilter, paidFilter, gradeFilter, languageFilter]);
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -240,11 +254,14 @@ export default function OlympiadsListPage() {
           <p className="text-sm mt-1 opacity-70">Boshqa filtrlarni sinab ko&apos;ring</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((o) => (
-            <AssessmentCard key={o.id} assessment={o} examType="olympiad" />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginated.map((o) => (
+              <AssessmentCard key={o.id} assessment={o} examType="olympiad" />
+            ))}
+          </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={filtered.length} />
+        </>
       )}
     </div>
   );

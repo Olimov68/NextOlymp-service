@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,7 @@ import {
 import {
   Plus, Pencil, Trash2, Eye, Image as ImageIcon, Loader2, RefreshCw, Search,
 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { getNewsList, getNewsItem, createNews, updateNews, deleteNews } from "@/lib/superadmin-api";
 import { uploadPanelImage } from "@/lib/admin-api";
@@ -85,6 +86,8 @@ export default function SuperadminNewsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -181,6 +184,14 @@ export default function SuperadminNewsPage() {
     return matchSearch && matchType && matchStatus;
   });
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  useEffect(() => { setPage(1); }, [search, typeFilter, statusFilter]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -243,7 +254,7 @@ export default function SuperadminNewsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((item, i) => (
+              {paginated.map((item, i) => (
                 <TableRow key={item.id}>
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell>
@@ -290,6 +301,8 @@ export default function SuperadminNewsPage() {
           </Table>
         )}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={filtered.length} />
 
       {/* Create/Edit Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
