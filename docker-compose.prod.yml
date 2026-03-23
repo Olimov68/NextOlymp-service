@@ -11,6 +11,12 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       backend:
         condition: service_healthy
@@ -18,8 +24,8 @@ services:
         condition: service_healthy
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      # SSL certificates (production uchun)
-      # - ./ssl:/etc/nginx/ssl:ro
+      # SSL certificates (mount Let's Encrypt or custom certs)
+      - ${SSL_CERT_DIR:-./ssl}:/etc/nginx/ssl:ro
     networks:
       - nextolymp
 
@@ -90,7 +96,7 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-nextolympservice}
-      DB_SSLMODE: "disable"
+      DB_SSLMODE: "prefer"
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_ACCESS_EXPIRY_HOURS: ${JWT_ACCESS_EXPIRY_HOURS:-1}
@@ -108,6 +114,13 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: "0"
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://nextolymp.uz}
+      APP_BASE_URL: ${APP_BASE_URL:-https://nextolymp.uz}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
+      PAYME_KEY: ${PAYME_KEY:-}
+      PAYME_TEST_KEY: ${PAYME_TEST_KEY:-}
+      PAYME_TEST_MODE: ${PAYME_TEST_MODE:-false}
     volumes:
       - uploads_data:/app/uploads
     networks:
@@ -151,6 +164,12 @@ services:
       BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       BACKEND_WEBHOOK_URL: http://backend:8080/api/v1/telegram/webhook
       CODE_TTL_MINUTES: "10"
+    healthcheck:
+      test: ["CMD-SHELL", "echo ok"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - nextolymp
 

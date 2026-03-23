@@ -26,8 +26,9 @@ func NewHandler(db *gorm.DB) *Handler {
 type ReportViolationRequest struct {
 	AttemptID   uint   `json:"attempt_id" binding:"required"`
 	AttemptType string `json:"attempt_type" binding:"required,oneof=olympiad mock_test"` // olympiad, mock_test
-	Type        string `json:"type" binding:"required"`                                   // tab_switch, blur, copy_paste, devtools, right_click, fullscreen_exit, offline
+	Type        string `json:"type" binding:"required"`                                   // tab_switch, blur, copy_paste, devtools, right_click, fullscreen_exit, offline, screenshot, screen_record, face_not_found, face_mismatch, multiple_faces, voice_detected
 	Severity    string `json:"severity"`                                                  // info, warning, critical
+	DeviceType  string `json:"device_type"`                                               // web, windows, android
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -44,6 +45,9 @@ func (h *Handler) ReportViolation(c *gin.Context) {
 
 	if req.Severity == "" {
 		req.Severity = "warning"
+	}
+	if req.DeviceType == "" {
+		req.DeviceType = "web"
 	}
 
 	// Attempt tegishliligini tekshirish
@@ -75,6 +79,7 @@ func (h *Handler) ReportViolation(c *gin.Context) {
 		AttemptType: req.AttemptType,
 		Type:        req.Type,
 		Severity:    req.Severity,
+		DeviceType:  req.DeviceType,
 		Metadata:    metadataJSON,
 		IPAddress:   c.ClientIP(),
 		UserAgent:   c.Request.UserAgent(),

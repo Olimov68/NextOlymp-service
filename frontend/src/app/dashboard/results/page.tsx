@@ -222,6 +222,8 @@ export default function ResultsPage() {
                               ? "bg-green-100 text-green-700"
                               : r.status === "in_progress"
                               ? "bg-amber-100 text-amber-700"
+                              : r.status === "timed_out"
+                              ? "bg-red-100 text-red-700"
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
@@ -229,15 +231,27 @@ export default function ResultsPage() {
                             ? "Yakunlangan"
                             : r.status === "in_progress"
                             ? "Jarayonda"
+                            : r.status === "timed_out"
+                            ? "Vaqt tugadi"
+                            : r.status === "cancelled"
+                            ? "Bekor qilingan"
                             : r.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {new Date(r.finished_at || r.created_at).toLocaleDateString(
-                            "uz-UZ"
-                          )}
+                          {(() => {
+                            const dateStr = r.finished_at || r.started_at || r.created_at;
+                            if (!dateStr) return "—";
+                            const d = new Date(dateStr);
+                            if (isNaN(d.getTime())) return "—";
+                            return d.toLocaleDateString("uz-UZ", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                            });
+                          })()}
                         </div>
                       </TableCell>
                     </TableRow>

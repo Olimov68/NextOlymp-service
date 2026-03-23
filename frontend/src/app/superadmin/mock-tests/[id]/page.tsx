@@ -22,7 +22,7 @@ import { normalizeList } from "@/lib/normalizeList";
 import RegistrationsTable from "@/components/assessment/RegistrationsTable";
 import ResultsTable from "@/components/assessment/ResultsTable";
 import AntiCheatLogsTab from "@/components/assessment/AntiCheatLogsTab";
-import type { AssessmentRegistration, AssessmentResult } from "@/lib/assessment-types";
+import type { AssessmentBase, AssessmentRegistration, AssessmentResult } from "@/lib/assessment-types";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api-error";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -190,7 +191,7 @@ export default function MockTestDetailPage() {
   const mockTestId = Number(id);
 
   const [tab, setTab] = useState<Tab>("general");
-  const [mockTest, setMockTest] = useState<any>(null);
+  const [mockTest, setMockTest] = useState<AssessmentBase | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -387,8 +388,8 @@ export default function MockTestDetailPage() {
       });
       toast.success("Mock test yangilandi");
       await loadMockTest();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik yuz berdi"));
     } finally {
       setGeneralSaving(false);
     }
@@ -408,8 +409,8 @@ export default function MockTestDetailPage() {
       });
       toast.success("Sozlamalar saqlandi");
       await loadMockTest();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik yuz berdi"));
     } finally {
       setSettingsSaving(false);
     }
@@ -555,9 +556,9 @@ export default function MockTestDetailPage() {
       }
       setQuestionDialogOpen(false);
       loadQuestions();
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.error || e?.message || "Xatolik yuz berdi";
-      console.error("Savol yaratish xatosi:", e?.response?.data || e);
+    } catch (e: unknown) {
+      const msg = getErrorMessage(e, "Xatolik yuz berdi");
+      console.error("Savol yaratish xatosi:", e);
       toast.error(msg);
     } finally {
       setQuestionSaving(false);

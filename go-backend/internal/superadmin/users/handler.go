@@ -23,6 +23,7 @@ type UserListItem struct {
 	ID                 uint   `json:"id"`
 	Username           string `json:"username"`
 	FullName           string `json:"full_name"`
+	PhotoURL           string `json:"photo_url"`
 	Region             string `json:"region"`
 	Grade              int    `json:"grade"`
 	Status             string `json:"status"`
@@ -35,6 +36,7 @@ type UserDetailResponse struct {
 	ID                 uint        `json:"id"`
 	Username           string      `json:"username"`
 	FullName           string      `json:"full_name"`
+	PhotoURL           string      `json:"photo_url"`
 	Region             string      `json:"region"`
 	District           string      `json:"district"`
 	School             string      `json:"school"`
@@ -97,6 +99,7 @@ func (h *Handler) List(c *gin.Context) {
 		}
 		if u.Profile != nil {
 			item.FullName = u.Profile.FirstName + " " + u.Profile.LastName
+			item.PhotoURL = u.Profile.PhotoURL
 			item.Region = u.Profile.Region
 			item.Grade = u.Profile.Grade
 		}
@@ -130,6 +133,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 	}
 	if u.Profile != nil {
 		detail.FullName = u.Profile.FirstName + " " + u.Profile.LastName
+		detail.PhotoURL = u.Profile.PhotoURL
 		detail.Region = u.Profile.Region
 		detail.District = u.Profile.District
 		detail.School = u.Profile.SchoolName

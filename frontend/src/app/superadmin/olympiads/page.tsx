@@ -30,6 +30,7 @@ import {
 import type { AssessmentBase, AssessmentFormData } from "@/lib/assessment-types";
 import { normalizeList } from "@/lib/normalizeList";
 import AssessmentForm from "@/components/assessment/AssessmentForm";
+import { getErrorMessage } from "@/lib/api-error";
 
 interface Olympiad extends AssessmentBase {
   exam_type?: "olympiad";
@@ -126,8 +127,8 @@ export default function SuperadminOlympiadsPage() {
       }
       setOpen(false);
       await load();
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
+    } catch (e: unknown) {
+      const msg = getErrorMessage(e, "Xatolik yuz berdi");
       toast.error(msg);
     } finally {
       setSaving(false);

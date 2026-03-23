@@ -18,6 +18,7 @@ interface User {
   id: number;
   username: string;
   full_name: string;
+  photo_url: string;
   region: string;
   grade: number;
   status: string;
@@ -32,6 +33,11 @@ interface UserDetail extends User {
   school: string;
   district: string;
   birth_date: string;
+  profile?: {
+    photo_url?: string;
+    first_name?: string;
+    last_name?: string;
+  };
 }
 
 export default function AdminUsersPage() {
@@ -43,8 +49,8 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [viewUser, setViewUser] = useState<UserDetail | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
-  const [approveDialog, setApproveDialog] = useState<User | null>(null);
-  const [rejectDialog, setRejectDialog] = useState<User | null>(null);
+  const [approveDialog, setApproveDialog] = useState<User | UserDetail | null>(null);
+  const [rejectDialog, setRejectDialog] = useState<User | UserDetail | null>(null);
   const [approveNote, setApproveNote] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -152,9 +158,8 @@ export default function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-accent">
-                <TableHead className="text-muted-foreground">ID</TableHead>
-                <TableHead className="text-muted-foreground">Username</TableHead>
-                <TableHead className="text-muted-foreground">Ism</TableHead>
+                <TableHead className="text-muted-foreground">Rasm</TableHead>
+                <TableHead className="text-muted-foreground">Ism / Username</TableHead>
                 <TableHead className="text-muted-foreground">Viloyat</TableHead>
                 <TableHead className="text-muted-foreground">Sinf</TableHead>
                 <TableHead className="text-muted-foreground">Status</TableHead>
@@ -167,7 +172,7 @@ export default function AdminUsersPage() {
                 <>
                   {[...Array(5)].map((_, i) => (
                     <TableRow key={i} className="border-border">
-                      {[...Array(8)].map((_, j) => (
+                      {[...Array(7)].map((_, j) => (
                         <TableCell key={j}>
                           <div className="h-4 bg-muted rounded animate-pulse" />
                         </TableCell>
@@ -177,15 +182,27 @@ export default function AdminUsersPage() {
                 </>
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     Foydalanuvchi topilmadi
                   </TableCell>
                 </TableRow>
               ) : users.map((u) => (
                 <TableRow key={u.id} className="border-border hover:bg-accent">
-                  <TableCell className="text-foreground">{u.id}</TableCell>
-                  <TableCell className="font-medium text-foreground">{u.username}</TableCell>
-                  <TableCell className="text-foreground">{u.full_name}</TableCell>
+                  <TableCell>
+                    {u.photo_url ? (
+                      <img src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}${u.photo_url}`} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                        {u.full_name?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium text-foreground">{u.full_name || "\u2014"}</p>
+                      <p className="text-xs text-muted-foreground">@{u.username}</p>
+                    </div>
+                  </TableCell>
                   <TableCell className="text-foreground">{u.region || "\u2014"}</TableCell>
                   <TableCell className="text-foreground">{u.grade || "\u2014"}</TableCell>
                   <TableCell>
@@ -247,10 +264,22 @@ export default function AdminUsersPage() {
               </div>
             ) : viewUser ? (
               <div className="space-y-3">
+                {/* Profil rasmi */}
+                <div className="flex items-center gap-4 pb-3 border-b border-border">
+                  {(viewUser.photo_url || viewUser.profile?.photo_url) ? (
+                    <img src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}${viewUser.photo_url || viewUser.profile?.photo_url}`} alt="" className="w-20 h-20 rounded-xl object-cover" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                      {viewUser.full_name?.[0]?.toUpperCase() || "?"}
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-lg font-semibold text-foreground">{viewUser.full_name || viewUser.username}</p>
+                    <p className="text-sm text-muted-foreground">@{viewUser.username}</p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label className="text-muted-foreground text-xs">ID</Label><p className="text-sm text-foreground">{viewUser.id}</p></div>
-                  <div><Label className="text-muted-foreground text-xs">Username</Label><p className="text-sm text-foreground">{viewUser.username}</p></div>
-                  <div><Label className="text-muted-foreground text-xs">To&apos;liq ism</Label><p className="text-sm text-foreground">{viewUser.full_name}</p></div>
                   <div><Label className="text-muted-foreground text-xs">Email</Label><p className="text-sm text-foreground">{viewUser.email || "\u2014"}</p></div>
                   <div><Label className="text-muted-foreground text-xs">Telefon</Label><p className="text-sm text-foreground">{viewUser.phone || "\u2014"}</p></div>
                   <div><Label className="text-muted-foreground text-xs">Viloyat</Label><p className="text-sm text-foreground">{viewUser.region || "\u2014"}</p></div>
@@ -270,10 +299,10 @@ export default function AdminUsersPage() {
                 </div>
                 {viewUser.is_profile_completed && !viewUser.is_telegram_linked && (
                   <div className="flex gap-2 pt-3 border-t border-border">
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setViewUser(null); setApproveDialog(viewUser as any); }}>
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setViewUser(null); setApproveDialog(viewUser); }}>
                       <UserCheck className="w-4 h-4 mr-1" /> Tasdiqlash
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={() => { setViewUser(null); setRejectDialog(viewUser as any); }}>
+                    <Button size="sm" variant="destructive" onClick={() => { setViewUser(null); setRejectDialog(viewUser); }}>
                       <UserX className="w-4 h-4 mr-1" /> Rad etish
                     </Button>
                   </div>

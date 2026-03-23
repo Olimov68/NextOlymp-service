@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/ui/pagination";
 import { Calendar, Newspaper, Search, ArrowRight } from "lucide-react";
 import { listNews } from "@/lib/user-api";
+import { normalizeList } from "@/lib/normalizeList";
 
 interface NewsItem {
   id: number;
@@ -37,9 +38,8 @@ export default function DashboardNewsPage() {
 
   useEffect(() => {
     listNews({ page: 1, page_size: 50 })
-      .then(data => {
-        const arr = Array.isArray(data) ? data : (data as any)?.data || [];
-        setItems(arr);
+      .then((data: unknown) => {
+        setItems(normalizeList<NewsItem>(data));
       })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));

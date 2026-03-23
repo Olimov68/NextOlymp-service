@@ -52,6 +52,7 @@ import {
 import { toast } from "sonner";
 import { normalizeList } from "@/lib/normalizeList";
 import { Pagination } from "@/components/ui/pagination";
+import { getErrorMessage } from "@/lib/api-error";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -291,8 +292,8 @@ export default function MockTestsPage() {
       setLanguageFilter("");
       setIsPaidFilter("");
       await fetchData();
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
+    } catch (e: unknown) {
+      const msg = getErrorMessage(e, "Xatolik yuz berdi");
       toast.error(msg);
     } finally {
       setSaving(false);

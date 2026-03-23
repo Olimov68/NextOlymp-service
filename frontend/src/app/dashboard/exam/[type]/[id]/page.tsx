@@ -10,7 +10,7 @@ import { AntiCheatWarningModal } from "@/components/exam/AntiCheatWarningModal";
 import { AntiCheatKickedOutModal } from "@/components/exam/AntiCheatKickedOutModal";
 import { useExamSession, ExamQuestion } from "@/hooks/useExamSession";
 import { useAntiCheat } from "@/hooks/useAntiCheat";
-import { Loader2, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, HelpCircle, AlertTriangle } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://nextolymp.uz/api/v1";
 
@@ -94,7 +94,7 @@ export default function ExamPage() {
       setExamData({
         attempt_id: attemptData.attempt_id || attemptData.id,
         title: attemptData.title || "Imtihon",
-        duration: attemptData.remaining_seconds || attemptData.duration_seconds || attemptData.duration * 60 || 3600,
+        duration: attemptData.remaining_seconds || attemptData.duration_seconds || (attemptData.duration_mins ? attemptData.duration_mins * 60 : null) || (attemptData.duration ? attemptData.duration * 60 : null) || 3600,
         questions,
         existing_answers: attemptData.existing_answers || {},
       });
@@ -291,6 +291,22 @@ export default function ExamPage() {
         />
       )}
 
+      {/* Submit error toast */}
+      {examSession.submitError && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[110] animate-in fade-in slide-in-from-top-2">
+          <div className="bg-red-900/90 border border-red-700 rounded-xl px-5 py-3 flex items-center gap-3 shadow-2xl max-w-md">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <p className="text-red-200 text-sm">{examSession.submitError}</p>
+            <button
+              onClick={examSession.clearSubmitError}
+              className="text-red-400 hover:text-red-300 ml-2 text-lg font-bold"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Confirm dialog */}
       {showConfirmDialog && !antiCheat.isKickedOut && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
@@ -318,9 +334,10 @@ export default function ExamPage() {
               </button>
               <button
                 onClick={confirmFinish}
-                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors font-semibold"
+                disabled={examSession.isSubmitting}
+                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Topshirish
+                {examSession.isSubmitting ? "Yuborilmoqda..." : "Topshirish"}
               </button>
             </div>
           </div>

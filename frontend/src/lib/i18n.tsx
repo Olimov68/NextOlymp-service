@@ -6,7 +6,7 @@ export type Lang = "uz" | "ru" | "en";
 
 const translations: Record<Lang, Record<string, string>> = {
   uz: {
-    // Header
+    // Header / Nav
     "nav.home": "Bosh sahifa",
     "nav.olympiads": "Olimpiadalar",
     "nav.materials": "Materiallar",
@@ -24,20 +24,180 @@ const translations: Record<Lang, Record<string, string>> = {
     "nav.profile": "Profil",
     "nav.dashboard": "Kabinet",
 
+    // Landing Navbar
+    "landing.nav.features": "Imkoniyatlar",
+    "landing.nav.how_it_works": "Qanday ishlaydi",
+    "landing.nav.blog": "Blog",
+    "landing.nav.testimonials": "Fikrlar",
+    "landing.nav.faq": "FAQ",
+    "landing.nav.certificate": "Sertifikat tekshirish",
+    "landing.nav.lang": "Til",
+
     // Hero
-    "hero.badge": "Xalqaro Platforma",
-    "hero.title": "NextOly — International Online Olympiad",
-    "hero.desc": "Xalqaro akademik olimpiadalarni tashkil etish va ularda ishtirok etish uchun professional va xavfsiz platforma.",
+    "hero.badge": "Jahonning #1 onlayn olimpiada platformasi",
+    "hero.title1": "Bilimingizni sinang.",
+    "hero.title2": "Raqobatda g'olib",
+    "hero.title3": "bo'ling.",
+    "hero.desc": "Xalqaro olimpiadalarga tayyorlaning, mock testlar yeching, real vaqtda reytingda raqobatlashing. Butun dunyo bo'ylab minglab o'quvchilar allaqachon bizni tanlamoqda.",
+    "hero.cta1": "Platformani kashf eting",
+    "hero.cta2": "Blog",
+    "hero.badge1": "Bepul foydalanish",
+    "hero.badge2": "Xavfsiz platforma",
+    "hero.badge3": "24/7 ishlaydi",
     "hero.register": "Ro'yxatdan o'tish",
     "hero.view_olympiads": "Olimpiadalarni ko'rish",
 
     // Stats
-    "stats.students": "Umumiy ishtirokchilar",
+    "stats.subtitle": "Raqamlarda biz",
+    "stats.users": "Faol o'quvchilar",
+    "stats.tests": "Yechilgan testlar",
     "stats.olympiads": "Olimpiadalar",
+    "stats.feedback": "Ijobiy fikrlar",
+    "stats.students": "Umumiy ishtirokchilar",
     "stats.regions": "Viloyatlar",
     "stats.mock_tests": "Mock testlar",
 
-    // Olympiads
+    // Preview dashboard
+    "preview.tests": "Jami testlar",
+    "preview.correct": "To'g'ri javoblar",
+    "preview.rating": "Reyting",
+    "preview.olympiads": "Olimpiadalar",
+
+    // Features
+    "features.badge": "IMKONIYATLAR",
+    "features.title": "Muvaffaqiyat uchun",
+    "features.highlight": "hamma narsa",
+    "features.desc": "Olimpiada va imtihonlarga tayyorlanish uchun kerakli barcha vositalar bir joyda",
+    "features.mock_tests": "Mock Testlar",
+    "features.mock_tests_desc": "Istalgan vaqtda mashq qiling. Real imtihon formatida, timer bilan, natijangizni tahlil qiling.",
+    "features.olympiads": "Online Olimpiadalar",
+    "features.olympiads_desc": "Haqiqiy raqobat muhitida bilimingizni sinang. Real vaqtda natijalar va reyting.",
+    "features.rating": "Live Reyting",
+    "features.rating_desc": "Haftalik va umumiy reyting. O'z o'rningizni bilish va boshqalar bilan taqqoslash.",
+    "features.analysis": "Batafsil Tahlil",
+    "features.analysis_desc": "Har bir test natijasi bo'yicha xatolaringizni ko'ring va kuchli-zaif tomonlaringizni bilib oling.",
+    "features.chat": "Onlayn Chat",
+    "features.chat_desc": "Boshqa o'quvchilar bilan muloqot qiling, savollar bering, tajriba almashing.",
+    "features.anticheat": "Anti-Cheat Tizim",
+    "features.anticheat_desc": "Test paytida adolatli muhit. Tab almashish va nusxa ko'chirish nazorat ostida.",
+    "features.most_popular": "Eng mashhur",
+    "features.reliable": "Ishonchli",
+
+    // How it works
+    "howit.badge": "QANDAY ISHLAYDI",
+    "howit.title": "Boshlash juda",
+    "howit.highlight": "oson",
+    "howit.desc": "Atigi 4 qadamda olimpiadalarga tayyorlanishni boshlang",
+    "howit.step": "qadam",
+    "howit.step1": "Ro'yxatdan o'ting",
+    "howit.step1_desc": "Email va parol bilan tezkor ro'yxatdan o'tish. 1 daqiqadan kam vaqt oladi.",
+    "howit.step2": "Fan va testni tanlang",
+    "howit.step2_desc": "Matematika, Fizika, Kimyo, Biologiya va boshqa fanlar bo'yicha testlar mavjud.",
+    "howit.step3": "Testni ishlang",
+    "howit.step3_desc": "Timer ostida savollarni yeching. Anti-cheat tizim adolatli natijalarni kafolatlaydi.",
+    "howit.step4": "Natijangizni ko'ring",
+    "howit.step4_desc": "Ball, reyting, xatolar tahlili — hammasini ko'ring va o'zingizni rivojlantiring.",
+
+    // Leaderboard
+    "leaderboard.badge": "LIVE REYTING",
+    "leaderboard.title": "Real vaqtda",
+    "leaderboard.highlight": "raqobatlashing",
+    "leaderboard.desc": "Har bir test va olimpiada uchun jonli reyting. Natijangiz bilan boshqalar orasida o'z o'rningizni darhol ko'ring.",
+    "leaderboard.feature1": "Real vaqtda yangilanuvchi reyting jadvali",
+    "leaderboard.feature2": "Haftalik va oylik statistika",
+    "leaderboard.feature3": "Fan bo'yicha alohida reytinglar",
+    "leaderboard.feature4": "Top o'quvchilar uchun maxsus mukofotlar",
+    "leaderboard.rank": "#",
+    "leaderboard.name": "Ism",
+    "leaderboard.subject": "Fan",
+    "leaderboard.score": "Ball",
+
+    // Certificate
+    "certificate.badge": "SERTIFIKAT",
+    "certificate.title": "Sertifikatni",
+    "certificate.highlight": "tekshiring",
+    "certificate.desc": "Olimpiada g'oliblariga beriladigan raqamli sertifikatlarni tekshiring",
+    "certificate.in_progress": "Jarayonda",
+    "certificate.in_progress_desc": "Sertifikat tekshirish tizimi hozirda ishlab chiqilmoqda. Tez orada sertifikat kodini kiritib, uning haqiqiyligini tekshirishingiz mumkin bo'ladi.",
+    "certificate.placeholder": "Sertifikat kodi...",
+    "certificate.check": "Tekshirish",
+    "certificate.coming_soon": "Tez kunda ishga tushiriladi",
+
+    // Testimonials
+    "testimonials.badge": "FIKRLAR",
+    "testimonials.title": "O'quvchilar",
+    "testimonials.highlight": "nima deydi",
+    "testimonials.desc": "Ishtirokchilar fikrlari",
+    "testimonials.t1_name": "Sardor Alimov",
+    "testimonials.t1_role": "11-sinf, Toshkent",
+    "testimonials.t1_text": "NextOlymp orqali olimpiadaga tayyorlandim va viloyat bosqichidan o'tdim. Mock testlar juda foydali bo'ldi!",
+    "testimonials.t2_name": "Madina Karimova",
+    "testimonials.t2_role": "10-sinf, Samarqand",
+    "testimonials.t2_text": "Real vaqtda reyting ko'rish juda qiziqarli. Har kuni testlar yechib, o'zimni rivojlantiryapman.",
+    "testimonials.t3_name": "Jasur Toshmatov",
+    "testimonials.t3_role": "9-sinf, Buxoro",
+    "testimonials.t3_text": "Anti-cheat tizim bor, shuning uchun natijalar adolatli. Chat orqali boshqa o'quvchilardan yordam olaman.",
+    "testimonials.t4_name": "Nilufar Rahimova",
+    "testimonials.t4_role": "11-sinf, Andijon",
+    "testimonials.t4_text": "Platformadagi tahlil funksiyasi juda ajoyib. Xatolarimni ko'rib, keyingi safar tuzataman.",
+    "testimonials.t5_name": "Azizbek Mo'minov",
+    "testimonials.t5_role": "10-sinf, Farg'ona",
+    "testimonials.t5_text": "Narxlari hamyonbop, sifati esa yuqori. Do'stlarimga ham tavsiya qildim!",
+    "testimonials.t6_name": "Dildora Yusupova",
+    "testimonials.t6_role": "9-sinf, Namangan",
+    "testimonials.t6_text": "Olimpiada testlarini ishlash juda qiziq. O'zimni haqiqiy musobaqada his qilaman!",
+
+    // FAQ
+    "faq.badge": "FAQ",
+    "faq.title": "Ko'p beriladigan",
+    "faq.highlight": "savollar",
+    "faq.q1": "NextOlymp bepulmi?",
+    "faq.a1": "Ha, ro'yxatdan o'tish bepul. Asosiy funksiyalardan foydalanish uchun bepul tarif mavjud. Qo'shimcha imkoniyatlar uchun pullik tariflar ham bor.",
+    "faq.q2": "Qaysi fanlar bo'yicha testlar bor?",
+    "faq.a2": "Matematika, Fizika, Kimyo, Biologiya, Ingliz tili va boshqa fanlar bo'yicha testlar mavjud. Yangi fanlar muntazam qo'shib boriladi.",
+    "faq.q3": "Olimpiadalarga qanday qatnashaman?",
+    "faq.a3": "Ro'yxatdan o'tganingizdan so'ng, 'Olimpiadalar' bo'limiga o'ting. Faol olimpiadalarni ko'rasiz va bir tugma bilan qatnashishingiz mumkin.",
+    "faq.q4": "Test paytida internet uzilib qolsa nima bo'ladi?",
+    "faq.a4": "Tizim javoblaringizni avtomatik saqlaydi. Internet qayta ulanganda testni davom ettirishingiz mumkin.",
+    "faq.q5": "Promo kod nima?",
+    "faq.a5": "Promo kodlar orqali balans to'ldirishingiz yoki chegirma olishingiz mumkin. Promo kodlarni profil sahifangizdagi 'Balans' bo'limida kiritishingiz mumkin.",
+    "faq.q6": "Mobil qurilmada ishlaydi mi?",
+    "faq.a6": "Ha, Android va Windows uchun maxsus ilovalarimiz mavjud. Ilovalarni yuklab olib, qulay tarzda olimpiadalarga qatnashishingiz mumkin.",
+
+    // Final CTA
+    "cta.title": "Bilimingizni sinashga tayyormisiz?",
+    "cta.desc": "Ilovani yuklab oling va minglab o'quvchilar bilan birga bilimingizni sinab ko'ring.",
+    "cta.android": "Android ilova",
+    "cta.windows": "Windows ilova",
+
+    // Apps
+    "apps.badge": "ILOVALAR",
+    "apps.title": "Ilovalarni",
+    "apps.highlight": "yuklab oling",
+    "apps.desc": "NextOlymp ilovasini qurilmangizga o'rnating va istalgan joydan olimpiadalarga qatnashing",
+    "apps.download": "Yuklab olish",
+    "apps.android": "Android",
+    "apps.windows": "Windows",
+
+    // Footer
+    "footer.desc": "Jahon bo'ylab o'quvchilarni olimpiada va imtihonlarga tayyorlash uchun yaratilgan zamonaviy onlayn test platformasi.",
+    "footer.platform": "Platforma",
+    "footer.mock_tests": "Mock testlar",
+    "footer.olympiads_link": "Olimpiadalar",
+    "footer.rating_link": "Reyting",
+    "footer.blog_link": "Blog",
+    "footer.apps": "Ilovalar",
+    "footer.android_app": "Android ilova",
+    "footer.windows_app": "Windows ilova",
+    "footer.useful": "Foydali",
+    "footer.certificate_link": "Sertifikat tekshirish",
+    "footer.privacy": "Maxfiylik siyosati",
+    "footer.terms": "Foydalanish shartlari",
+    "footer.rights": "Barcha huquqlar himoyalangan.",
+    "footer.info": "Ma'lumot",
+    "footer.contact": "Bog'lanish",
+
+    // Olympiads page
     "olympiads.title": "Olimpiadalar",
     "olympiads.desc": "Barcha fan olimpiadalariga qatnashing va o'z bilimingizni sinab ko'ring",
     "olympiads.free": "Bepul",
@@ -69,6 +229,7 @@ const translations: Record<Lang, Record<string, string>> = {
     "results.country": "Mamlakat",
     "results.score": "Ball",
     "results.medal": "Medal",
+    "results.no_results": "Natijalar topilmadi",
 
     // Auth
     "auth.login": "Kirish",
@@ -106,49 +267,6 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.recovery_wrong_code": "Noto'g'ri kod. Qaytadan urinib ko'ring.",
     "auth.recovery_password_short": "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
     "auth.back_to_login": "Kirishga qaytish",
-
-    // Dashboard
-    "dashboard.title": "Talaba kabineti",
-    "dashboard.olympiads": "Olimpiadalar",
-    "dashboard.news": "Yangiliklar",
-    "dashboard.results": "Natijalar",
-    "dashboard.profile": "Mening profilim",
-
-    // Profile
-    "profile.title": "Mening profilim",
-    "profile.save": "Saqlash",
-    "profile.saved": "Muvaffaqiyatli saqlandi!",
-
-    // Testimonials
-    "testimonials.badge": "Fikrlar",
-    "testimonials.title": "Ishtirokchilar fikrlari",
-    "testimonials.desc": "NextOly platformasi haqida o'quvchilarimizning fikrlari",
-
-    // Team
-    "team.title": "Bizning Jamoa",
-    "team.desc": "NextOly platformasi ortidagi jamoamiz bilan tanishing",
-
-    // About
-    "about.badge": "Biz haqimizda",
-    "about.title": "Biz haqimizda",
-    "about.p1": "NextOly — bu xalqaro akademik olimpiadalarni onlayn formatda tashkil etish va o'tkazish uchun yaratilgan zamonaviy platforma.",
-    "about.p2": "Biz 2023-yilda O'zbekistonda tashkil topgan bo'lib, bugungi kunga qadar 20 dan ortiq mamlakatda faoliyat yuritmoqdamiz. Platformamiz orqali 75,000 dan ortiq o'quvchi turli fan olimpiadalarida ishtirok etgan.",
-    "about.p3": "Bizning maqsadimiz — har bir iqtidorli o'quvchiga geografik joylashuvidan qat'i nazar, xalqaro darajadagi olimpiadalarda qatnashish imkoniyatini yaratish.",
-    "about.p4": "Platforma matematik, fizika, kimyo, biologiya va informatika fanlariga ixtisoslashgan bo'lib, kelgusida yangi fanlar ham qo'shilishi rejalashtirilgan.",
-
-    // Features
-    "features.badge": "Platforma imkoniyatlari",
-    "features.title": "Nima uchun NextOly?",
-    "features.desc": "Platformamiz zamonaviy texnologiyalar asosida qurilgan bo'lib, xavfsizlik, tezkorlik va qulaylikni ta'minlaydi.",
-
-    // Footer
-    "footer.desc": "Xalqaro akademik olimpiadalarni tashkil etish va ularda ishtirok etish uchun professional platforma.",
-    "footer.platform": "Platforma",
-    "footer.info": "Ma'lumot",
-    "footer.contact": "Bog'lanish",
-    "footer.rights": "Barcha huquqlar himoyalangan.",
-
-    // Auth extra
     "auth.fill_all": "Barcha maydonlarni to'ldiring",
     "auth.join_platform": "NextOly platformasiga qo'shiling",
     "auth.select_region": "Viloyatni tanlang",
@@ -170,13 +288,29 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.pw_match": "Parollar mos",
     "auth.pw_no_match": "Parollar mos emas",
 
-    // How it works
-    "howit.badge": "Qanday ishlaydi?",
-    "howit.title": "3 oddiy qadam",
-    "howit.desc": "NextOly platformasida olimpiadaga qatnashish juda oson",
+    // Dashboard
+    "dashboard.title": "Talaba kabineti",
+    "dashboard.olympiads": "Olimpiadalar",
+    "dashboard.news": "Yangiliklar",
+    "dashboard.results": "Natijalar",
+    "dashboard.profile": "Mening profilim",
 
-    // Results extra
-    "results.no_results": "Natijalar topilmadi",
+    // Profile
+    "profile.title": "Mening profilim",
+    "profile.save": "Saqlash",
+    "profile.saved": "Muvaffaqiyatli saqlandi!",
+
+    // Team
+    "team.title": "Bizning Jamoa",
+    "team.desc": "NextOly platformasi ortidagi jamoamiz bilan tanishing",
+
+    // About
+    "about.badge": "Biz haqimizda",
+    "about.title": "Biz haqimizda",
+    "about.p1": "NextOly — bu xalqaro akademik olimpiadalarni onlayn formatda tashkil etish va o'tkazish uchun yaratilgan zamonaviy platforma.",
+    "about.p2": "Biz 2023-yilda O'zbekistonda tashkil topgan bo'lib, bugungi kunga qadar 20 dan ortiq mamlakatda faoliyat yuritmoqdamiz.",
+    "about.p3": "Bizning maqsadimiz — har bir iqtidorli o'quvchiga geografik joylashuvidan qat'i nazar, xalqaro darajadagi olimpiadalarda qatnashish imkoniyatini yaratish.",
+    "about.p4": "Platforma matematik, fizika, kimyo, biologiya va informatika fanlariga ixtisoslashgan.",
 
     // Common
     "common.loading": "Yuklanmoqda...",
@@ -188,8 +322,15 @@ const translations: Record<Lang, Record<string, string>> = {
     "common.create": "Yaratish",
     "common.search": "Qidirish",
     "common.back": "Ortga",
+
+    // Leaderboard subjects
+    "subject.math": "Matematika",
+    "subject.physics": "Fizika",
+    "subject.biology": "Biologiya",
+    "subject.chemistry": "Kimyo",
   },
   ru: {
+    // Header / Nav
     "nav.home": "Главная",
     "nav.olympiads": "Олимпиады",
     "nav.materials": "Материалы",
@@ -207,17 +348,180 @@ const translations: Record<Lang, Record<string, string>> = {
     "nav.profile": "Профиль",
     "nav.dashboard": "Кабинет",
 
-    "hero.badge": "Международная Платформа",
-    "hero.title": "NextOly — International Online Olympiad",
-    "hero.desc": "Профессиональная и безопасная платформа для организации и участия в международных академических олимпиадах.",
+    // Landing Navbar
+    "landing.nav.features": "Возможности",
+    "landing.nav.how_it_works": "Как это работает",
+    "landing.nav.blog": "Блог",
+    "landing.nav.testimonials": "Отзывы",
+    "landing.nav.faq": "FAQ",
+    "landing.nav.certificate": "Проверка сертификата",
+    "landing.nav.lang": "Язык",
+
+    // Hero
+    "hero.badge": "Онлайн-олимпиадная платформа #1 в мире",
+    "hero.title1": "Проверьте свои знания.",
+    "hero.title2": "Станьте победителем",
+    "hero.title3": "в конкурсе.",
+    "hero.desc": "Готовьтесь к международным олимпиадам, решайте пробные тесты, соревнуйтесь в рейтинге в реальном времени. Тысячи учеников по всему миру уже выбирают нас.",
+    "hero.cta1": "Откройте платформу",
+    "hero.cta2": "Блог",
+    "hero.badge1": "Бесплатное использование",
+    "hero.badge2": "Безопасная платформа",
+    "hero.badge3": "Работает 24/7",
     "hero.register": "Регистрация",
     "hero.view_olympiads": "Смотреть олимпиады",
 
-    "stats.students": "Всего участников",
+    // Stats
+    "stats.subtitle": "Мы в цифрах",
+    "stats.users": "Активные ученики",
+    "stats.tests": "Решённые тесты",
     "stats.olympiads": "Олимпиады",
+    "stats.feedback": "Положительные отзывы",
+    "stats.students": "Всего участников",
     "stats.regions": "Регионы",
     "stats.mock_tests": "Пробные тесты",
 
+    // Preview dashboard
+    "preview.tests": "Всего тестов",
+    "preview.correct": "Правильные ответы",
+    "preview.rating": "Рейтинг",
+    "preview.olympiads": "Олимпиады",
+
+    // Features
+    "features.badge": "ВОЗМОЖНОСТИ",
+    "features.title": "Всё для",
+    "features.highlight": "успеха",
+    "features.desc": "Все необходимые инструменты для подготовки к олимпиадам и экзаменам в одном месте",
+    "features.mock_tests": "Пробные тесты",
+    "features.mock_tests_desc": "Практикуйтесь в любое время. В реальном формате экзамена, с таймером, анализируйте результаты.",
+    "features.olympiads": "Онлайн-олимпиады",
+    "features.olympiads_desc": "Проверьте свои знания в реальной конкурентной среде. Результаты и рейтинг в реальном времени.",
+    "features.rating": "Живой рейтинг",
+    "features.rating_desc": "Еженедельный и общий рейтинг. Узнайте своё место и сравнивайтесь с другими.",
+    "features.analysis": "Подробный анализ",
+    "features.analysis_desc": "Просматривайте свои ошибки по каждому тесту и узнайте свои сильные и слабые стороны.",
+    "features.chat": "Онлайн-чат",
+    "features.chat_desc": "Общайтесь с другими учениками, задавайте вопросы, обменивайтесь опытом.",
+    "features.anticheat": "Античит-система",
+    "features.anticheat_desc": "Справедливая среда во время тестирования. Переключение вкладок и копирование под контролем.",
+    "features.most_popular": "Популярное",
+    "features.reliable": "Надёжно",
+
+    // How it works
+    "howit.badge": "КАК ЭТО РАБОТАЕТ",
+    "howit.title": "Начать очень",
+    "howit.highlight": "легко",
+    "howit.desc": "Начните подготовку к олимпиадам всего за 4 шага",
+    "howit.step": "шаг",
+    "howit.step1": "Зарегистрируйтесь",
+    "howit.step1_desc": "Быстрая регистрация с email и паролем. Занимает менее 1 минуты.",
+    "howit.step2": "Выберите предмет и тест",
+    "howit.step2_desc": "Доступны тесты по математике, физике, химии, биологии и другим предметам.",
+    "howit.step3": "Решайте тест",
+    "howit.step3_desc": "Решайте задания с таймером. Античит-система гарантирует честные результаты.",
+    "howit.step4": "Смотрите результаты",
+    "howit.step4_desc": "Баллы, рейтинг, анализ ошибок — всё доступно для вашего развития.",
+
+    // Leaderboard
+    "leaderboard.badge": "ЖИВОЙ РЕЙТИНГ",
+    "leaderboard.title": "Соревнуйтесь в",
+    "leaderboard.highlight": "реальном времени",
+    "leaderboard.desc": "Живой рейтинг для каждого теста и олимпиады. Сразу увидите своё место среди других.",
+    "leaderboard.feature1": "Обновляемая в реальном времени таблица рейтинга",
+    "leaderboard.feature2": "Еженедельная и ежемесячная статистика",
+    "leaderboard.feature3": "Отдельные рейтинги по предметам",
+    "leaderboard.feature4": "Специальные награды для лучших учеников",
+    "leaderboard.rank": "#",
+    "leaderboard.name": "Имя",
+    "leaderboard.subject": "Предмет",
+    "leaderboard.score": "Балл",
+
+    // Certificate
+    "certificate.badge": "СЕРТИФИКАТ",
+    "certificate.title": "Проверьте",
+    "certificate.highlight": "сертификат",
+    "certificate.desc": "Проверьте цифровые сертификаты победителей олимпиад",
+    "certificate.in_progress": "В разработке",
+    "certificate.in_progress_desc": "Система проверки сертификатов находится в разработке. Скоро вы сможете ввести код сертификата и проверить его подлинность.",
+    "certificate.placeholder": "Код сертификата...",
+    "certificate.check": "Проверить",
+    "certificate.coming_soon": "Скоро будет запущена",
+
+    // Testimonials
+    "testimonials.badge": "ОТЗЫВЫ",
+    "testimonials.title": "Что говорят",
+    "testimonials.highlight": "ученики",
+    "testimonials.desc": "Отзывы участников",
+    "testimonials.t1_name": "Сардор Алимов",
+    "testimonials.t1_role": "11-класс, Ташкент",
+    "testimonials.t1_text": "Благодаря NextOlymp я подготовился к олимпиаде и прошёл областной этап. Пробные тесты были очень полезны!",
+    "testimonials.t2_name": "Мадина Каримова",
+    "testimonials.t2_role": "10-класс, Самарканд",
+    "testimonials.t2_text": "Очень интересно видеть рейтинг в реальном времени. Каждый день решаю тесты и развиваюсь.",
+    "testimonials.t3_name": "Жасур Тошматов",
+    "testimonials.t3_role": "9-класс, Бухара",
+    "testimonials.t3_text": "Есть античит-система, поэтому результаты справедливые. Через чат получаю помощь от других учеников.",
+    "testimonials.t4_name": "Нилуфар Рахимова",
+    "testimonials.t4_role": "11-класс, Андижан",
+    "testimonials.t4_text": "Функция анализа на платформе просто отличная. Вижу свои ошибки и исправляю их в следующий раз.",
+    "testimonials.t5_name": "Азизбек Муминов",
+    "testimonials.t5_role": "10-класс, Фергана",
+    "testimonials.t5_text": "Цены доступные, качество высокое. Рекомендовал друзьям!",
+    "testimonials.t6_name": "Дилдора Юсупова",
+    "testimonials.t6_role": "9-класс, Наманган",
+    "testimonials.t6_text": "Решать олимпиадные тесты очень увлекательно. Чувствую себя на настоящем соревновании!",
+
+    // FAQ
+    "faq.badge": "FAQ",
+    "faq.title": "Часто задаваемые",
+    "faq.highlight": "вопросы",
+    "faq.q1": "NextOlymp бесплатный?",
+    "faq.a1": "Да, регистрация бесплатная. Для использования основных функций есть бесплатный тариф. Также доступны платные тарифы с дополнительными возможностями.",
+    "faq.q2": "По каким предметам есть тесты?",
+    "faq.a2": "Доступны тесты по математике, физике, химии, биологии, английскому языку и другим предметам. Новые предметы регулярно добавляются.",
+    "faq.q3": "Как участвовать в олимпиадах?",
+    "faq.a3": "После регистрации перейдите в раздел 'Олимпиады'. Увидите активные олимпиады и сможете участвовать одним нажатием.",
+    "faq.q4": "Что будет, если интернет отключится во время теста?",
+    "faq.a4": "Система автоматически сохраняет ваши ответы. При восстановлении интернета вы сможете продолжить тест.",
+    "faq.q5": "Что такое промо-код?",
+    "faq.a5": "С помощью промо-кодов можно пополнить баланс или получить скидку. Промо-коды вводятся в разделе 'Баланс' на странице профиля.",
+    "faq.q6": "Работает ли на мобильных устройствах?",
+    "faq.a6": "Да, у нас есть специальные приложения для Android и Windows. Скачайте приложение и удобно участвуйте в олимпиадах.",
+
+    // Final CTA
+    "cta.title": "Готовы проверить свои знания?",
+    "cta.desc": "Скачайте приложение и проверьте свои знания вместе с тысячами учеников.",
+    "cta.android": "Android-приложение",
+    "cta.windows": "Windows-приложение",
+
+    // Apps
+    "apps.badge": "ПРИЛОЖЕНИЯ",
+    "apps.title": "Скачайте",
+    "apps.highlight": "приложения",
+    "apps.desc": "Установите приложение NextOlymp и участвуйте в олимпиадах откуда угодно",
+    "apps.download": "Скачать",
+    "apps.android": "Android",
+    "apps.windows": "Windows",
+
+    // Footer
+    "footer.desc": "Современная онлайн тестовая платформа для подготовки учеников к олимпиадам и экзаменам по всему миру.",
+    "footer.platform": "Платформа",
+    "footer.mock_tests": "Пробные тесты",
+    "footer.olympiads_link": "Олимпиады",
+    "footer.rating_link": "Рейтинг",
+    "footer.blog_link": "Блог",
+    "footer.apps": "Приложения",
+    "footer.android_app": "Android-приложение",
+    "footer.windows_app": "Windows-приложение",
+    "footer.useful": "Полезное",
+    "footer.certificate_link": "Проверка сертификата",
+    "footer.privacy": "Политика конфиденциальности",
+    "footer.terms": "Условия использования",
+    "footer.rights": "Все права защищены.",
+    "footer.info": "Информация",
+    "footer.contact": "Контакты",
+
+    // Olympiads
     "olympiads.title": "Олимпиады",
     "olympiads.desc": "Участвуйте во всех предметных олимпиадах и проверьте свои знания",
     "olympiads.free": "Бесплатно",
@@ -246,7 +550,9 @@ const translations: Record<Lang, Record<string, string>> = {
     "results.country": "Страна",
     "results.score": "Балл",
     "results.medal": "Медаль",
+    "results.no_results": "Результаты не найдены",
 
+    // Auth
     "auth.login": "Войти",
     "auth.register": "Регистрация",
     "auth.username": "Имя пользователя",
@@ -265,7 +571,7 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.forgot_password": "Забыли пароль?",
     "auth.account_recovery": "Восстановление аккаунта",
     "auth.recovery_desc": "Восстановите аккаунт через Telegram бот",
-    "auth.recovery_bot_info": "Код восстановления будет отправлен через Telegram бот. У вас должен быть привязанный аккаунт.",
+    "auth.recovery_bot_info": "Код восстановления будет отправлен через Telegram бот.",
     "auth.recovery_identifier": "Имя пользователя, email или телефон",
     "auth.recovery_send_code": "Отправить код",
     "auth.recovery_code_sent": "Код отправлен!",
@@ -282,43 +588,6 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.recovery_wrong_code": "Неверный код. Попробуйте ещё раз.",
     "auth.recovery_password_short": "Пароль должен содержать минимум 8 символов",
     "auth.back_to_login": "Вернуться ко входу",
-
-    "dashboard.title": "Кабинет ученика",
-    "dashboard.olympiads": "Олимпиады",
-    "dashboard.news": "Новости",
-    "dashboard.results": "Результаты",
-    "dashboard.profile": "Мой профиль",
-
-    "profile.title": "Мой профиль",
-    "profile.save": "Сохранить",
-    "profile.saved": "Успешно сохранено!",
-
-    // Testimonials
-    "testimonials.badge": "Отзывы",
-    "testimonials.title": "Отзывы участников",
-    "testimonials.desc": "Что говорят наши ученики о платформе NextOly",
-
-    "team.title": "Наша Команда",
-    "team.desc": "Познакомьтесь с командой, стоящей за платформой NextOly",
-
-    "about.badge": "О нас",
-    "about.title": "О нас",
-    "about.p1": "NextOly — это современная платформа для организации и проведения международных академических олимпиад в онлайн-формате.",
-    "about.p2": "Мы были основаны в 2023 году в Узбекистане и на сегодняшний день работаем более чем в 20 странах. Через нашу платформу более 75 000 учеников приняли участие в различных предметных олимпиадах.",
-    "about.p3": "Наша цель — дать возможность каждому талантливому ученику участвовать в олимпиадах международного уровня, независимо от географического расположения.",
-    "about.p4": "Платформа специализируется на математике, физике, химии, биологии и информатике, в будущем планируется добавление новых предметов.",
-
-    // Features
-    "features.badge": "Возможности платформы",
-    "features.title": "Почему NextOly?",
-    "features.desc": "Наша платформа построена на современных технологиях, обеспечивая безопасность, скорость и удобство.",
-
-    "footer.desc": "Профессиональная платформа для организации и участия в международных академических олимпиадах.",
-    "footer.platform": "Платформа",
-    "footer.info": "Информация",
-    "footer.contact": "Контакты",
-    "footer.rights": "Все права защищены.",
-
     "auth.fill_all": "Заполните все поля",
     "auth.join_platform": "Присоединяйтесь к платформе NextOly",
     "auth.select_region": "Выберите область",
@@ -340,11 +609,26 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.pw_match": "Пароли совпадают",
     "auth.pw_no_match": "Пароли не совпадают",
 
-    "howit.badge": "Как это работает?",
-    "howit.title": "3 простых шага",
-    "howit.desc": "Участвовать в олимпиаде на платформе NextOly очень просто",
+    // Dashboard
+    "dashboard.title": "Кабинет ученика",
+    "dashboard.olympiads": "Олимпиады",
+    "dashboard.news": "Новости",
+    "dashboard.results": "Результаты",
+    "dashboard.profile": "Мой профиль",
 
-    "results.no_results": "Результаты не найдены",
+    "profile.title": "Мой профиль",
+    "profile.save": "Сохранить",
+    "profile.saved": "Успешно сохранено!",
+
+    "team.title": "Наша Команда",
+    "team.desc": "Познакомьтесь с командой NextOly",
+
+    "about.badge": "О нас",
+    "about.title": "О нас",
+    "about.p1": "NextOly — современная платформа для международных академических олимпиад.",
+    "about.p2": "Основана в 2023 году, работаем в 20+ странах.",
+    "about.p3": "Наша цель — дать возможность каждому ученику участвовать в олимпиадах.",
+    "about.p4": "Математика, физика, химия, биология и информатика.",
 
     "common.loading": "Загрузка...",
     "common.error": "Произошла ошибка",
@@ -355,8 +639,14 @@ const translations: Record<Lang, Record<string, string>> = {
     "common.create": "Создать",
     "common.search": "Поиск",
     "common.back": "Назад",
+
+    "subject.math": "Математика",
+    "subject.physics": "Физика",
+    "subject.biology": "Биология",
+    "subject.chemistry": "Химия",
   },
   en: {
+    // Header / Nav
     "nav.home": "Home",
     "nav.olympiads": "Olympiads",
     "nav.materials": "Materials",
@@ -374,17 +664,180 @@ const translations: Record<Lang, Record<string, string>> = {
     "nav.profile": "Profile",
     "nav.dashboard": "Dashboard",
 
-    "hero.badge": "International Platform",
-    "hero.title": "NextOly — International Online Olympiad",
-    "hero.desc": "A professional and secure platform for organizing and participating in international academic olympiads.",
+    // Landing Navbar
+    "landing.nav.features": "Features",
+    "landing.nav.how_it_works": "How It Works",
+    "landing.nav.blog": "Blog",
+    "landing.nav.testimonials": "Testimonials",
+    "landing.nav.faq": "FAQ",
+    "landing.nav.certificate": "Verify Certificate",
+    "landing.nav.lang": "Language",
+
+    // Hero
+    "hero.badge": "World's #1 online olympiad platform",
+    "hero.title1": "Test your knowledge.",
+    "hero.title2": "Be a champion",
+    "hero.title3": "in competition.",
+    "hero.desc": "Prepare for international olympiads, solve mock tests, compete in real-time rankings. Thousands of students worldwide already choose us.",
+    "hero.cta1": "Explore the platform",
+    "hero.cta2": "Blog",
+    "hero.badge1": "Free to use",
+    "hero.badge2": "Secure platform",
+    "hero.badge3": "Available 24/7",
     "hero.register": "Register",
     "hero.view_olympiads": "View Olympiads",
 
-    "stats.students": "Total Participants",
+    // Stats
+    "stats.subtitle": "Us in numbers",
+    "stats.users": "Active students",
+    "stats.tests": "Tests solved",
     "stats.olympiads": "Olympiads",
+    "stats.feedback": "Positive feedback",
+    "stats.students": "Total Participants",
     "stats.regions": "Regions",
     "stats.mock_tests": "Mock Tests",
 
+    // Preview dashboard
+    "preview.tests": "Total tests",
+    "preview.correct": "Correct answers",
+    "preview.rating": "Rating",
+    "preview.olympiads": "Olympiads",
+
+    // Features
+    "features.badge": "FEATURES",
+    "features.title": "Everything for",
+    "features.highlight": "success",
+    "features.desc": "All the tools you need for olympiad and exam preparation in one place",
+    "features.mock_tests": "Mock Tests",
+    "features.mock_tests_desc": "Practice anytime. Real exam format with timer, analyze your results.",
+    "features.olympiads": "Online Olympiads",
+    "features.olympiads_desc": "Test your knowledge in a real competitive environment. Real-time results and rankings.",
+    "features.rating": "Live Rankings",
+    "features.rating_desc": "Weekly and overall rankings. Know your position and compare with others.",
+    "features.analysis": "Detailed Analysis",
+    "features.analysis_desc": "View your mistakes for each test and learn your strengths and weaknesses.",
+    "features.chat": "Online Chat",
+    "features.chat_desc": "Communicate with other students, ask questions, share experiences.",
+    "features.anticheat": "Anti-Cheat System",
+    "features.anticheat_desc": "Fair environment during testing. Tab switching and copying under control.",
+    "features.most_popular": "Most Popular",
+    "features.reliable": "Reliable",
+
+    // How it works
+    "howit.badge": "HOW IT WORKS",
+    "howit.title": "Getting started is",
+    "howit.highlight": "easy",
+    "howit.desc": "Start preparing for olympiads in just 4 steps",
+    "howit.step": "step",
+    "howit.step1": "Register",
+    "howit.step1_desc": "Quick registration with email and password. Takes less than 1 minute.",
+    "howit.step2": "Choose subject and test",
+    "howit.step2_desc": "Tests available in Mathematics, Physics, Chemistry, Biology and other subjects.",
+    "howit.step3": "Take the test",
+    "howit.step3_desc": "Solve questions with a timer. Anti-cheat system guarantees fair results.",
+    "howit.step4": "See your results",
+    "howit.step4_desc": "Score, ranking, error analysis — see everything and improve yourself.",
+
+    // Leaderboard
+    "leaderboard.badge": "LIVE RANKINGS",
+    "leaderboard.title": "Compete in",
+    "leaderboard.highlight": "real time",
+    "leaderboard.desc": "Live rankings for every test and olympiad. See your position among others instantly.",
+    "leaderboard.feature1": "Real-time updating leaderboard",
+    "leaderboard.feature2": "Weekly and monthly statistics",
+    "leaderboard.feature3": "Separate rankings by subject",
+    "leaderboard.feature4": "Special awards for top students",
+    "leaderboard.rank": "#",
+    "leaderboard.name": "Name",
+    "leaderboard.subject": "Subject",
+    "leaderboard.score": "Score",
+
+    // Certificate
+    "certificate.badge": "CERTIFICATE",
+    "certificate.title": "Verify your",
+    "certificate.highlight": "certificate",
+    "certificate.desc": "Verify digital certificates awarded to olympiad winners",
+    "certificate.in_progress": "In Progress",
+    "certificate.in_progress_desc": "The certificate verification system is currently under development. Soon you will be able to enter a certificate code and verify its authenticity.",
+    "certificate.placeholder": "Certificate code...",
+    "certificate.check": "Verify",
+    "certificate.coming_soon": "Coming soon",
+
+    // Testimonials
+    "testimonials.badge": "TESTIMONIALS",
+    "testimonials.title": "What students",
+    "testimonials.highlight": "say",
+    "testimonials.desc": "Participants' feedback",
+    "testimonials.t1_name": "Sardor Alimov",
+    "testimonials.t1_role": "11th grade, Tashkent",
+    "testimonials.t1_text": "I prepared for the olympiad through NextOlymp and passed the regional stage. Mock tests were very helpful!",
+    "testimonials.t2_name": "Madina Karimova",
+    "testimonials.t2_role": "10th grade, Samarkand",
+    "testimonials.t2_text": "Seeing real-time rankings is very exciting. I solve tests every day and keep improving.",
+    "testimonials.t3_name": "Jasur Toshmatov",
+    "testimonials.t3_role": "9th grade, Bukhara",
+    "testimonials.t3_text": "There's an anti-cheat system, so results are fair. I get help from other students through chat.",
+    "testimonials.t4_name": "Nilufar Rahimova",
+    "testimonials.t4_role": "11th grade, Andijan",
+    "testimonials.t4_text": "The analysis function on the platform is amazing. I see my mistakes and correct them next time.",
+    "testimonials.t5_name": "Azizbek Muminov",
+    "testimonials.t5_role": "10th grade, Fergana",
+    "testimonials.t5_text": "Affordable prices, high quality. I recommended it to my friends!",
+    "testimonials.t6_name": "Dildora Yusupova",
+    "testimonials.t6_role": "9th grade, Namangan",
+    "testimonials.t6_text": "Solving olympiad tests is very fun. I feel like I'm in a real competition!",
+
+    // FAQ
+    "faq.badge": "FAQ",
+    "faq.title": "Frequently asked",
+    "faq.highlight": "questions",
+    "faq.q1": "Is NextOlymp free?",
+    "faq.a1": "Yes, registration is free. There is a free plan for basic features. Paid plans with additional features are also available.",
+    "faq.q2": "Which subjects have tests?",
+    "faq.a2": "Tests are available in Mathematics, Physics, Chemistry, Biology, English and other subjects. New subjects are added regularly.",
+    "faq.q3": "How do I participate in olympiads?",
+    "faq.a3": "After registering, go to the 'Olympiads' section. You'll see active olympiads and can participate with one click.",
+    "faq.q4": "What happens if the internet disconnects during a test?",
+    "faq.a4": "The system automatically saves your answers. When the internet reconnects, you can continue the test.",
+    "faq.q5": "What is a promo code?",
+    "faq.a5": "You can top up your balance or get discounts with promo codes. Enter promo codes in the 'Balance' section of your profile page.",
+    "faq.q6": "Does it work on mobile devices?",
+    "faq.a6": "Yes, we have dedicated apps for Android and Windows. Download the app and conveniently participate in olympiads.",
+
+    // Final CTA
+    "cta.title": "Ready to test your knowledge?",
+    "cta.desc": "Download the app and test your knowledge together with thousands of students.",
+    "cta.android": "Android App",
+    "cta.windows": "Windows App",
+
+    // Apps
+    "apps.badge": "APPS",
+    "apps.title": "Download",
+    "apps.highlight": "our apps",
+    "apps.desc": "Install the NextOlymp app on your device and participate in olympiads from anywhere",
+    "apps.download": "Download",
+    "apps.android": "Android",
+    "apps.windows": "Windows",
+
+    // Footer
+    "footer.desc": "A modern online test platform for preparing students for olympiads and exams worldwide.",
+    "footer.platform": "Platform",
+    "footer.mock_tests": "Mock Tests",
+    "footer.olympiads_link": "Olympiads",
+    "footer.rating_link": "Rankings",
+    "footer.blog_link": "Blog",
+    "footer.apps": "Apps",
+    "footer.android_app": "Android App",
+    "footer.windows_app": "Windows App",
+    "footer.useful": "Useful",
+    "footer.certificate_link": "Verify Certificate",
+    "footer.privacy": "Privacy Policy",
+    "footer.terms": "Terms of Service",
+    "footer.rights": "All rights reserved.",
+    "footer.info": "Information",
+    "footer.contact": "Contact",
+
+    // Olympiads
     "olympiads.title": "Olympiads",
     "olympiads.desc": "Participate in all subject olympiads and test your knowledge",
     "olympiads.free": "Free",
@@ -413,7 +866,9 @@ const translations: Record<Lang, Record<string, string>> = {
     "results.country": "Country",
     "results.score": "Score",
     "results.medal": "Medal",
+    "results.no_results": "No results found",
 
+    // Auth
     "auth.login": "Login",
     "auth.register": "Register",
     "auth.username": "Username",
@@ -432,7 +887,7 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.forgot_password": "Forgot password?",
     "auth.account_recovery": "Account Recovery",
     "auth.recovery_desc": "Recover your account via Telegram bot",
-    "auth.recovery_bot_info": "Recovery code will be sent via Telegram bot. You must have a linked account.",
+    "auth.recovery_bot_info": "Recovery code will be sent via Telegram bot.",
     "auth.recovery_identifier": "Username, email or phone",
     "auth.recovery_send_code": "Send code",
     "auth.recovery_code_sent": "Code sent!",
@@ -449,43 +904,6 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.recovery_wrong_code": "Wrong code. Please try again.",
     "auth.recovery_password_short": "Password must be at least 8 characters",
     "auth.back_to_login": "Back to login",
-
-    "dashboard.title": "Student Dashboard",
-    "dashboard.olympiads": "Olympiads",
-    "dashboard.news": "News",
-    "dashboard.results": "Results",
-    "dashboard.profile": "My Profile",
-
-    "profile.title": "My Profile",
-    "profile.save": "Save",
-    "profile.saved": "Successfully saved!",
-
-    // Testimonials
-    "testimonials.badge": "Testimonials",
-    "testimonials.title": "What Our Students Say",
-    "testimonials.desc": "Hear from students who have participated through the NextOly platform",
-
-    "team.title": "Our Team",
-    "team.desc": "Meet the team behind the NextOly platform",
-
-    "about.badge": "About Us",
-    "about.title": "About Us",
-    "about.p1": "NextOly is a modern platform designed to organize and conduct international academic olympiads in an online format.",
-    "about.p2": "Founded in 2023 in Uzbekistan, we now operate in more than 20 countries. Over 75,000 students have participated in various subject olympiads through our platform.",
-    "about.p3": "Our goal is to give every talented student the opportunity to participate in international-level olympiads, regardless of geographical location.",
-    "about.p4": "The platform specializes in mathematics, physics, chemistry, biology, and computer science, with plans to add new subjects in the future.",
-
-    // Features
-    "features.badge": "Platform Features",
-    "features.title": "Why NextOly?",
-    "features.desc": "Our platform is built on modern technologies, ensuring security, speed, and convenience.",
-
-    "footer.desc": "A professional platform for organizing and participating in international academic olympiads.",
-    "footer.platform": "Platform",
-    "footer.info": "Information",
-    "footer.contact": "Contact",
-    "footer.rights": "All rights reserved.",
-
     "auth.fill_all": "Please fill in all fields",
     "auth.join_platform": "Join the NextOly platform",
     "auth.select_region": "Select region",
@@ -507,11 +925,25 @@ const translations: Record<Lang, Record<string, string>> = {
     "auth.pw_match": "Passwords match",
     "auth.pw_no_match": "Passwords don't match",
 
-    "howit.badge": "How It Works?",
-    "howit.title": "3 Simple Steps",
-    "howit.desc": "Participating in an olympiad on the NextOly platform is very easy",
+    "dashboard.title": "Student Dashboard",
+    "dashboard.olympiads": "Olympiads",
+    "dashboard.news": "News",
+    "dashboard.results": "Results",
+    "dashboard.profile": "My Profile",
 
-    "results.no_results": "No results found",
+    "profile.title": "My Profile",
+    "profile.save": "Save",
+    "profile.saved": "Successfully saved!",
+
+    "team.title": "Our Team",
+    "team.desc": "Meet the team behind NextOly",
+
+    "about.badge": "About Us",
+    "about.title": "About Us",
+    "about.p1": "NextOly is a modern platform for international academic olympiads.",
+    "about.p2": "Founded in 2023, operating in 20+ countries.",
+    "about.p3": "Our goal is to give every student the opportunity to participate in olympiads.",
+    "about.p4": "Mathematics, physics, chemistry, biology and computer science.",
 
     "common.loading": "Loading...",
     "common.error": "An error occurred",
@@ -522,6 +954,11 @@ const translations: Record<Lang, Record<string, string>> = {
     "common.create": "Create",
     "common.search": "Search",
     "common.back": "Back",
+
+    "subject.math": "Mathematics",
+    "subject.physics": "Physics",
+    "subject.biology": "Biology",
+    "subject.chemistry": "Chemistry",
   },
 };
 
@@ -546,6 +983,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       setLangState(stored);
     }
   }, []);
+
+  // Update <html lang> when language changes — helps browser auto-translate
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);

@@ -62,6 +62,22 @@ import type { MockExam } from "@/lib/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
+/** MockExam with additional join status fields from the API */
+interface MockExamWithJoinStatus extends MockExam {
+  is_joined?: boolean;
+  joined?: boolean;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
 type Phase = "detail" | "exam" | "result";
 
 interface AnswerMap {
@@ -153,10 +169,8 @@ export default function MockTestDetailPage() {
       .then(([testRes, attemptsRes]) => {
         if (testRes.status === "fulfilled") {
           setMockTest(testRes.value);
-          if (
-            (testRes.value as any).is_joined ||
-            (testRes.value as any).joined
-          ) {
+          const testWithJoinStatus = testRes.value as MockExamWithJoinStatus;
+          if (testWithJoinStatus.is_joined || testWithJoinStatus.joined) {
             setJoined(true);
           }
         }
@@ -252,9 +266,10 @@ export default function MockTestDetailPage() {
       await joinMockTest(id);
       setJoined(true);
       toast.success("Testga muvaffaqiyatli ro'yxatdan o'tdingiz!");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const apiErr = err as ApiError;
       const msg =
-        err?.response?.data?.message || "Ro'yxatdan o'tishda xatolik yuz berdi";
+        apiErr?.response?.data?.message || "Ro'yxatdan o'tishda xatolik yuz berdi";
       toast.error(msg);
     } finally {
       setJoining(false);
@@ -270,9 +285,10 @@ export default function MockTestDetailPage() {
       setCurrentIdx(0);
       setPhase("exam");
       toast.success("Test boshlandi! Omad tilaymiz!");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const apiErr = err as ApiError;
       const msg =
-        err?.response?.data?.message || "Testni boshlashda xatolik yuz berdi";
+        apiErr?.response?.data?.message || "Testni boshlashda xatolik yuz berdi";
       toast.error(msg);
     } finally {
       setStarting(false);
@@ -318,7 +334,7 @@ export default function MockTestDetailPage() {
       setResult(resultData);
       setPhase("result");
       toast.info("Vaqt tugadi! Test yakunlandi.");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Testni yakunlashda xatolik");
       try {
         const resultData = await getMockAttemptResult(examData.attempt_id);
@@ -351,7 +367,7 @@ export default function MockTestDetailPage() {
       setResult(resultData);
       setPhase("result");
       toast.success("Test muvaffaqiyatli yakunlandi!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Testni yakunlashda xatolik");
       try {
         const resultData = await getMockAttemptResult(examData.attempt_id);
@@ -398,8 +414,9 @@ export default function MockTestDetailPage() {
       const data = await getAIAnalysis(result.attempt_id);
       setAiAnalysis(data);
       setShowAiAnalysis(true);
-    } catch (err: any) {
-      setAiError(err?.response?.data?.message || "AI tahlil yuklanmadi");
+    } catch (err: unknown) {
+      const apiErr = err as ApiError;
+      setAiError(apiErr?.response?.data?.message || "AI tahlil yuklanmadi");
     } finally {
       setAiLoading(false);
     }

@@ -6,7 +6,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { register } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { Loader2, Eye, EyeOff, UserPlus } from "lucide-react";
+import { useSettings } from "@/lib/settings-context";
+import { Loader2, Eye, EyeOff, UserPlus, ShieldOff } from "lucide-react";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
@@ -17,6 +18,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { setAuth } = useAuth();
+  const settings = useSettings();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +31,10 @@ export default function RegisterPage() {
       setError("Foydalanuvchi nomi kamida 4 ta belgi bo'lishi kerak");
       return;
     }
+    if (!/^[a-zA-Z0-9_.]+$/.test(username.trim())) {
+      setError("Foydalanuvchi nomida faqat lotin harflari, raqamlar, _ va . ishlatish mumkin");
+      return;
+    }
     if (!password) {
       setError("Parolni kiriting");
       return;
@@ -37,8 +43,24 @@ export default function RegisterPage() {
       setError("Parol kamida 8 ta belgi bo'lishi kerak");
       return;
     }
+    if (!/[A-Z]/.test(password)) {
+      setError("Parolda kamida 1 ta katta harf bo'lishi kerak (masalan: A, B, C)");
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      setError("Parolda kamida 1 ta kichik harf bo'lishi kerak (masalan: a, b, c)");
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      setError("Parolda kamida 1 ta raqam bo'lishi kerak (masalan: 1, 2, 3)");
+      return;
+    }
+    if (!confirmPassword) {
+      setError("Parolni tasdiqlash uchun qayta kiriting");
+      return;
+    }
     if (password !== confirmPassword) {
-      setError("Parollar mos kelmayapti");
+      setError("Parollar bir-biriga mos kelmayapti");
       return;
     }
 
@@ -59,8 +81,16 @@ export default function RegisterPage() {
           router.push("/dashboard");
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || "Ro'yxatdan o'tishda xatolik yuz berdi");
+      const apiErr = err as { response?: { data?: { message?: string; errors?: Record<string, string> } } };
+      const errors = apiErr?.response?.data?.errors;
+      if (errors) {
+        // Backend validation errors — birinchi xatoni ko'rsatamiz
+        const firstError = Object.values(errors)[0];
+        setError(firstError || "Ma'lumotlar noto'g'ri kiritilgan");
+      } else {
+        const msg = apiErr?.response?.data?.message;
+        setError(msg || "Ro'yxatdan o'tishda xatolik yuz berdi");
+      }
     } finally {
       setLoading(false);
     }
@@ -100,6 +130,36 @@ export default function RegisterPage() {
               Hisob yarating va testlarni boshlang
             </p>
           </div>
+
+          {/* Ro'yxatdan o'tish o'chirilgan */}
+          {!settings.loading && !settings.registration_enabled && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-8"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
+                  <ShieldOff className="h-8 w-8 text-amber-400" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Ro&apos;yxatdan o&apos;tish vaqtincha to&apos;xtatilgan
+              </h3>
+              <p className="text-sm text-blue-200/60 mb-6">
+                Hozirda yangi foydalanuvchilar ro&apos;yxatdan o&apos;ta olmaydi. Iltimos, keyinroq qayta urinib ko&apos;ring.
+              </p>
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
+              >
+                Kirish sahifasiga qaytish
+              </Link>
+            </motion.div>
+          )}
+
+          {/* Ro'yxatdan o'tish yoqilgan bo'lsa form ko'rsatiladi */}
+          {(settings.loading || settings.registration_enabled) && (<>
 
           {/* Error */}
           {error && (
@@ -202,6 +262,8 @@ export default function RegisterPage() {
               </Link>
             </p>
           </div>
+
+          </>)}
         </div>
       </motion.div>
     </div>

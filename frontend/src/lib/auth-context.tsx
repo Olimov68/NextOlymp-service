@@ -1,10 +1,11 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { getMe, type User, type TokenPair, type MeResponse } from "./api";
+import { getMe, type User, type UserProfile, type TokenPair, type MeResponse } from "./api";
 
 interface AuthContextType {
   user: User | null;
+  profile: UserProfile | null;
   token: string | null;
   nextStep: string | null;
   setAuth: (tokens: TokenPair, user: User, nextStep?: string) => void;
@@ -15,6 +16,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  profile: null,
   token: null,
   nextStep: null,
   setAuth: () => {},
@@ -25,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [nextStep, setNextStep] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       getMe()
         .then((data: MeResponse) => {
           setUser(data.user);
+          setProfile(data.profile ?? null);
           setNextStep(data.next_step);
         })
         .catch(() => {
@@ -61,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await getMe();
       setUser(data.user);
+      setProfile(data.profile ?? null);
       setNextStep(data.next_step);
     } catch {
       // ignore
@@ -72,11 +77,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("refresh_token");
     setToken(null);
     setUser(null);
+    setProfile(null);
     setNextStep(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, nextStep, setAuth, refreshUser, logout, loading }}>
+    <AuthContext.Provider value={{ user, profile, token, nextStep, setAuth, refreshUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

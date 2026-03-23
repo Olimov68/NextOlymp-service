@@ -1,6 +1,8 @@
 package database
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"log"
 
@@ -131,7 +133,19 @@ func Migrate(db *gorm.DB) error {
 	return nil
 }
 
+func generateRandomPassword(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", fmt.Errorf("failed to generate random password: %w", err)
+	}
+	return base64.RawURLEncoding.EncodeToString(bytes)[:length], nil
+}
+
 func seedSuperAdmin(db *gorm.DB) {
+	// SuperAdmin credentials — har doim shu login/parol
+	const superadminUsername = "Asilbek9900"
+	const superadminPassword = "Alimoff9900"
+
 	var count int64
 	db.Model(&models.StaffUser{}).Where("role = ?", "superadmin").Count(&count)
 	if count > 0 {
@@ -139,14 +153,14 @@ func seedSuperAdmin(db *gorm.DB) {
 		return
 	}
 
-	hash, err := utils.HashPassword("SuperAdmin123!")
+	hash, err := utils.HashPassword(superadminPassword)
 	if err != nil {
 		log.Println("Warning: failed to hash superadmin password:", err)
 		return
 	}
 
 	superadmin := &models.StaffUser{
-		Username:     "superadmin",
+		Username:     superadminUsername,
 		PasswordHash: hash,
 		FullName:     "Super Administrator",
 		Role:         models.StaffRoleSuperAdmin,
@@ -158,7 +172,7 @@ func seedSuperAdmin(db *gorm.DB) {
 		return
 	}
 
-	log.Printf("SuperAdmin created (username: superadmin, password: SuperAdmin123!)")
+	log.Printf("SuperAdmin created: %s\n", superadminUsername)
 }
 
 func seedPermissions(db *gorm.DB) {

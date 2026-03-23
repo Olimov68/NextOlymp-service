@@ -110,6 +110,7 @@ paymentsHandler := sapayments.NewHandler(db)
 			oG.POST("/:id/duplicate", olympiadsHandler.Duplicate)
 			oG.PATCH("/:id/publish", olympiadsHandler.Publish)
 			oG.PATCH("/:id/unpublish", olympiadsHandler.Unpublish)
+			oG.PATCH("/:id/toggle-registration", olympiadsHandler.ToggleRegistration)
 		}
 
 		// Mock tests management

@@ -35,6 +35,7 @@ import AssessmentForm from "@/components/assessment/AssessmentForm";
 import RegistrationsTable from "@/components/assessment/RegistrationsTable";
 import ResultsTable from "@/components/assessment/ResultsTable";
 import AntiCheatLogsTab from "@/components/assessment/AntiCheatLogsTab";
+import { getErrorMessage } from "@/lib/api-error";
 
 // ========== Types ==========
 
@@ -288,8 +289,8 @@ export default function OlympiadDetailPage() {
       toast.success("Olimpiada yangilandi");
       setEditOpen(false);
       fetchOlympiad();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik yuz berdi"));
     } finally {
       setEditSaving(false);
     }
@@ -303,8 +304,9 @@ export default function OlympiadDetailPage() {
       await publishOlympiad(olympiad.id);
       toast.success("Olimpiada nashr qilindi");
       fetchOlympiad();
-    } catch {
-      toast.error("Nashr qilib bo'lmadi");
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || "Nashr qilib bo'lmadi");
     }
   };
 
@@ -314,8 +316,21 @@ export default function OlympiadDetailPage() {
       await unpublishOlympiad(olympiad.id);
       toast.success("Olimpiada nashrdan olindi");
       fetchOlympiad();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg || "Nashrdan olib bo'lmadi");
+    }
+  };
+
+  const handleToggleRegistration = async () => {
+    if (!olympiad) return;
+    try {
+      const { toggleOlympiadRegistration } = await import("@/lib/superadmin-api");
+      await toggleOlympiadRegistration(olympiad.id);
+      fetchOlympiad();
+      toast.success(olympiad.registration_open ? "Ro'yxatdan o'tish yopildi" : "Ro'yxatdan o'tish ochildi");
     } catch {
-      toast.error("Nashrdan olib bo'lmadi");
+      toast.error("Xatolik yuz berdi");
     }
   };
 
@@ -419,9 +434,9 @@ export default function OlympiadDetailPage() {
       }
       setQuestionDialogOpen(false);
       fetchQuestions();
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.error || e?.message || "Xatolik yuz berdi";
-      console.error("Savol yaratish xatosi:", e?.response?.data || e);
+    } catch (e: unknown) {
+      const msg = getErrorMessage(e, "Xatolik yuz berdi");
+      console.error("Savol yaratish xatosi:", e);
       toast.error(msg);
     } finally {
       setQuestionSaving(false);
@@ -535,6 +550,17 @@ export default function OlympiadDetailPage() {
           {olympiad.status === "published" && (
             <Button size="sm" variant="outline" onClick={handleUnpublish} className="gap-2">
               <SendHorizonal className="h-4 w-4" /> Nashrdan olish
+            </Button>
+          )}
+          {(olympiad.status === "published" || olympiad.status === "active") && (
+            <Button
+              size="sm"
+              variant={olympiad.registration_open !== false ? "destructive" : "default"}
+              onClick={handleToggleRegistration}
+              className="gap-2"
+            >
+              <ShieldAlert className="h-4 w-4" />
+              {olympiad.registration_open !== false ? "Ro'yxatni yopish" : "Ro'yxatni ochish"}
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={() => setEditOpen(true)} className="gap-2">

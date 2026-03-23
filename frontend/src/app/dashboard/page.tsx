@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
   Trophy, ClipboardCheck, BarChart3, MessageCircle,
-  ChevronRight, Calendar, ArrowRight,
+  ChevronRight, Calendar, ArrowRight, Sparkles,
 } from "lucide-react";
 import {
   getMyOlympiads, getMyMockTests, getMyResults,
   type UserResult,
 } from "@/lib/user-api";
 import type { Olympiad, MockExam } from "@/lib/api";
+import { DashboardSkeleton } from "@/components/skeletons";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -31,26 +32,28 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-muted-foreground">Yuklanmoqda...</div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Xush kelibsiz{user?.username ? `, ${user.username}` : ""}!
-        </h1>
-        <p className="text-muted-foreground mt-1">Shaxsiy kabinetingiz</p>
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/10 p-6">
+        <div className="absolute top-[-30%] right-[-10%] w-48 h-48 bg-primary/10 rounded-full blur-3xl" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h1 className="text-2xl font-bold text-foreground">
+              Xush kelibsiz{user?.username ? `, ${user.username}` : ""}!
+            </h1>
+          </div>
+          <p className="text-muted-foreground">Shaxsiy kabinetingiz — bugungi natijalaringiz va tezkor amallar</p>
+        </div>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Link href="/dashboard" className="block">
+        <Link href="/dashboard/olympiads" className="block">
           <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
@@ -78,7 +81,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/dashboard/leaderboard" className="block">
+        <Link href="/dashboard/results" className="block">
           <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
@@ -142,7 +145,7 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium text-foreground">{r.title}</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {(r as any).date || new Date(r.created_at).toLocaleDateString("uz-UZ")}
+                        {new Date(r.created_at).toLocaleDateString("uz-UZ")}
                       </p>
                     </div>
                   </div>

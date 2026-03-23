@@ -34,7 +34,7 @@ func (h *Handler) List(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Olympiads", result)
 }
 
-// GetByID — bitta olimpiada detail
+// GetByID — bitta olimpiada detail (user holati bilan)
 // GET /api/v1/user/olympiads/:id
 func (h *Handler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -49,7 +49,24 @@ func (h *Handler) GetByID(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Olympiad detail", result)
+	// User holati — ro'yxatdan o'tganmi, topshirganmi
+	userStatus := map[string]interface{}{
+		"is_joined":     false,
+		"has_attempted":  false,
+		"attempt_status": "",
+		"attempt_id":     uint(0),
+	}
+	if uid, exists := c.Get("userID"); exists {
+		userID := uid.(uint)
+		userStatus = h.service.GetUserOlympiadStatus(userID, uint(id))
+	}
+
+	resp := map[string]interface{}{
+		"olympiad":    result,
+		"user_status": userStatus,
+	}
+
+	response.Success(c, http.StatusOK, "Olympiad detail", resp)
 }
 
 // MyOlympiads — mening olimpiadalarim

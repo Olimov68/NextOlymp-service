@@ -22,8 +22,9 @@ type Profile struct {
 	District   string    `gorm:"size:100;not null" json:"district"`
 	SchoolName string    `gorm:"size:200;not null" json:"school_name"`
 	Grade      int       `gorm:"not null" json:"grade"`
-	PhotoURL   string    `gorm:"size:500" json:"photo_url"`
-	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
+	PhotoURL       string    `gorm:"size:500" json:"photo_url"`
+	FaceEmbedding  string    `gorm:"type:text" json:"-"` // JSON array of floats, hidden from API
+	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt  time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 

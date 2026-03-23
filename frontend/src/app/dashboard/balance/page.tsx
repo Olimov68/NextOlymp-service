@@ -33,6 +33,7 @@ import {
   type PromoApplyResponse,
   type TopUpResponse,
 } from "@/lib/user-api";
+import { getErrorMessage } from "@/lib/api-error";
 
 export default function BalancePage() {
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
@@ -120,8 +121,8 @@ export default function BalancePage() {
       setTopUpMessage("So'rov muvaffaqiyatli yuborildi!");
       setTopUpAmount("");
       await loadData(page);
-    } catch (err: any) {
-      setTopUpError(err?.response?.data?.message || "Xatolik yuz berdi");
+    } catch (err: unknown) {
+      setTopUpError(getErrorMessage(err, "Xatolik yuz berdi"));
     } finally {
       setTopUpLoading(false);
     }
@@ -138,8 +139,8 @@ export default function BalancePage() {
     try {
       const result = await applyPromoCode({ code: promoCode.trim(), amount: parseInt(topUpAmount) || 0 });
       setPromoResult(result);
-    } catch (err: any) {
-      setPromoError(err?.response?.data?.message || "Promo kod xato yoki muddati tugagan");
+    } catch (err: unknown) {
+      setPromoError(getErrorMessage(err, "Promo kod xato yoki muddati tugagan"));
     } finally {
       setPromoLoading(false);
     }

@@ -12,12 +12,27 @@ import { Loader2, Upload, X } from "lucide-react";
 import type { ExamType, AssessmentBase, AssessmentFormData } from "@/lib/assessment-types";
 import { uploadImage } from "@/lib/superadmin-api";
 
+/** Extended initial data that may include mock-test-specific fields */
+type AssessmentInitialData = Partial<AssessmentBase> & {
+  scoring_type?: string;
+  scaling_formula_type?: string;
+};
+
 interface AssessmentFormProps {
   examType: ExamType;
-  initialData?: Partial<AssessmentBase>;
+  initialData?: AssessmentInitialData;
   onSubmit: (data: AssessmentFormData) => void;
   onCancel: () => void;
   loading?: boolean;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
 }
 
 const emptyForm: AssessmentFormData = {
@@ -100,10 +115,10 @@ export default function AssessmentForm({
         give_certificate: initialData.give_certificate ?? false,
         manual_review: initialData.manual_review ?? false,
         admin_approval: initialData.admin_approval ?? false,
-        min_score_for_certificate: (initialData as any)?.min_score_for_certificate ?? 0,
-        scoring_rules: (initialData as any)?.scoring_rules || "",
-        scoring_type: (initialData as any)?.scoring_type || "classic",
-        scaling_formula_type: (initialData as any)?.scaling_formula_type || "linear",
+        min_score_for_certificate: initialData.min_score_for_certificate ?? 0,
+        scoring_rules: initialData.scoring_rules || "",
+        scoring_type: initialData.scoring_type || "classic",
+        scaling_formula_type: initialData.scaling_formula_type || "linear",
       });
     }
   }, [initialData]);
@@ -537,8 +552,9 @@ function ImageUploadField({
     try {
       const result = await uploadImage(file);
       onChange(result.url);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Rasm yuklashda xatolik");
+    } catch (err: unknown) {
+      const apiErr = err as ApiError;
+      setError(apiErr?.response?.data?.message || "Rasm yuklashda xatolik");
     } finally {
       setUploading(false);
       e.target.value = "";

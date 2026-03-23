@@ -9,6 +9,7 @@ import { Search, ClipboardCheck } from "lucide-react";
 import { listMockTests } from "@/lib/user-api";
 import AssessmentCard from "@/components/assessment/AssessmentCard";
 import type { AssessmentBase } from "@/lib/assessment-types";
+import { normalizeList } from "@/lib/normalizeList";
 
 const subjectOptions = [
   { value: "", label: "Barcha fanlar" },
@@ -40,6 +41,7 @@ const languageOptions = [
   { value: "en", label: "Ingliz" },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapToAssessment(o: Record<string, any>): AssessmentBase {
   return {
     id: o.id,
@@ -139,14 +141,11 @@ export default function MockTestsListPage() {
 
   useEffect(() => {
     listMockTests({ page: 1, page_size: 100 })
-      .then((data) => {
-        let list: any[] = [];
-        if (Array.isArray(data)) list = data;
-        else if ((data as any)?.data && Array.isArray((data as any).data)) list = (data as any).data;
-        else if ((data as any)?.items && Array.isArray((data as any).items)) list = (data as any).items;
+      .then((data: unknown) => {
+        const list = normalizeList(data);
         setMockTests(list.map(mapToAssessment));
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error("Mock tests load error:", err);
         setMockTests([]);
       })
