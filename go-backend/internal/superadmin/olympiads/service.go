@@ -261,14 +261,33 @@ func (s *Service) Duplicate(id uint) (*models.Olympiad, error) {
 	return &dup, nil
 }
 
-// Publish sets the olympiad status to published
+// Publish sets the olympiad status to published (savol soni tekshiriladi)
 func (s *Service) Publish(id uint) error {
+	o, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Savol soni tekshirish — total_questions bilan haqiqiy savollar soni mos bo'lishi shart
+	actualCount := s.repo.CountQuestions("olympiad", id)
+	if o.TotalQuestions > 0 && int64(o.TotalQuestions) != actualCount {
+		return fmt.Errorf("Olimpiadada %d ta savol bo'lishi kerak, hozirda %d ta mavjud. Avval savollarni to'ldiring", o.TotalQuestions, actualCount)
+	}
+	if actualCount == 0 {
+		return fmt.Errorf("Olimpiadada hech qanday savol yo'q. Avval savollar qo'shing")
+	}
+
 	return s.repo.UpdateStatus(id, string(models.OlympiadStatusPublished))
 }
 
 // Unpublish sets the olympiad status to draft
 func (s *Service) Unpublish(id uint) error {
 	return s.repo.UpdateStatus(id, string(models.OlympiadStatusDraft))
+}
+
+// ToggleRegistration — ro'yxatdan o'tishni ochish/yopish
+func (s *Service) ToggleRegistration(id uint, open bool) error {
+	return s.repo.UpdateField(id, "registration_open", open)
 }
 
 func generateSlug(title string) string {

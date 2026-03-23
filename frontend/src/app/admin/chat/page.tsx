@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   getAdminChatMessages,
+  sendAdminChatMessage,
   deleteAdminChatMessage,
   banChatUser,
   unbanChatUser,
@@ -25,6 +26,7 @@ import {
   Settings,
   ScrollText,
   Loader2,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -71,6 +73,8 @@ export default function AdminChatPage() {
   const [tab, setTab] = useState<"messages" | "bans" | "settings" | "logs">("messages");
   const [banDialog, setBanDialog] = useState<{ userId: number; username: string } | null>(null);
   const [banForm, setBanForm] = useState({ reason: "", type: "mute", duration: 1 });
+  const [newMessage, setNewMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -165,6 +169,21 @@ export default function AdminChatPage() {
       toast.success(chatOpen ? "Chat yopildi" : "Chat ochildi");
     } catch {
       toast.error("Xatolik yuz berdi");
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || sending) return;
+    setSending(true);
+    try {
+      await sendAdminChatMessage(newMessage.trim());
+      setNewMessage("");
+      toast.success("Xabar yuborildi");
+      loadMessages();
+    } catch {
+      toast.error("Xabar yuborishda xatolik");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -278,6 +297,24 @@ export default function AdminChatPage() {
                 </div>
               </div>
             ))}
+          </div>
+          {/* Admin xabar yuborish */}
+          <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-accent/30">
+            <input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+              placeholder="Admin sifatida xabar yozing..."
+              className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              disabled={sending}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={sending || !newMessage.trim()}
+              className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       )}

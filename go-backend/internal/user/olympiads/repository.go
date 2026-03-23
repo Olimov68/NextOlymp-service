@@ -76,3 +76,18 @@ func (r *Repository) CountRegistrations(olympiadID uint) (int64, error) {
 func (r *Repository) CreateRegistration(reg *models.OlympiadRegistration) error {
 	return r.db.Create(reg).Error
 }
+
+// GetLatestAttempt — user ning oxirgi urinishini olish
+func (r *Repository) GetLatestAttempt(userID, olympiadID uint) (*models.OlympiadAttempt, error) {
+	var attempt models.OlympiadAttempt
+	err := r.db.Where("user_id = ? AND olympiad_id = ?", userID, olympiadID).
+		Order("created_at DESC").First(&attempt).Error
+	return &attempt, err
+}
+
+// GetUserProfile — foydalanuvchi profilini olish
+func (r *Repository) GetUserProfile(userID uint) (*models.Profile, error) {
+	var profile models.Profile
+	err := r.db.Where("user_id = ?", userID).First(&profile).Error
+	return &profile, err
+}

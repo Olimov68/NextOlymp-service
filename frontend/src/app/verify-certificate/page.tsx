@@ -256,8 +256,9 @@ export default function VerifyCertificatePage() {
         `${API_URL}/certificates/verify/${encodeURIComponent(trimmed)}`
       );
       setResult(res.data?.data ?? res.data);
-    } catch (err: any) {
-      if (err.response?.status === 404) {
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { status?: number } };
+      if (apiErr.response?.status === 404) {
         setError("Sertifikat topilmadi");
       } else {
         setError("Xatolik yuz berdi. Qayta urinib ko'ring.");

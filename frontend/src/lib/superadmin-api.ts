@@ -79,6 +79,7 @@ export const approveOlympiadResult = (olympiadId: number, resultId: number) => p
 export const duplicateOlympiad = (id: number) => post(`/olympiads/${id}/duplicate`);
 export const publishOlympiad = (id: number) => patch(`/olympiads/${id}/publish`);
 export const unpublishOlympiad = (id: number) => patch(`/olympiads/${id}/unpublish`);
+export const toggleOlympiadRegistration = (id: number) => patch(`/olympiads/${id}/toggle-registration`);
 
 // ============================================
 // Mock Tests

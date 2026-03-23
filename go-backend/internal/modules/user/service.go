@@ -1,9 +1,11 @@
 package user
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/nextolympservice/go-backend/config"
 	"github.com/nextolympservice/go-backend/internal/models"
+	"github.com/nextolympservice/go-backend/internal/services"
 	"gorm.io/gorm"
 )
 
@@ -59,6 +62,54 @@ func (s *Service) CompleteProfile(userID uint, req *CompleteProfileRequest, phot
 			return nil, fmt.Errorf("failed to save photo: %w", err)
 		}
 		profile.PhotoURL = photoURL
+
+		// Face embedding olish va dublikat tekshirish
+		if services.IsFaceServiceAvailable() {
+			fullPath := filepath.Join(".", photoURL)
+			embedResult, err := services.GetFaceEmbedding(fullPath)
+			if err != nil {
+				log.Printf("[FaceService] Embedding olishda xatolik (user %d): %v", userID, err)
+			} else if embedResult != nil && embedResult.FaceFound {
+				// Embeddingni JSON ga o'girish
+				embJSON, _ := json.Marshal(embedResult.Embedding)
+				profile.FaceEmbedding = string(embJSON)
+
+				// Mavjud embeddinglarni olish va dublikat tekshirish
+				var existingProfiles []models.Profile
+				s.repo.db.Where("face_embedding != '' AND face_embedding IS NOT NULL AND user_id != ?", userID).
+					Select("user_id, face_embedding").Find(&existingProfiles)
+
+				if len(existingProfiles) > 0 {
+					existingEmbs := make([]services.ExistingEmbedding, 0, len(existingProfiles))
+					for _, ep := range existingProfiles {
+						var emb []float64
+						if err := json.Unmarshal([]byte(ep.FaceEmbedding), &emb); err == nil {
+							// Username ni olish
+							var u models.User
+							s.repo.db.Select("username").First(&u, ep.UserID)
+							existingEmbs = append(existingEmbs, services.ExistingEmbedding{
+								UserID:    ep.UserID,
+								Username:  u.Username,
+								Embedding: emb,
+							})
+						}
+					}
+
+					if len(existingEmbs) > 0 {
+						dupResult, err := services.CheckDuplicate(embedResult.Embedding, existingEmbs)
+						if err != nil {
+							log.Printf("[FaceService] Dublikat tekshirishda xatolik: %v", err)
+						} else if dupResult != nil && dupResult.IsDuplicate {
+							match := dupResult.Matches[0]
+							return nil, fmt.Errorf(
+								"Bu yuz allaqachon ro'yxatdan o'tgan (@%s). Agar bu sizning hisobingiz bo'lsa, tizimga kiring",
+								match.Username,
+							)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if err := s.repo.CreateProfile(profile); err != nil {

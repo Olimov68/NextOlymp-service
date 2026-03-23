@@ -263,6 +263,20 @@ func (s *Service) Duplicate(id uint) (*models.MockTest, error) {
 }
 
 func (s *Service) Publish(id uint) error {
+	mt, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Savol soni tekshirish
+	actualCount := s.repo.CountQuestions("mock_test", id)
+	if mt.TotalQuestions > 0 && int64(mt.TotalQuestions) != actualCount {
+		return fmt.Errorf("Mock testda %d ta savol bo'lishi kerak, hozirda %d ta mavjud. Avval savollarni to'ldiring", mt.TotalQuestions, actualCount)
+	}
+	if actualCount == 0 {
+		return fmt.Errorf("Mock testda hech qanday savol yo'q. Avval savollar qo'shing")
+	}
+
 	return s.repo.UpdateStatus(id, models.MockTestStatusPublished)
 }
 

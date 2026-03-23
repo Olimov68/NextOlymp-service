@@ -22,7 +22,8 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // GetBalance — foydalanuvchi balansini olish
 func (h *Handler) GetBalance(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 
 	var bal models.Balance
 	if err := h.db.Where("user_id = ?", userID).First(&bal).Error; err != nil {
@@ -38,7 +39,8 @@ func (h *Handler) GetBalance(c *gin.Context) {
 
 // GetTransactions — tranzaksiyalar tarixi
 func (h *Handler) GetTransactions(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	page := 1
 	limit := 20
 	if p := c.Query("page"); p != "" {
@@ -67,7 +69,8 @@ type TopUpRequest struct {
 }
 
 func (h *Handler) TopUp(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 
 	var req TopUpRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

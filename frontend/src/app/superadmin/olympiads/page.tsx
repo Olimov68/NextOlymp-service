@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
   Plus, Pencil, Trash2, Search, RefreshCw, Loader2, Trophy,
   Eye, DollarSign, Copy, Send, SendHorizonal,
 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import {
   getOlympiads, createOlympiad, updateOlympiad, deleteOlympiad,
@@ -29,6 +30,7 @@ import {
 import type { AssessmentBase, AssessmentFormData } from "@/lib/assessment-types";
 import { normalizeList } from "@/lib/normalizeList";
 import AssessmentForm from "@/components/assessment/AssessmentForm";
+import { getErrorMessage } from "@/lib/api-error";
 
 interface Olympiad extends AssessmentBase {
   exam_type?: "olympiad";
@@ -48,6 +50,8 @@ export default function SuperadminOlympiadsPage() {
   const [editItem, setEditItem] = useState<Olympiad | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const load = async () => {
     setLoading(true);
@@ -123,8 +127,8 @@ export default function SuperadminOlympiadsPage() {
       }
       setOpen(false);
       await load();
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
+    } catch (e: unknown) {
+      const msg = getErrorMessage(e, "Xatolik yuz berdi");
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -188,6 +192,15 @@ export default function SuperadminOlympiadsPage() {
       (paidFilter === "free" && !item.is_paid);
     return matchSearch && matchStatus && matchSubject && matchGrade && matchLanguage && matchPaid;
   });
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  // Reset page on filter change
+  useEffect(() => { setPage(1); }, [search, statusFilter, subjectFilter, gradeFilter, languageFilter, paidFilter]);
 
   return (
     <div className="space-y-6">
@@ -284,7 +297,7 @@ export default function SuperadminOlympiadsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((item, i) => {
+              {paginated.map((item, i) => {
                 const displayStatus = getAssessmentDisplayStatus(item);
                 const langLabels: Record<string, string> = { uz: "O'zbek", ru: "Rus", en: "Ingliz" };
                 return (
@@ -378,6 +391,8 @@ export default function SuperadminOlympiadsPage() {
           </Table>
         )}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={filtered.length} />
 
       {/* Create/Edit Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>

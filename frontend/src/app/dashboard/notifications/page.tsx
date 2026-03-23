@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Bell,
   CheckCheck,
@@ -36,6 +37,8 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   useEffect(() => {
     listNotifications()
@@ -129,7 +132,7 @@ export default function NotificationsPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {notifications.map((n) => {
+          {notifications.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((n) => {
             const Icon = typeIcons[n.type] || Bell;
             return (
               <Card
@@ -197,6 +200,12 @@ export default function NotificationsPage() {
               </Card>
             );
           })}
+          <Pagination
+            page={page}
+            totalPages={Math.ceil(notifications.length / PAGE_SIZE)}
+            onPageChange={setPage}
+            total={notifications.length}
+          />
         </div>
       )}
     </div>

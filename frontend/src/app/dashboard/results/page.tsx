@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -34,6 +35,8 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   useEffect(() => {
     getMyResults()
@@ -54,6 +57,14 @@ export default function ResultsPage() {
       return true;
     });
   }, [results, typeFilter, subjectFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  useMemo(() => { setPage(1); }, [typeFilter, subjectFilter]);
 
   if (loading) {
     return (
@@ -165,7 +176,7 @@ export default function ResultsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r) => (
+                  {paginated.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>
                         <span className="text-sm font-medium text-foreground">
@@ -211,6 +222,8 @@ export default function ResultsPage() {
                               ? "bg-green-100 text-green-700"
                               : r.status === "in_progress"
                               ? "bg-amber-100 text-amber-700"
+                              : r.status === "timed_out"
+                              ? "bg-red-100 text-red-700"
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
@@ -218,15 +231,27 @@ export default function ResultsPage() {
                             ? "Yakunlangan"
                             : r.status === "in_progress"
                             ? "Jarayonda"
+                            : r.status === "timed_out"
+                            ? "Vaqt tugadi"
+                            : r.status === "cancelled"
+                            ? "Bekor qilingan"
                             : r.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {new Date(r.finished_at || r.created_at).toLocaleDateString(
-                            "uz-UZ"
-                          )}
+                          {(() => {
+                            const dateStr = r.finished_at || r.started_at || r.created_at;
+                            if (!dateStr) return "—";
+                            const d = new Date(dateStr);
+                            if (isNaN(d.getTime())) return "—";
+                            return d.toLocaleDateString("uz-UZ", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                            });
+                          })()}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -237,6 +262,7 @@ export default function ResultsPage() {
           )}
         </CardContent>
       </Card>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={filtered.length} />
     </div>
   );
 }

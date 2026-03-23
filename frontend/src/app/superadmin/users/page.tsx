@@ -10,14 +10,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Trash2, ShieldOff, Shield, ChevronLeft, ChevronRight, Eye, Plus, CheckCircle, UserX, Loader2 } from "lucide-react";
+import { Search, Trash2, ShieldOff, Shield, Eye, Plus, CheckCircle, UserX, Loader2 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { regions } from "@/lib/regions";
+import { getErrorMessage } from "@/lib/api-error";
 
 interface User {
   id: number;
   username: string;
   full_name: string;
+  photo_url: string;
   region: string;
   grade: number;
   status: string;
@@ -33,6 +36,11 @@ interface UserDetail extends User {
   district: string;
   birth_date: string;
   updated_at: string;
+  profile?: {
+    photo_url?: string;
+    first_name?: string;
+    last_name?: string;
+  };
 }
 
 export default function UsersPage() {
@@ -85,8 +93,8 @@ export default function UsersPage() {
       else await blockUser(id);
       toast.success(blocked ? "Blok olib tashlandi" : "Bloklandi");
       fetchUsers();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     }
   };
 
@@ -96,8 +104,8 @@ export default function UsersPage() {
       toast.success("Foydalanuvchi tasdiqlandi");
       fetchUsers();
       setViewUser(null);
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     }
   };
 
@@ -117,8 +125,8 @@ export default function UsersPage() {
       setViewUser(null);
       setRejectDialog(null);
       setRejectReason("");
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     }
   };
 
@@ -128,8 +136,8 @@ export default function UsersPage() {
       await deleteUser(id);
       toast.success("O'chirildi");
       fetchUsers();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     }
   };
 
@@ -150,8 +158,8 @@ export default function UsersPage() {
       setNewUsername("");
       setNewPassword("");
       fetchUsers();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     } finally {
       setCreating(false);
     }
@@ -202,9 +210,8 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-border hover:bg-accent">
-              <TableHead>ID</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Ism</TableHead>
+              <TableHead>Rasm</TableHead>
+              <TableHead>Ism / Username</TableHead>
               <TableHead>Viloyat</TableHead>
               <TableHead>Sinf</TableHead>
               <TableHead>Status</TableHead>
@@ -214,14 +221,26 @@ export default function UsersPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Yuklanmoqda...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Yuklanmoqda...</TableCell></TableRow>
             ) : users.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Foydalanuvchi topilmadi</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Foydalanuvchi topilmadi</TableCell></TableRow>
             ) : users.map((u) => (
               <TableRow key={u.id} className="border-border hover:bg-accent">
-                <TableCell>{u.id}</TableCell>
-                <TableCell className="font-medium">{u.username}</TableCell>
-                <TableCell>{u.full_name || "—"}</TableCell>
+                <TableCell>
+                  {u.photo_url ? (
+                    <img src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}${u.photo_url}`} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                      {u.full_name?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase() || "?"}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{u.full_name || "—"}</p>
+                    <p className="text-xs text-muted-foreground">@{u.username}</p>
+                  </div>
+                </TableCell>
                 <TableCell>{u.region || "—"}</TableCell>
                 <TableCell>{u.grade || "—"}</TableCell>
                 <TableCell>
@@ -262,17 +281,7 @@ export default function UsersPage() {
         </Table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Jami: {total}</span>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}><ChevronLeft className="w-4 h-4" /></Button>
-            <span className="px-3 py-1 text-sm">{page} / {totalPages}</span>
-            <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}><ChevronRight className="w-4 h-4" /></Button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} />
 
       {/* Create User Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -308,10 +317,22 @@ export default function UsersPage() {
             <p className="text-muted-foreground text-center py-4">Yuklanmoqda...</p>
           ) : viewUser ? (
             <div className="space-y-4">
+              {/* Profil rasmi */}
+              <div className="flex items-center gap-4 pb-3 border-b border-border">
+                {(viewUser.photo_url || viewUser.profile?.photo_url) ? (
+                  <img src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}${viewUser.photo_url || viewUser.profile?.photo_url}`} alt="" className="w-20 h-20 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                    {viewUser.full_name?.[0]?.toUpperCase() || "?"}
+                  </div>
+                )}
+                <div>
+                  <p className="text-lg font-semibold">{viewUser.full_name || viewUser.username}</p>
+                  <p className="text-sm text-muted-foreground">@{viewUser.username}</p>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-muted-foreground text-xs">ID</Label><p className="text-sm">{viewUser.id}</p></div>
-                <div><Label className="text-muted-foreground text-xs">Username</Label><p className="text-sm">{viewUser.username}</p></div>
-                <div><Label className="text-muted-foreground text-xs">To&apos;liq ism</Label><p className="text-sm">{viewUser.full_name || "—"}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Email</Label><p className="text-sm">{viewUser.email || "—"}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Telefon</Label><p className="text-sm">{viewUser.phone || "—"}</p></div>
                 <div><Label className="text-muted-foreground text-xs">Viloyat</Label><p className="text-sm">{viewUser.region || "—"}</p></div>

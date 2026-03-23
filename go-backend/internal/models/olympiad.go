@@ -48,6 +48,9 @@ type Olympiad struct {
 	RegistrationEndTime   *time.Time `json:"registration_end_time,omitempty"`
 	MaxSeats              int        `gorm:"default:0" json:"max_seats"` // 0 = cheksiz
 
+	// Ro'yxatdan o'tish holati (admin boshqaradi)
+	RegistrationOpen bool `gorm:"default:true" json:"registration_open"`
+
 	// Sozlamalar
 	ShuffleQuestions       bool `gorm:"default:false" json:"shuffle_questions"`
 	ShuffleAnswers         bool `gorm:"default:false" json:"shuffle_answers"`

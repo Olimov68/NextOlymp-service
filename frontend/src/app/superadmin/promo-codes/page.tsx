@@ -44,14 +44,14 @@ import {
   Eye,
   Loader2,
   Tag,
-  ChevronLeft,
-  ChevronRight,
   Search,
   TicketPercent,
   Users,
   TrendingUp,
 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api-error";
 
 interface PromoCode {
   id: number;
@@ -153,8 +153,8 @@ export default function PromoCodesPage() {
       resetForm();
       fetchCodes();
       fetchStats();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     } finally {
       setCreating(false);
     }
@@ -174,8 +174,8 @@ export default function PromoCodesPage() {
       toast.success("Status o'zgartirildi");
       fetchCodes();
       fetchStats();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     }
   };
 
@@ -186,8 +186,8 @@ export default function PromoCodesPage() {
       toast.success("O'chirildi");
       fetchCodes();
       fetchStats();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     }
   };
 
@@ -367,22 +367,7 @@ export default function PromoCodesPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Jami: {total}</span>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="px-3 py-1 text-sm">
-              {page} / {totalPages}
-            </span>
-            <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} />
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -412,7 +397,7 @@ export default function PromoCodesPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Chegirma turi</Label>
-                <Select value={newType} onValueChange={setNewType}>
+                <Select value={newType} onValueChange={(v) => setNewType(v ?? "percentage")}>
                   <SelectTrigger className="bg-muted border-border">
                     <SelectValue />
                   </SelectTrigger>

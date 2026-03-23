@@ -2,6 +2,7 @@ package userolympiads
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/nextolympservice/go-backend/internal/models"
@@ -82,17 +83,65 @@ func (s *Service) GetMyOlympiads(userID uint) ([]map[string]interface{}, error) 
 	return result, nil
 }
 
+func (s *Service) GetUserOlympiadStatus(userID, olympiadID uint) map[string]interface{} {
+	result := map[string]interface{}{
+		"is_joined":      false,
+		"has_attempted":  false,
+		"attempt_status": "",
+		"attempt_id":     uint(0),
+		"allow_retake":   false,
+	}
+
+	// Olimpiada AllowRetake sozlamasini olish
+	olympiad, err := s.repo.GetByID(olympiadID)
+	if err == nil {
+		result["allow_retake"] = olympiad.AllowRetake
+	}
+
+	// Ro'yxatdan o'tganmi
+	_, err = s.repo.GetRegistration(userID, olympiadID)
+	if err == nil {
+		result["is_joined"] = true
+	}
+
+	// Attemptlar
+	attempt, err := s.repo.GetLatestAttempt(userID, olympiadID)
+	if err == nil {
+		result["has_attempted"] = true
+		result["attempt_status"] = attempt.Status
+		result["attempt_id"] = attempt.ID
+	}
+
+	return result
+}
+
 func (s *Service) Join(userID, olympiadID uint) (*RegistrationResponse, error) {
 	olympiad, err := s.repo.GetByID(olympiadID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("olympiad not found")
+			return nil, errors.New("Olimpiada topilmadi")
 		}
 		return nil, err
 	}
 
 	if olympiad.Status != models.OlympiadStatusPublished && olympiad.Status != models.OlympiadStatusActive {
-		return nil, errors.New("this olympiad is not accepting registrations")
+		return nil, errors.New("Bu olimpiada hozirda ro'yxatga olish uchun ochiq emas")
+	}
+
+	// Admin ro'yxatdan o'tishni yopgan bo'lishi mumkin
+	if !olympiad.RegistrationOpen {
+		return nil, errors.New("Bu olimpiadaga ro'yxatdan o'tish yopilgan")
+	}
+
+	// Sinf bo'yicha cheklov — foydalanuvchining sinfi olimpiada sinfiga mos bo'lishi kerak
+	if olympiad.Grade > 0 {
+		profile, err := s.repo.GetUserProfile(userID)
+		if err != nil {
+			return nil, errors.New("Profilingiz topilmadi. Avval profilni to'ldiring")
+		}
+		if profile.Grade != olympiad.Grade {
+			return nil, fmt.Errorf("Bu olimpiada faqat %d-sinf o'quvchilari uchun. Siz %d-sinfda o'qiysiz", olympiad.Grade, profile.Grade)
+		}
 	}
 
 	// Ro'yxatdan o'tish vaqtini tekshirish
@@ -118,7 +167,7 @@ func (s *Service) Join(userID, olympiadID uint) (*RegistrationResponse, error) {
 	// Oldin qo'shilgan-qo'shilmaganligini tekshirish
 	_, err = s.repo.GetRegistration(userID, olympiadID)
 	if err == nil {
-		return nil, errors.New("you have already joined this olympiad")
+		return nil, errors.New("Siz bu olimpiadaga allaqachon ro'yxatdan o'tgansiz")
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
@@ -131,7 +180,7 @@ func (s *Service) Join(userID, olympiadID uint) (*RegistrationResponse, error) {
 	}
 
 	if err := s.repo.CreateRegistration(reg); err != nil {
-		return nil, errors.New("failed to join olympiad")
+		return nil, errors.New("Olimpiadaga qo'shilishda xatolik yuz berdi")
 	}
 
 	return &RegistrationResponse{

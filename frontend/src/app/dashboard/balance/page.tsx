@@ -17,13 +17,12 @@ import {
   Wallet,
   ArrowUpRight,
   ArrowDownLeft,
-  ChevronLeft,
-  ChevronRight,
   Plus,
   AlertCircle,
   CheckCircle2,
   Tag,
 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import {
   getBalance,
   getTransactions,
@@ -34,6 +33,7 @@ import {
   type PromoApplyResponse,
   type TopUpResponse,
 } from "@/lib/user-api";
+import { getErrorMessage } from "@/lib/api-error";
 
 export default function BalancePage() {
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
@@ -121,8 +121,8 @@ export default function BalancePage() {
       setTopUpMessage("So'rov muvaffaqiyatli yuborildi!");
       setTopUpAmount("");
       await loadData(page);
-    } catch (err: any) {
-      setTopUpError(err?.response?.data?.message || "Xatolik yuz berdi");
+    } catch (err: unknown) {
+      setTopUpError(getErrorMessage(err, "Xatolik yuz berdi"));
     } finally {
       setTopUpLoading(false);
     }
@@ -139,8 +139,8 @@ export default function BalancePage() {
     try {
       const result = await applyPromoCode({ code: promoCode.trim(), amount: parseInt(topUpAmount) || 0 });
       setPromoResult(result);
-    } catch (err: any) {
-      setPromoError(err?.response?.data?.message || "Promo kod xato yoki muddati tugagan");
+    } catch (err: unknown) {
+      setPromoError(getErrorMessage(err, "Promo kod xato yoki muddati tugagan"));
     } finally {
       setPromoLoading(false);
     }
@@ -359,34 +359,7 @@ export default function BalancePage() {
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    Jami: {totalTxns} ta tranzaksiya
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page <= 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      {page} / {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={page >= totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={totalTxns} className="mt-4 pt-4 border-t" />
             </>
           )}
         </CardContent>

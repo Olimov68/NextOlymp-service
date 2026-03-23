@@ -47,13 +47,12 @@ import {
   Trash2,
   ShieldOff,
   Shield,
-  ChevronLeft,
-  ChevronRight,
   Eye,
   Check,
   X,
   Loader2,
 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import { normalizeList } from "@/lib/normalizeList";
 
 // ============================================
@@ -903,34 +902,7 @@ export default function AdminsPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Jami: {total}</span>
-          <div className="flex gap-2 items-center">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-              className="border-border"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="px-3 py-1 text-sm text-muted-foreground">
-              {page} / {totalPages}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={page >= totalPages}
-              onClick={() => setPage(page + 1)}
-              className="border-border"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} />
 
       {/* ============================================ */}
       {/* Create Admin Dialog */}

@@ -30,7 +30,8 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // StartMockTest — mock testni boshlash
 func (h *Handler) StartMockTest(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	mockTestID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri ID")
@@ -59,16 +60,46 @@ func (h *Handler) StartMockTest(c *gin.Context) {
 	// Faol urinish bormi tekshirish
 	var activeAttempt models.MockAttempt
 	if err := h.db.Where("user_id = ? AND mock_test_id = ? AND status = ?", userID, mockTestID, "in_progress").First(&activeAttempt).Error; err == nil {
-		// Faol urinish bor — davom ettirish
+		// Faol urinish bor — savollar va javoblarni qaytarish
+		var questions []models.Question
+		h.db.Preload("Options", func(db *gorm.DB) *gorm.DB {
+			return db.Order("order_num ASC")
+		}).Where("source_type = ? AND source_id = ? AND is_active = true", "mock_test", mockTestID).
+			Order("order_num ASC").Find(&questions)
+
+		safeQuestions := h.hideCorrectAnswers(questions)
+
+		// Mavjud javoblarni olish
 		var answers []models.MockAttemptAnswer
 		h.db.Where("attempt_id = ?", activeAttempt.ID).Find(&answers)
+		existingAnswers := make(map[uint]uint)
+		for _, a := range answers {
+			if a.SelectedOptionID != nil {
+				existingAnswers[a.QuestionID] = *a.SelectedOptionID
+			}
+		}
+
+		timeLeft := h.calculateTimeLeft(activeAttempt.StartedAt, mockTest.DurationMins)
 
 		response.Success(c, http.StatusOK, "Faol urinish topildi", gin.H{
-			"attempt":       activeAttempt,
-			"answers_given": len(answers),
-			"time_left":     h.calculateTimeLeft(activeAttempt.StartedAt, mockTest.DurationMins),
+			"attempt_id":        activeAttempt.ID,
+			"questions":         safeQuestions,
+			"total":             len(questions),
+			"remaining_seconds": timeLeft,
+			"duration_mins":     mockTest.DurationMins,
+			"started_at":        activeAttempt.StartedAt,
+			"existing_answers":  existingAnswers,
 		})
 		return
+	}
+
+	// Oldingi urinish bormi — AllowRetake tekshiruvi
+	var prevMockAttempt models.MockAttempt
+	if err := h.db.Where("user_id = ? AND mock_test_id = ? AND status IN ?", userID, mockTestID, []string{"completed", "timed_out"}).First(&prevMockAttempt).Error; err == nil {
+		if !mockTest.AllowRetake {
+			response.Error(c, http.StatusBadRequest, "Siz bu testni allaqachon topshirgansiz. Qayta topshirish yopiq.")
+			return
+		}
 	}
 
 	// Savollarni olish
@@ -135,7 +166,8 @@ type SubmitAnswerRequest struct {
 }
 
 func (h *Handler) SubmitMockAnswer(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	attemptID, err := strconv.ParseUint(c.Param("attempt_id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri attempt ID")
@@ -203,7 +235,8 @@ func (h *Handler) SubmitMockAnswer(c *gin.Context) {
 
 // FinishMockTest — testni yakunlash
 func (h *Handler) FinishMockTest(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	attemptID, err := strconv.ParseUint(c.Param("attempt_id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri attempt ID")
@@ -235,7 +268,8 @@ func (h *Handler) FinishMockTest(c *gin.Context) {
 
 // GetMockAttemptResult — urinish natijasini ko'rish
 func (h *Handler) GetMockAttemptResult(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	attemptID, err := strconv.ParseUint(c.Param("attempt_id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri attempt ID")
@@ -299,7 +333,8 @@ func (h *Handler) GetMockAttemptResult(c *gin.Context) {
 
 // GetMyMockAttempts — mening urinishlarim
 func (h *Handler) GetMyMockAttempts(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	mockTestID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri ID")
@@ -319,7 +354,8 @@ func (h *Handler) GetMyMockAttempts(c *gin.Context) {
 
 // StartOlympiad — olimpiadani boshlash
 func (h *Handler) StartOlympiad(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	olympiadID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri ID")
@@ -332,7 +368,7 @@ func (h *Handler) StartOlympiad(c *gin.Context) {
 		return
 	}
 
-	if olympiad.Status != "active" {
+	if olympiad.Status != "active" && olympiad.Status != "published" {
 		response.Error(c, http.StatusBadRequest, "Bu olimpiada hozirda faol emas")
 		return
 	}
@@ -358,18 +394,48 @@ func (h *Handler) StartOlympiad(c *gin.Context) {
 	// Faol urinish
 	var activeAttempt models.OlympiadAttempt
 	if err := h.db.Where("user_id = ? AND olympiad_id = ? AND status = ?", userID, olympiadID, "in_progress").First(&activeAttempt).Error; err == nil {
+		// Savollarni qaytarish
+		var questions []models.Question
+		h.db.Preload("Options", func(db *gorm.DB) *gorm.DB {
+			return db.Order("order_num ASC")
+		}).Where("source_type = ? AND source_id = ? AND is_active = true", "olympiad", olympiadID).
+			Order("order_num ASC").Find(&questions)
+
+		safeQuestions := h.hideCorrectAnswers(questions)
+
+		// Mavjud javoblarni olish
+		var answers []models.OlympiadAttemptAnswer
+		h.db.Where("attempt_id = ?", activeAttempt.ID).Find(&answers)
+		existingAnswers := make(map[uint]uint)
+		for _, a := range answers {
+			if a.SelectedOptionID != nil {
+				existingAnswers[a.QuestionID] = *a.SelectedOptionID
+			}
+		}
+
+		timeLeft := h.calculateTimeLeft(activeAttempt.StartedAt, olympiad.DurationMins)
+
 		response.Success(c, http.StatusOK, "Faol urinish topildi", gin.H{
-			"attempt":   activeAttempt,
-			"time_left": h.calculateTimeLeft(activeAttempt.StartedAt, olympiad.DurationMins),
+			"attempt_id":        activeAttempt.ID,
+			"questions":         safeQuestions,
+			"total":             len(questions),
+			"remaining_seconds": timeLeft,
+			"duration_mins":     olympiad.DurationMins,
+			"started_at":        activeAttempt.StartedAt,
+			"existing_answers":  existingAnswers,
 		})
 		return
 	}
 
-	// Oldingi urinish bor-yo'qligini tekshirish (olympiada faqat 1 urinish)
+	// Oldingi urinish bor-yo'qligini tekshirish
 	var prevAttempt models.OlympiadAttempt
 	if err := h.db.Where("user_id = ? AND olympiad_id = ? AND status IN ?", userID, olympiadID, []string{"completed", "timed_out"}).First(&prevAttempt).Error; err == nil {
-		response.Error(c, http.StatusBadRequest, "Siz bu olimpiadada allaqachon qatnashgansiz")
-		return
+		// Agar qayta topshirish yoqilmagan bo'lsa — bloklash
+		if !olympiad.AllowRetake {
+			response.Error(c, http.StatusBadRequest, "Siz bu olimpiadada allaqachon qatnashgansiz. Qayta topshirish yopiq.")
+			return
+		}
+		// Qayta topshirish yoqilgan — yangi attempt yaratiladi (pastda)
 	}
 
 	// Savollar
@@ -432,7 +498,8 @@ func (h *Handler) StartOlympiad(c *gin.Context) {
 
 // SubmitOlympiadAnswer — olimpiada javobi
 func (h *Handler) SubmitOlympiadAnswer(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	attemptID, err := strconv.ParseUint(c.Param("attempt_id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri attempt ID")
@@ -496,7 +563,8 @@ func (h *Handler) SubmitOlympiadAnswer(c *gin.Context) {
 
 // FinishOlympiad — olimpiadani yakunlash
 func (h *Handler) FinishOlympiad(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	attemptID, err := strconv.ParseUint(c.Param("attempt_id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri attempt ID")
@@ -528,7 +596,8 @@ func (h *Handler) FinishOlympiad(c *gin.Context) {
 
 // GetOlympiadAttemptResult — olimpiada natijasi
 func (h *Handler) GetOlympiadAttemptResult(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	attemptID, err := strconv.ParseUint(c.Param("attempt_id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri attempt ID")

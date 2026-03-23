@@ -22,6 +22,7 @@ import {
   getQuestionsBySource, createQuestion, updateQuestion, deleteQuestion, getOlympiad, uploadImage,
 } from "@/lib/superadmin-api";
 import { normalizeList } from "@/lib/normalizeList";
+import { getErrorMessage } from "@/lib/api-error";
 
 interface Option {
   id?: number;
@@ -81,7 +82,7 @@ const difficultyLabels: Record<string, string> = {
 export default function OlympiadQuestionsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [olympiad, setOlympiad] = useState<any>(null);
+  const [olympiad, setOlympiad] = useState<{ title?: string; id?: number; subject?: string; duration_minutes?: number; total_questions?: number } | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -219,8 +220,8 @@ export default function OlympiadQuestionsPage() {
       }
       setOpen(false);
       load();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error || "Xatolik yuz berdi");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik yuz berdi"));
     } finally {
       setSaving(false);
     }

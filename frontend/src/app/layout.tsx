@@ -5,6 +5,8 @@ import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { AuthProvider } from "@/lib/auth-context";
 import { SettingsProvider } from "@/lib/settings-context";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 import { Toaster } from "sonner";
 
 const inter = Inter({
@@ -66,7 +68,11 @@ export default function RootLayout({
         <Providers>
           <SettingsProvider>
             <AuthProvider>
-              {children}
+              <ErrorBoundary>
+                <MaintenanceGuard>
+                  {children}
+                </MaintenanceGuard>
+              </ErrorBoundary>
             </AuthProvider>
           </SettingsProvider>
         </Providers>

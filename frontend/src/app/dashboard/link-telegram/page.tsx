@@ -42,8 +42,9 @@ export default function LinkTelegramPage() {
       await verifyTelegramCode(code);
       setLinked(true);
       await refreshUser();
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "Kod noto'g'ri yoki muddati tugagan");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      setError(err?.response?.data?.message || "Kod noto'g'ri yoki muddati tugagan");
     } finally {
       setLoading(false);
     }

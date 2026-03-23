@@ -19,7 +19,8 @@ type Config struct {
 	Telegram TelegramConfig
 	CORS     CORSConfig
 	Payme    PaymeConfig
-	Google   GoogleConfig
+	Google          GoogleConfig
+	AnthropicAPIKey string
 }
 
 type GoogleConfig struct {
@@ -45,8 +46,9 @@ type CORSConfig struct {
 }
 
 type AppConfig struct {
-	Port string
-	Env  string
+	Port    string
+	Env     string
+	BaseURL string
 }
 
 type DBConfig struct {
@@ -107,10 +109,14 @@ func Load() (*Config, error) {
 
 	paymeTestMode := getEnv("PAYME_TEST_MODE", "true") == "true"
 
+	appPort := getEnv("APP_PORT", "8080")
+	appBaseURL := getEnv("APP_BASE_URL", fmt.Sprintf("http://localhost:%s", appPort))
+
 	cfg := &Config{
 		App: AppConfig{
-			Port: getEnv("APP_PORT", "8080"),
-			Env:  getEnv("APP_ENV", "development"),
+			Port:    appPort,
+			Env:     getEnv("APP_ENV", "development"),
+			BaseURL: appBaseURL,
 		},
 		DB: DBConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
@@ -158,6 +164,7 @@ func Load() (*Config, error) {
 		Google: GoogleConfig{
 			ClientID: getEnv("GOOGLE_CLIENT_ID", ""),
 		},
+		AnthropicAPIKey: getEnv("ANTHROPIC_API_KEY", ""),
 	}
 
 	if cfg.JWT.AccessSecret == "" || cfg.JWT.RefreshSecret == "" {

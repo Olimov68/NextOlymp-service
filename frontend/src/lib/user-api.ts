@@ -101,6 +101,8 @@ export interface ExamStartResponse {
   questions: ExamQuestion[];
   duration_minutes: number;
   started_at: string;
+  existing_answers?: Record<string, number>;
+  remaining_seconds?: number;
 }
 
 export interface ExamQuestion {
@@ -176,7 +178,16 @@ export const uploadPhoto = (file: File) => {
 
 // ─── Olympiads ───────────────────────────────────────────────────────────────
 
-export const listOlympiads = (params?: Record<string, any>): Promise<Olympiad[]> =>
+export interface ListParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  subject?: string;
+  status?: string;
+  limit?: number;
+}
+
+export const listOlympiads = (params?: ListParams): Promise<Olympiad[]> =>
   api.get("/user/olympiads", { params }).then((r) => r.data.data ?? r.data);
 
 export const getOlympiad = (id: number): Promise<Olympiad> =>
@@ -190,7 +201,7 @@ export const joinOlympiad = (id: number) =>
 
 // ─── Mock Tests ──────────────────────────────────────────────────────────────
 
-export const listMockTests = (params?: Record<string, any>): Promise<MockExam[]> =>
+export const listMockTests = (params?: ListParams): Promise<MockExam[]> =>
   api.get("/user/mock-tests", { params }).then((r) => r.data.data ?? r.data);
 
 export const getMockTest = (id: number): Promise<MockExam> =>
@@ -306,7 +317,7 @@ export interface PromoApplyResponse {
 
 export const applyPromoCode = (data: {
   code: string;
-  amount: number;
+  amount?: number;
   source_type?: string;
 }): Promise<PromoApplyResponse> =>
   api.post("/user/balance/promo-code/apply", data).then((r) => r.data.data ?? r.data);
@@ -375,13 +386,13 @@ export const deleteNotification = (id: number) =>
 
 // ─── Results ─────────────────────────────────────────────────────────────────
 
-export const getMyResults = (params?: Record<string, any>): Promise<UserResult[]> =>
+export const getMyResults = (params?: ListParams): Promise<UserResult[]> =>
   api.get("/user/results", { params }).then((r) => r.data.data ?? r.data);
 
-export const getMockTestResults = (params?: Record<string, any>): Promise<UserResult[]> =>
+export const getMockTestResults = (params?: ListParams): Promise<UserResult[]> =>
   api.get("/user/results/mock-tests", { params }).then((r) => r.data.data ?? r.data);
 
-export const getOlympiadResults = (params?: Record<string, any>): Promise<UserResult[]> =>
+export const getOlympiadResults = (params?: ListParams): Promise<UserResult[]> =>
   api.get("/user/results/olympiads", { params }).then((r) => r.data.data ?? r.data);
 
 // ─── Devices ────────────────────────────────────────────────────────────────
@@ -484,4 +495,27 @@ export const downloadMyCertificatePDF = async (id: number) => {
   link.remove();
   window.URL.revokeObjectURL(url);
 };
+
+// ─── AI Analysis ──────────────────────────────────────────────────────────────
+
+export interface AIQuestionReview {
+  question_num: number;
+  question_text: string;
+  your_answer: string;
+  correct_answer: string;
+  explanation: string;
+}
+
+export interface AIAnalysisResult {
+  overall_grade: string;
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  question_analysis: AIQuestionReview[];
+  recommendations: string[];
+  motivation: string;
+}
+
+export const getAIAnalysis = (attemptId: number): Promise<AIAnalysisResult> =>
+  api.get(`/user/exams/mock-tests/attempts/${attemptId}/ai-analysis`).then((r) => r.data.data ?? r.data);
 

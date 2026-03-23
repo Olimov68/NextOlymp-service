@@ -20,7 +20,8 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // GetMyResults — barcha natijalarim
 func (h *Handler) GetMyResults(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	page := 1
 	limit := 20
 	if p := c.Query("page"); p != "" {
@@ -114,7 +115,8 @@ func (h *Handler) GetMyResults(c *gin.Context) {
 
 // GetMockTestResults — mock test bo'yicha natijalar
 func (h *Handler) GetMockTestResults(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 
 	var attempts []models.MockAttempt
 	h.db.Preload("MockTest").
@@ -127,7 +129,8 @@ func (h *Handler) GetMockTestResults(c *gin.Context) {
 
 // GetOlympiadResults — olimpiada bo'yicha natijalar
 func (h *Handler) GetOlympiadResults(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 
 	var attempts []models.OlympiadAttempt
 	h.db.Preload("Olympiad").

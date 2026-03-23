@@ -4,10 +4,12 @@ import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { Pagination } from "@/components/ui/pagination";
 import { Search, ClipboardCheck } from "lucide-react";
 import { listMockTests } from "@/lib/user-api";
 import AssessmentCard from "@/components/assessment/AssessmentCard";
 import type { AssessmentBase } from "@/lib/assessment-types";
+import { normalizeList } from "@/lib/normalizeList";
 
 const subjectOptions = [
   { value: "", label: "Barcha fanlar" },
@@ -39,6 +41,7 @@ const languageOptions = [
   { value: "en", label: "Ingliz" },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapToAssessment(o: Record<string, any>): AssessmentBase {
   return {
     id: o.id,
@@ -69,6 +72,8 @@ function mapToAssessment(o: Record<string, any>): AssessmentBase {
     give_certificate: o.give_certificate ?? false,
     manual_review: o.manual_review ?? false,
     admin_approval: o.admin_approval ?? false,
+    min_score_for_certificate: o.min_score_for_certificate ?? 0,
+    scoring_rules: o.scoring_rules ?? "",
     registered_count: o.registered_count,
     participants_count: o.participants_count,
     created_at: o.created_at ?? "",
@@ -131,17 +136,16 @@ export default function MockTestsListPage() {
   const [paidFilter, setPaidFilter] = useState("");
   const [gradeFilter, setGradeFilter] = useState("");
   const [languageFilter, setLanguageFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 12;
 
   useEffect(() => {
     listMockTests({ page: 1, page_size: 100 })
-      .then((data) => {
-        let list: any[] = [];
-        if (Array.isArray(data)) list = data;
-        else if ((data as any)?.data && Array.isArray((data as any).data)) list = (data as any).data;
-        else if ((data as any)?.items && Array.isArray((data as any).items)) list = (data as any).items;
+      .then((data: unknown) => {
+        const list = normalizeList(data);
         setMockTests(list.map(mapToAssessment));
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error("Mock tests load error:", err);
         setMockTests([]);
       })
@@ -159,6 +163,14 @@ export default function MockTestsListPage() {
       return true;
     });
   }, [mockTests, search, subjectFilter, paidFilter, gradeFilter, languageFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  useMemo(() => { setPage(1); }, [search, subjectFilter, paidFilter, gradeFilter, languageFilter]);
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -222,11 +234,14 @@ export default function MockTestsListPage() {
           <p className="text-sm mt-1 opacity-70">Boshqa filtrlarni sinab ko&apos;ring</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((m) => (
-            <AssessmentCard key={m.id} assessment={m} examType="mock_test" />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginated.map((m) => (
+              <AssessmentCard key={m.id} assessment={m} examType="mock_test" />
+            ))}
+          </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={filtered.length} />
+        </>
       )}
     </div>
   );

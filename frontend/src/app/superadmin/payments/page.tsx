@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ChevronLeft, ChevronRight, CheckCircle, RotateCcw, DollarSign, Clock, XCircle, TrendingUp, Tag } from "lucide-react";
+import { Search, CheckCircle, RotateCcw, DollarSign, Clock, XCircle, TrendingUp, Tag } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import Link from "next/link";
 
 interface Payment {
@@ -261,17 +262,7 @@ export default function PaymentsPage() {
         </Table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Jami: {total}</span>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}><ChevronLeft className="w-4 h-4" /></Button>
-            <span className="px-3 py-1 text-sm">{page} / {totalPages}</span>
-            <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}><ChevronRight className="w-4 h-4" /></Button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} />
 
       {/* Refund Dialog */}
       <Dialog open={showRefund} onOpenChange={setShowRefund}>

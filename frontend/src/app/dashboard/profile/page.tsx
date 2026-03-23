@@ -625,8 +625,16 @@ function ProfileForm({
       setTimeout(() => setSuccess(false), 3000);
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || "Xatolik yuz berdi");
+      const apiErr = err as { response?: { data?: { message?: string; errors?: Record<string, string> } } };
+      const errors = apiErr?.response?.data?.errors;
+      if (errors) {
+        // Backend validation xatolarini ko'rsatamiz
+        const errorMessages = Object.values(errors);
+        setError(errorMessages.join(". "));
+      } else {
+        const msg = apiErr?.response?.data?.message;
+        setError(msg || "Profil saqlashda xatolik yuz berdi");
+      }
     },
   });
 
@@ -666,6 +674,40 @@ function ProfileForm({
       setError("Iltimos, avval rasmingizni yuklang");
       return;
     }
+    // Frontend validation — aniq xato xabarlari
+    if (!form.first_name || form.first_name.trim().length < 2) {
+      setError("Ism kamida 2 ta belgi bo'lishi kerak");
+      return;
+    }
+    if (!form.last_name || form.last_name.trim().length < 2) {
+      setError("Familiya kamida 2 ta belgi bo'lishi kerak");
+      return;
+    }
+    if (!form.birth_date) {
+      setError("Tug'ilgan sanani tanlang");
+      return;
+    }
+    if (!form.gender) {
+      setError("Jinsni tanlang");
+      return;
+    }
+    if (!form.region || form.region.trim().length < 2) {
+      setError("Viloyatni tanlang yoki kamida 2 ta belgi kiriting");
+      return;
+    }
+    if (!form.district || form.district.trim().length < 2) {
+      setError("Tumanni tanlang yoki kamida 2 ta belgi kiriting");
+      return;
+    }
+    if (!form.school_name || form.school_name.trim().length < 1) {
+      setError("Maktab nomini kiriting");
+      return;
+    }
+    if (!form.grade || Number(form.grade) < 1 || Number(form.grade) > 12) {
+      setError("Sinf 1 dan 12 gacha bo'lishi kerak");
+      return;
+    }
+    setError("");
     mutation.mutate(form);
   };
 

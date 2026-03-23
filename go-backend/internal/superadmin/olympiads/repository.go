@@ -62,7 +62,22 @@ func (r *Repository) Update(id uint, fields map[string]interface{}) error {
 }
 
 func (r *Repository) Delete(id uint) error {
-	return r.db.Delete(&models.Olympiad{}, id).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		tx.Exec("DELETE FROM olympiad_attempt_answer WHERE attempt_id IN (SELECT id FROM olympiad_attempt WHERE olympiad_id = ?)", id)
+		tx.Exec("DELETE FROM anti_cheat_violations WHERE attempt_type = 'olympiad' AND attempt_id IN (SELECT id FROM olympiad_attempt WHERE olympiad_id = ?)", id)
+		tx.Exec("DELETE FROM exam_violation WHERE attempt_id IN (SELECT id FROM olympiad_attempt WHERE olympiad_id = ?)", id)
+		tx.Exec("DELETE FROM olympiad_attempt WHERE olympiad_id = ?", id)
+		tx.Exec("DELETE FROM olympiad_registration WHERE olympiad_id = ?", id)
+		tx.Exec("DELETE FROM olympiad_question_stat WHERE olympiad_id = ?", id)
+		tx.Exec("DELETE FROM certificate WHERE source_type = 'olympiad' AND source_id = ?", id)
+		tx.Exec("DELETE FROM question_option WHERE question_id IN (SELECT id FROM question WHERE source_type = 'olympiad' AND source_id = ?)", id)
+		tx.Exec("DELETE FROM question WHERE source_type = 'olympiad' AND source_id = ?", id)
+		tx.Exec("DELETE FROM notification WHERE source_type = 'olympiad' AND source_id = ?", id)
+		if err := tx.Delete(&models.Olympiad{}, id).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // ListRegistrations returns paginated registrations for an olympiad with user info
@@ -114,4 +129,16 @@ func (r *Repository) CreateOlympiad(o *models.Olympiad) error {
 // UpdateStatus updates only the status of an olympiad
 func (r *Repository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&models.Olympiad{}).Where("id = ?", id).Update("status", status).Error
+}
+
+// CountQuestions — olimpiadaga tegishli savollar sonini hisoblash
+func (r *Repository) CountQuestions(sourceType string, sourceID uint) int64 {
+	var count int64
+	r.db.Model(&models.Question{}).Where("source_type = ? AND source_id = ? AND is_active = true", sourceType, sourceID).Count(&count)
+	return count
+}
+
+// UpdateField — bitta fieldni yangilash
+func (r *Repository) UpdateField(id uint, field string, value interface{}) error {
+	return r.db.Model(&models.Olympiad{}).Where("id = ?", id).Update(field, value).Error
 }

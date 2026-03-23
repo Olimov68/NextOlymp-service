@@ -8,9 +8,10 @@ import Link from "next/link";
 import {
   Trophy, UserCircle, LogOut, Home,
   ClipboardCheck, MessageCircle,
-  Menu, BarChart3
+  Menu, BarChart3, Bell, Newspaper, Wallet, X,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { getUnreadCount } from "@/lib/user-api";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, nextStep, loading, logout } = useAuth();
@@ -18,6 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const mustCompleteProfile = nextStep === "complete_profile";
   const mustCompleteStep = mustCompleteProfile;
@@ -34,6 +36,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [loading, user, mustCompleteProfile, pathname, router]);
 
+  // Fetch unread notification count
+  useEffect(() => {
+    if (!user || mustCompleteStep) return;
+    getUnreadCount().then(setUnreadCount).catch(() => {});
+    const interval = setInterval(() => {
+      getUnreadCount().then(setUnreadCount).catch(() => {});
+    }, 30000); // Every 30 seconds
+    return () => clearInterval(interval);
+  }, [user, mustCompleteStep]);
+
 
   if (loading) {
     return (
@@ -49,16 +61,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return null;
 
   const menuItems = [
-    { href: "/dashboard", label: t("dashboard.olympiads"), icon: Trophy, module: "olympiads" },
-    { href: "/dashboard/mock-tests", label: "Mock testlar", icon: ClipboardCheck, module: "mock-tests" },
-    { href: "/dashboard/leaderboard", label: "Reyting", icon: BarChart3, module: "leaderboard" },
-    { href: "/dashboard/chat", label: "Chat", icon: MessageCircle, module: "chat" },
-    { href: "/dashboard/profile", label: t("dashboard.profile"), icon: UserCircle, module: "profile" },
+    { href: "/dashboard", label: "Bosh sahifa", icon: Home, module: "dashboard", badge: 0 },
+    { href: "/dashboard/olympiads", label: t("dashboard.olympiads"), icon: Trophy, module: "olympiads", badge: 0 },
+    { href: "/dashboard/mock-tests", label: "Mock testlar", icon: ClipboardCheck, module: "mock-tests", badge: 0 },
+    { href: "/dashboard/results", label: "Natijalar", icon: BarChart3, module: "results", badge: 0 },
+    { href: "/dashboard/leaderboard", label: "Reyting", icon: BarChart3, module: "leaderboard", badge: 0 },
+    { href: "/dashboard/news", label: "Yangiliklar", icon: Newspaper, module: "news", badge: 0 },
+    { href: "/dashboard/notifications", label: "Bildirishnomalar", icon: Bell, module: "notifications", badge: unreadCount },
+    { href: "/dashboard/balance", label: "Balans", icon: Wallet, module: "balance", badge: 0 },
+    { href: "/dashboard/chat", label: "Chat", icon: MessageCircle, module: "chat", badge: 0 },
+    { href: "/dashboard/profile", label: t("dashboard.profile"), icon: UserCircle, module: "profile", badge: 0 },
   ];
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
-      return pathname === "/dashboard" || pathname.startsWith("/dashboard/olympiads");
+      return pathname === "/dashboard";
     }
     return pathname.startsWith(href);
   };
@@ -66,14 +83,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const SidebarContent = () => (
     <>
       <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <UserCircle className="h-4 w-4 text-primary" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
+              <span className="text-sm font-bold text-primary">
+                {user.username?.charAt(0).toUpperCase() || "U"}
+              </span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">@{user.username}</p>
+              <p className="text-xs text-muted-foreground">{t("dashboard.title")}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-foreground">@{user.username}</p>
-            <p className="text-xs text-muted-foreground">{t("dashboard.title")}</p>
-          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-1.5 rounded-lg hover:bg-accent text-muted-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -98,7 +125,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }`}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.badge > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1.5">
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -114,7 +146,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }`}
         >
           <Home className="h-4 w-4" />
-          {t("nav.home")}
+          Asosiy sahifa
         </Link>
         <button
           onClick={mustCompleteStep ? undefined : () => { logout(); router.push("/"); }}
@@ -150,11 +182,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main content */}
       <div className="flex-1 md:ml-64">
         {/* Mobile header */}
-        <header className="md:hidden sticky top-0 z-20 flex items-center gap-3 px-4 h-14 bg-card/80 backdrop-blur-xl border-b border-border">
-          <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-accent text-muted-foreground">
-            <Menu className="h-5 w-5" />
-          </button>
-          <span className="font-semibold text-foreground">@{user.username}</span>
+        <header className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 h-14 bg-card/80 backdrop-blur-xl border-b border-border">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-accent text-muted-foreground">
+              <Menu className="h-5 w-5" />
+            </button>
+            <span className="font-semibold text-foreground">@{user.username}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/notifications" className="relative p-2 rounded-lg hover:bg-accent text-muted-foreground">
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground px-1">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </header>
         <main className="p-4 md:p-6 overflow-auto">{children}</main>
       </div>

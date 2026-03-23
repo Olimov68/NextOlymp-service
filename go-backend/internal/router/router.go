@@ -1,7 +1,7 @@
 package router
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextolympservice/go-backend/config"
@@ -35,6 +35,7 @@ usermocktests "github.com/nextolympservice/go-backend/internal/user/mocktests"
 	usernotifs "github.com/nextolympservice/go-backend/internal/user/notifications"
 	userolympiads "github.com/nextolympservice/go-backend/internal/user/olympiads"
 	userpromos "github.com/nextolympservice/go-backend/internal/user/promocodes"
+	userai "github.com/nextolympservice/go-backend/internal/user/ai"
 	useranticheat "github.com/nextolympservice/go-backend/internal/user/anticheat"
 	userresults "github.com/nextolympservice/go-backend/internal/user/results"
 
@@ -70,9 +71,14 @@ func Setup(cfg *config.Config, db *gorm.DB, redisClient *cache.RedisClient) *gin
 	r.Use(gin.Recovery())
 	r.Use(middleware.SecurityHeaders())
 
-	// CORS: production da aniq originlar, development da hamma
-	if cfg.App.Env == "production" && len(cfg.CORS.AllowedOrigins) > 0 {
-		r.Use(middleware.CORSWithOrigins(cfg.CORS.AllowedOrigins))
+	// CORS: production requires explicit origins; development allows all
+	if cfg.App.Env == "production" {
+		if len(cfg.CORS.AllowedOrigins) == 0 || (len(cfg.CORS.AllowedOrigins) == 1 && cfg.CORS.AllowedOrigins[0] == "") {
+			log.Println("WARNING: Production mode with no CORS_ALLOWED_ORIGINS set. Defaulting to deny all cross-origin requests.")
+			r.Use(middleware.CORSWithOrigins([]string{}))
+		} else {
+			r.Use(middleware.CORSWithOrigins(cfg.CORS.AllowedOrigins))
+		}
 	} else {
 		r.Use(middleware.CORS())
 	}
@@ -126,6 +132,7 @@ examsHandler := userexams.NewHandler(db)
 	devicesHandler := userdevices.NewHandler(sessionMgr)
 	leaderboardHandler := userleaderboard.NewHandler(db)
 	anticheatHandler := useranticheat.NewHandler(db)
+	aiHandler := userai.NewHandler(db, cfg.AnthropicAPIKey)
 
 	// ─── Chat ─────────────────────────────────────────────────────
 	chatHub := chat.NewHub()
@@ -133,8 +140,7 @@ examsHandler := userexams.NewHandler(db)
 	chatHandler := chat.NewHandler(db, chatHub)
 
 	// ─── Upload ──────────────────────────────────────────────────────
-	baseURL := fmt.Sprintf("http://localhost:%s", cfg.App.Port)
-	uploadHandler := upload.NewHandler(cfg.Upload.Dir, baseURL)
+	uploadHandler := upload.NewHandler(cfg.Upload.Dir, cfg.App.BaseURL)
 
 	// ─── Payme ────────────────────────────────────────────────────────────
 	paymeHandler := payme.NewHandler(db, &cfg.Payme)
@@ -326,6 +332,8 @@ examsHandler := userexams.NewHandler(db)
 			eg.POST("/mock-tests/attempts/:attempt_id/finish", examsHandler.FinishMockTest)
 			eg.GET("/mock-tests/attempts/:attempt_id/result", examsHandler.GetMockAttemptResult)
 			eg.GET("/mock-tests/:id/my-attempts", examsHandler.GetMyMockAttempts)
+			// AI Analysis
+			eg.GET("/mock-tests/attempts/:attempt_id/ai-analysis", aiHandler.GetAIAnalysis)
 			// Olympiad topshirish
 			eg.POST("/olympiads/:id/start", examsHandler.StartOlympiad)
 			eg.POST("/olympiads/attempts/:attempt_id/answer", examsHandler.SubmitOlympiadAnswer)

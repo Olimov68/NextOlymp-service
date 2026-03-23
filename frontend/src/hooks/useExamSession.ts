@@ -39,6 +39,7 @@ export function useExamSession(config: ExamSessionConfig) {
   const [timeLeft, setTimeLeft] = useState(config.duration);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Timer
@@ -153,6 +154,7 @@ export function useExamSession(config: ExamSessionConfig) {
   const finishExam = useCallback(async () => {
     if (isSubmitting || isFinished) return;
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const endpoint =
@@ -168,13 +170,20 @@ export function useExamSession(config: ExamSessionConfig) {
         },
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        const data = await res.json();
         setIsFinished(true);
         config.onFinish?.(data);
+      } else {
+        const errorMsg = data?.message || "Imtihonni yakunlashda xatolik yuz berdi";
+        setSubmitError(errorMsg);
+        console.error("Finish exam error:", errorMsg);
       }
-    } catch {
-      // Error handling
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Tarmoq xatoligi — internetni tekshiring";
+      setSubmitError(errorMsg);
+      console.error("Finish exam network error:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -195,6 +204,7 @@ export function useExamSession(config: ExamSessionConfig) {
     timeLeft,
     isSubmitting,
     isFinished,
+    submitError,
 
     // Actions
     selectAnswer,
@@ -204,6 +214,7 @@ export function useExamSession(config: ExamSessionConfig) {
     prevQuestion,
     finishExam,
     getQuestionStatus,
+    clearSubmitError: () => setSubmitError(null),
 
     // Stats
     answeredCount,

@@ -25,8 +25,39 @@ import {
   finishOlympiad,
   getOlympiadAttemptResult,
   getBalance,
+  type BalanceInfo,
+  type ExamStartResponse,
 } from "@/lib/user-api";
+import type { Olympiad } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+
+interface OlympiadDetail extends Olympiad {
+  is_paid: boolean;
+  grade: number;
+  total_questions?: number;
+  rules?: string;
+  start_time?: string;
+  end_time?: string;
+  is_joined?: boolean;
+  banner_url?: string;
+  icon_url?: string;
+  language?: string;
+  registration_start_time?: string;
+  registration_end_time?: string;
+  max_seats?: number;
+  registered_count?: number;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+      message?: string;
+    };
+  };
+  message?: string;
+}
 
 interface Option {
   id: number;
@@ -69,8 +100,9 @@ function formatTime(sec: number) {
 export default function OlympiadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { profile } = useAuth();
 
-  const [olympiad, setOlympiad] = useState<any>(null);
+  const [olympiad, setOlympiad] = useState<OlympiadDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>("detail");
 
@@ -106,8 +138,9 @@ export default function OlympiadDetailPage() {
       setPhase("result");
       if (auto) toast.info("Vaqt tugadi! Olimpiada yakunlandi.");
       else toast.success("Olimpiada muvaffaqiyatli yakunlandi!");
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error || "Yakunlashda xatolik yuz berdi");
+    } catch (e: unknown) {
+      const err = e as ApiError;
+      toast.error(err?.response?.data?.error || "Yakunlashda xatolik yuz berdi");
     } finally {
       setFinishing(false);
     }
@@ -120,10 +153,52 @@ export default function OlympiadDetailPage() {
   useEffect(() => {
     Promise.all([
       getOlympiad(Number(id)),
-      getBalance().catch(() => ({ balance: 0 })),
+      getBalance().catch((): BalanceInfo => ({ balance: 0, currency: "UZS" })),
     ]).then(([olympiadData, balanceData]) => {
-      setOlympiad(olympiadData);
-      setBalance((balanceData as any)?.balance || 0);
+      // Backend yangi formatda {olympiad, user_status} qaytarishi mumkin
+      const raw = olympiadData as unknown as Record<string, unknown>;
+      let oData: OlympiadDetail;
+      interface UserOlympiadStatus {
+        is_joined?: boolean;
+        has_attempted?: boolean;
+        attempt_status?: string;
+        attempt_id?: number;
+      }
+      let userStatus: UserOlympiadStatus | null = null;
+
+      if (raw.olympiad) {
+        oData = raw.olympiad as OlympiadDetail;
+        userStatus = raw.user_status as UserOlympiadStatus;
+      } else {
+        oData = olympiadData as OlympiadDetail;
+      }
+
+      setOlympiad(oData);
+      setBalance(balanceData.balance || 0);
+
+      // User holatiga qarab boshlang'ich phase
+      if (userStatus) {
+        if (userStatus.has_attempted && userStatus.attempt_status === "in_progress") {
+          // Faol urinish bor — to'g'ridan-to'g'ri examga o'tish
+          setPhase("ready");
+        } else if (userStatus.has_attempted && (userStatus.attempt_status === "completed" || userStatus.attempt_status === "timed_out")) {
+          // Allaqachon topshirgan — natijani ko'rsatish
+          if (userStatus.attempt_id) {
+            getOlympiadAttemptResult(userStatus.attempt_id)
+              .then((r) => {
+                setResult(r as unknown as AttemptResult);
+                setAttemptId(userStatus!.attempt_id!);
+                setPhase("result");
+              })
+              .catch(() => setPhase("detail"));
+          }
+        } else if (userStatus.is_joined) {
+          // Ro'yxatdan o'tgan, hali topshirmagan
+          setPhase("ready");
+        }
+      } else if (oData.is_joined) {
+        setPhase("ready");
+      }
     }).catch(() => {})
       .finally(() => setLoading(false));
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -178,40 +253,81 @@ export default function OlympiadDetailPage() {
     }
     try {
       await joinOlympiad(Number(id));
+      toast.success("Olimpiadaga muvaffaqiyatli ro'yxatdan o'tdingiz!");
       setPhase("ready");
-    } catch (e: any) {
-      const msg = e?.response?.data?.error || "";
-      if (msg.includes("already")) setPhase("ready");
-      else toast.error(msg || "Xatolik yuz berdi");
+    } catch (e: unknown) {
+      const err = e as ApiError;
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "";
+      if (msg.includes("allaqachon") || msg.includes("already")) {
+        // Allaqachon ro'yxatdan o'tgan — ready ga o'tkazamiz
+        setPhase("ready");
+      } else {
+        toast.error(msg || "Olimpiadaga qo'shilishda xatolik yuz berdi");
+      }
     }
   };
 
   const handlePayAndJoin = async () => {
     if (!olympiad) return;
-    if (balance < (olympiad.price || 0)) return;
+    if (balance < (olympiad.price || 0)) {
+      toast.error("Balansingizda yetarli mablag' yo'q. Iltimos, balansni to'ldiring.");
+      return;
+    }
     try {
       await joinOlympiad(Number(id));
       setPhase("ready");
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.error || "";
-      if (msg.includes("already")) setPhase("ready");
-      else toast.error(msg || "Xatolik yuz berdi");
+    } catch (e: unknown) {
+      const err = e as ApiError;
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "";
+      if (msg.includes("allaqachon") || msg.includes("already")) setPhase("ready");
+      else toast.error(msg || "Olimpiadaga qo'shilishda xatolik yuz berdi");
     }
   };
 
   const handleStart = async () => {
     try {
-      const attempt = await startOlympiad(Number(id));
-      const aId = (attempt as any).id || (attempt as any).attempt_id;
-      setAttemptId(aId);
-      const qs: Question[] = (attempt as any).questions || [];
+      const attempt: ExamStartResponse = await startOlympiad(Number(id));
+      setAttemptId(attempt.attempt_id);
+      const qs: Question[] = attempt.questions as unknown as Question[];
       setQuestions(qs);
       setCurrentIdx(0);
-      setAnswers({});
+      // Mavjud javoblarni yuklash (agar davom ettirish bo'lsa)
+      if (attempt.existing_answers) {
+        const existing: Record<number, number> = {};
+        for (const [qid, oid] of Object.entries(attempt.existing_answers)) {
+          existing[Number(qid)] = Number(oid);
+        }
+        setAnswers(existing);
+      } else {
+        setAnswers({});
+      }
       setPhase("exam");
-      startTimer((attempt as any).duration_minutes || olympiad?.duration_minutes || 60);
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.response?.data?.error || "Test boshlashda xatolik");
+      // remaining_seconds bo'lsa, undan foydalanish (davom ettirish uchun)
+      const remainingSec = (attempt as unknown as Record<string, number>).remaining_seconds;
+      if (remainingSec && remainingSec > 0) {
+        setTimeLeft(remainingSec);
+        timerRef.current = setInterval(() => {
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              clearInterval(timerRef.current!);
+              handleFinishRef.current(true);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        startTimer(attempt.duration_minutes || olympiad?.duration_minutes || 60);
+      }
+    } catch (e: unknown) {
+      const err = e as ApiError;
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "";
+      if (msg.includes("allaqachon qatnashgan") || msg.includes("already")) {
+        toast.info("Siz bu olimpiadani allaqachon topshirgansiz. Natijangizni ko'ring.");
+        router.push("/dashboard/results");
+      } else {
+        toast.error(msg || "Test boshlashda xatolik");
+      }
     }
   };
 
@@ -699,7 +815,7 @@ export default function OlympiadDetailPage() {
               <div className="rounded-xl border border-border p-3">
                 <p className="text-xs text-muted-foreground mb-1">Boshlanish</p>
                 <p className="font-medium text-foreground">
-                  {new Date(olympiad.start_time || olympiad.start_date).toLocaleDateString("uz-UZ")}
+                  {new Date((olympiad.start_time || olympiad.start_date)!).toLocaleDateString("uz-UZ")}
                 </p>
               </div>
             )}
@@ -707,7 +823,7 @@ export default function OlympiadDetailPage() {
               <div className="rounded-xl border border-border p-3">
                 <p className="text-xs text-muted-foreground mb-1">Tugash</p>
                 <p className="font-medium text-foreground">
-                  {new Date(olympiad.end_time || olympiad.end_date).toLocaleDateString("uz-UZ")}
+                  {new Date((olympiad.end_time || olympiad.end_date)!).toLocaleDateString("uz-UZ")}
                 </p>
               </div>
             )}
@@ -721,14 +837,34 @@ export default function OlympiadDetailPage() {
           </div>
         )}
 
+        {/* Sinf ogohlantirish */}
+        {olympiad.grade > 0 && profile && profile.grade !== olympiad.grade && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                Bu olimpiada {olympiad.grade}-sinf o&apos;quvchilari uchun
+              </p>
+              <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1">
+                Siz hozir {profile.grade}-sinfda o&apos;qiysiz. Bu olimpiadaga qatnasha olmaysiz.
+              </p>
+            </div>
+          </div>
+        )}
+
         {olympiad.status === "ended" || olympiad.status === "completed" ? (
           <Button disabled className="w-full">Olimpiada tugagan</Button>
-        ) : (
+        ) : olympiad.grade > 0 && profile && profile.grade !== olympiad.grade ? (
+          <Button disabled className="w-full" variant="outline">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            Faqat {olympiad.grade}-sinf uchun
+          </Button>
+        ) : phase === "detail" ? (
           <Button className="w-full gap-2" onClick={handleJoin} size="lg">
             <Trophy className="h-4 w-4" />
             {olympiad.is_paid ? `To'lov qilish (${olympiad.price?.toLocaleString()} UZS)` : "Qatnashish"}
           </Button>
-        )}
+        ) : null}
       </div>
     </div>
   );

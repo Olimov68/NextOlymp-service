@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,7 @@ func AuditLogger(db *gorm.DB) gin.HandlerFunc {
 
 		details := fmt.Sprintf("%s %s -> %d", method, path, status)
 
-		log := &models.AuditLog{
+		auditEntry := &models.AuditLog{
 			ActorID:   actorID,
 			ActorType: actorType,
 			Action:    action,
@@ -64,7 +65,12 @@ func AuditLogger(db *gorm.DB) gin.HandlerFunc {
 			Details:   details,
 		}
 
-		go db.Create(log)
+		go func(entry *models.AuditLog) {
+			if err := db.Create(entry).Error; err != nil {
+				log.Printf("ERROR: failed to write audit log: %v (action=%s resource=%s actor=%d)",
+					err, entry.Action, entry.Resource, entry.ActorID)
+			}
+		}(auditEntry)
 	}
 }
 

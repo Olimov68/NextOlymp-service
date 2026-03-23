@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { login } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { AlertTriangle, Loader2, Eye, EyeOff, LogIn } from "lucide-react";
+import { useSettings } from "@/lib/settings-context";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { setAuth } = useAuth();
+  const settings = useSettings();
 
   useEffect(() => {
     const reason = sessionStorage.getItem("session_ended_reason");
@@ -28,8 +30,12 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      setError("Username va parolni kiriting");
+    if (!username.trim()) {
+      setError("Foydalanuvchi nomini kiriting");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Parolni kiriting");
       return;
     }
     setError("");
@@ -48,8 +54,19 @@ export default function LoginPage() {
           router.push("/dashboard");
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || "Kirish muvaffaqiyatsiz bo'ldi. Qaytadan urinib ko'ring.");
+      const apiErr = err as { response?: { data?: { message?: string; errors?: Record<string, string> }; status?: number } };
+      const status = apiErr?.response?.status;
+      const errors = apiErr?.response?.data?.errors;
+      if (errors) {
+        setError(Object.values(errors)[0] || "Ma'lumotlar noto'g'ri kiritilgan");
+      } else if (status === 401) {
+        setError("Foydalanuvchi nomi yoki parol noto'g'ri");
+      } else if (status === 429) {
+        setError("Juda ko'p urinish. Biroz kutib, qaytadan urinib ko'ring");
+      } else {
+        const msg = apiErr?.response?.data?.message;
+        setError(msg || "Tizimga kirishda xatolik yuz berdi. Qaytadan urinib ko'ring.");
+      }
     } finally {
       setLoading(false);
     }
@@ -178,15 +195,17 @@ export default function LoginPage() {
             </motion.button>
           </form>
 
-          {/* Bottom link */}
-          <div className="mt-8 text-center text-sm text-blue-200/40">
-            <p>
-              Akkauntingiz yo&apos;qmi?{" "}
-              <Link href="/register" className="text-blue-400 font-medium hover:text-blue-300 transition-colors">
-                Ro&apos;yxatdan o&apos;tish
-              </Link>
-            </p>
-          </div>
+          {/* Bottom link — faqat registration yoqilgan bo'lsa ko'rsatiladi */}
+          {settings.registration_enabled && (
+            <div className="mt-8 text-center text-sm text-blue-200/40">
+              <p>
+                Akkauntingiz yo&apos;qmi?{" "}
+                <Link href="/register" className="text-blue-400 font-medium hover:text-blue-300 transition-colors">
+                  Ro&apos;yxatdan o&apos;tish
+                </Link>
+              </p>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

@@ -14,6 +14,7 @@ interface GlobalSettings {
   support_email: string;
   maintenance_mode: boolean;
   registration_enabled: boolean;
+  telegram_verification_enabled?: boolean;
 }
 
 const defaultSettings: GlobalSettings = {
@@ -22,6 +23,7 @@ const defaultSettings: GlobalSettings = {
   support_email: "",
   maintenance_mode: false,
   registration_enabled: true,
+  telegram_verification_enabled: false,
 };
 
 export default function SettingsPage() {
