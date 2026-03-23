@@ -19,6 +19,11 @@ type Config struct {
 	Telegram TelegramConfig
 	CORS     CORSConfig
 	Payme    PaymeConfig
+	Google   GoogleConfig
+}
+
+type GoogleConfig struct {
+	ClientID string
 }
 
 type PaymeConfig struct {
@@ -149,6 +154,9 @@ func Load() (*Config, error) {
 			Key:        getEnv("PAYME_KEY", ""),
 			TestKey:    getEnv("PAYME_TEST_KEY", ""),
 			TestMode:   paymeTestMode,
+		},
+		Google: GoogleConfig{
+			ClientID: getEnv("GOOGLE_CLIENT_ID", ""),
 		},
 	}
 

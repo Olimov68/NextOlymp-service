@@ -99,6 +99,7 @@ func Setup(cfg *config.Config, db *gorm.DB, redisClient *cache.RedisClient) *gin
 	telegramRepo := telegram.NewRepository(db)
 	telegramService := telegram.NewService(telegramRepo, &cfg.Telegram)
 	authService.SetTelegramSender(telegramService, telegramService.BotURL(), cfg.Telegram.BotUsername)
+	authService.SetGoogleClientID(cfg.Google.ClientID)
 
 	userRepo := user.NewRepository(db)
 	userService := user.NewService(userRepo, &cfg.Upload)
@@ -177,6 +178,7 @@ examsHandler := userexams.NewHandler(db)
 	{
 		authGroup.POST("/register", middleware.RateLimitRegister(rateLimiter), authHandler.Register)
 		authGroup.POST("/login", middleware.RateLimitLogin(rateLimiter), authHandler.Login)
+		authGroup.POST("/google", authHandler.GoogleAuth)
 		authGroup.POST("/refresh", authHandler.RefreshToken)
 		// Parol tiklash
 		authGroup.POST("/recovery/identify", middleware.RateLimitLogin(rateLimiter), authHandler.RecoveryIdentify)

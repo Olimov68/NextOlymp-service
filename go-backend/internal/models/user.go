@@ -14,11 +14,16 @@ const (
 
 type User struct {
 	ID                 uint       `gorm:"primaryKey" json:"id"`
-	Username           string     `gorm:"uniqueIndex;size:50;not null" json:"username"`
-	PasswordHash       string     `gorm:"size:255;not null" json:"-"`
+	Username           string     `gorm:"uniqueIndex;size:50" json:"username"`
+	PasswordHash       string     `gorm:"size:255" json:"-"`
+	GoogleID           *string    `gorm:"uniqueIndex;size:255" json:"google_id,omitempty"`
+	Email              *string    `gorm:"uniqueIndex;size:255" json:"email,omitempty"`
+	FullName           string     `gorm:"size:200" json:"full_name,omitempty"`
+	AvatarURL          string     `gorm:"size:500" json:"avatar_url,omitempty"`
 	Status             UserStatus `gorm:"size:20;default:active;not null" json:"status"`
 	IsProfileCompleted bool       `gorm:"default:false;not null" json:"is_profile_completed"`
 	IsTelegramLinked   bool       `gorm:"default:false;not null" json:"is_telegram_linked"`
+	IsVerified         bool       `gorm:"default:true;not null" json:"is_verified"`
 	VerificationMethod string     `gorm:"type:varchar(30)" json:"verification_method"`
 	VerifiedAt         *time.Time `json:"verified_at,omitempty"`
 	VerifiedBy         *uint      `json:"verified_by,omitempty"`

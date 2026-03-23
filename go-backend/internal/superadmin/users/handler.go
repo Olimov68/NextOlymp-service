@@ -248,11 +248,41 @@ func (h *Handler) Delete(c *gin.Context) {
 
 	// Bog'liq ma'lumotlarni o'chirish (foreign key constraints)
 	tx := h.db.Begin()
+
+	// Auth va session
 	tx.Where("user_id = ?", id).Delete(&models.Session{})
 	tx.Where("user_id = ?", id).Delete(&models.TelegramLink{})
+
+	// Profile
 	tx.Where("user_id = ?", id).Delete(&models.Profile{})
-	tx.Where("user_id = ?", id).Delete(&models.PromoCodeUsage{})
+
+	// Chat
+	tx.Where("user_id = ?", id).Delete(&models.ChatMessage{})
+	tx.Where("user_id = ?", id).Delete(&models.ChatBan{})
+
+	// Notifications
 	tx.Where("user_id = ?", id).Delete(&models.Notification{})
+
+	// Balance va to'lovlar
+	tx.Where("user_id = ?", id).Delete(&models.PromoCodeUsage{})
+	tx.Exec("DELETE FROM balance WHERE user_id = ?", id)
+	tx.Exec("DELETE FROM transaction WHERE user_id = ?", id)
+
+	// Olimpiada va mock test urinishlari
+	tx.Exec("DELETE FROM olympiad_answers WHERE attempt_id IN (SELECT id FROM olympiad_attempt WHERE user_id = ?)", id)
+	tx.Exec("DELETE FROM olympiad_attempt WHERE user_id = ?", id)
+	tx.Exec("DELETE FROM olympiad_registration WHERE user_id = ?", id)
+	tx.Exec("DELETE FROM mock_answers WHERE attempt_id IN (SELECT id FROM mock_attempt WHERE user_id = ?)", id)
+	tx.Exec("DELETE FROM mock_attempt WHERE user_id = ?", id)
+	tx.Exec("DELETE FROM mock_test_registration WHERE user_id = ?", id)
+
+	// Sertifikatlar
+	tx.Exec("DELETE FROM certificate WHERE user_id = ?", id)
+
+	// Verification
+	tx.Exec("DELETE FROM user_verification WHERE user_id = ?", id)
+
+	// User o'zi
 	tx.Delete(&user)
 
 	if err := tx.Commit().Error; err != nil {

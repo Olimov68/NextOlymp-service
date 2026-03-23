@@ -275,6 +275,50 @@ func (h *Handler) RecoveryReset(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Parol muvaffaqiyatli o'zgartirildi", nil)
 }
 
+// GoogleAuth godoc
+// @Summary      Google OAuth login/register
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body GoogleAuthRequest true "Google ID token"
+// @Success      200 {object} response.Response{data=GoogleAuthResponse}
+// @Failure      400 {object} response.Response
+// @Router       /auth/google [post]
+func (h *Handler) GoogleAuth(c *gin.Context) {
+	var req GoogleAuthRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, utils.FormatValidationErrors(err))
+		return
+	}
+
+	result, err := h.service.GoogleAuth(&req, getSessionInfo(c))
+	if err != nil {
+		if h.db != nil {
+			utils.LogSystemAudit(h.db, c, "google_auth_failed", "auth",
+				fmt.Sprintf("Google auth urinishi muvaffaqiyatsiz: %s", err.Error()))
+		}
+		response.Error(c, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	// Audit log
+	if h.db != nil && result != nil {
+		action := "google_login"
+		detail := fmt.Sprintf("Google orqali tizimga kirdi: %s", result.User.Username)
+		if result.IsNew {
+			action = "google_register"
+			detail = fmt.Sprintf("Google orqali ro'yxatdan o'tdi: %s", result.User.Username)
+		}
+		utils.LogUserAudit(h.db, c, result.User.ID, action, "auth", nil, detail)
+	}
+
+	msg := "Google login successful"
+	if result.IsNew {
+		msg = "Google registration successful"
+	}
+	response.Success(c, http.StatusOK, msg, result)
+}
+
 // Me godoc
 // @Summary      Get current user info
 // @Tags         auth

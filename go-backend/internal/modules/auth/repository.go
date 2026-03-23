@@ -56,6 +56,26 @@ func (r *Repository) UpdateUser(user *models.User) error {
 	return r.db.Save(user).Error
 }
 
+// --- Google OAuth ---
+
+func (r *Repository) GetByGoogleID(googleID string) (*models.User, error) {
+	var user models.User
+	err := r.db.Where("google_id = ?", googleID).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *Repository) GetByEmail(email string) (*models.User, error) {
+	var user models.User
+	err := r.db.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 // --- Recovery ---
 
 // GetTelegramLinkByUserID — user ning telegram bog'lanishini olish

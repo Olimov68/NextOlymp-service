@@ -26,6 +26,7 @@ samocktests "github.com/nextolympservice/go-backend/internal/superadmin/mocktest
 	saquestions "github.com/nextolympservice/go-backend/internal/superadmin/questions"
 	saresults "github.com/nextolympservice/go-backend/internal/superadmin/results"
 	sasecurity "github.com/nextolympservice/go-backend/internal/superadmin/security"
+	saanticheat "github.com/nextolympservice/go-backend/internal/superadmin/anticheat"
 	sasettings "github.com/nextolympservice/go-backend/internal/superadmin/settings"
 	satemplates "github.com/nextolympservice/go-backend/internal/superadmin/templates"
 	sausers "github.com/nextolympservice/go-backend/internal/superadmin/users"
@@ -56,6 +57,7 @@ paymentsHandler := sapayments.NewHandler(db)
 	auditHandler := saaudit.NewHandler(db)
 	settingsHandler := sasettings.NewHandler(db)
 	promosHandler := sapromos.NewHandler(db)
+	anticheatHandler := saanticheat.NewHandler(db)
 	verificationsHandler := adminverifications.NewHandler(db)
 	uploadHandler := panelupload.NewHandler(cfg)
 
@@ -245,6 +247,13 @@ paymentsHandler := sapayments.NewHandler(db)
 
 		// Upload
 		sa.POST("/upload/image", uploadHandler.UploadImage)
+
+		// Anti-cheat violations
+		acG := sa.Group("/anticheat")
+		{
+			acG.GET("/violations", anticheatHandler.List)
+			acG.GET("/violations/stats", anticheatHandler.Stats)
+		}
 
 		// Chat moderation
 		chatG := sa.Group("/chat")

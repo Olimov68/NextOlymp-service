@@ -19,6 +19,10 @@ type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+type GoogleAuthRequest struct {
+	IDToken string `json:"id_token" binding:"required"`
+}
+
 // --- Response DTOs ---
 
 type TokenPair struct {
@@ -39,9 +43,19 @@ type LoginResponse struct {
 	NextStep string       `json:"next_step"` // complete_profile | link_telegram | dashboard
 }
 
+type GoogleAuthResponse struct {
+	User     UserResponse `json:"user"`
+	Tokens   TokenPair    `json:"tokens"`
+	NextStep string       `json:"next_step"` // complete_profile | link_telegram | dashboard
+	IsNew    bool         `json:"is_new"`    // yangi foydalanuvchi yaratilganmi
+}
+
 type UserResponse struct {
 	ID                 uint               `json:"id"`
 	Username           string             `json:"username"`
+	Email              string             `json:"email,omitempty"`
+	FullName           string             `json:"full_name,omitempty"`
+	AvatarURL          string             `json:"avatar_url,omitempty"`
 	Status             models.UserStatus  `json:"status"`
 	IsProfileCompleted bool               `json:"is_profile_completed"`
 	IsTelegramLinked   bool               `json:"is_telegram_linked"`
@@ -71,11 +85,21 @@ func ToUserResponse(u *models.User) UserResponse {
 	return UserResponse{
 		ID:                 u.ID,
 		Username:           u.Username,
+		Email:              ptrStr(u.Email),
+		FullName:           u.FullName,
+		AvatarURL:          u.AvatarURL,
 		Status:             u.Status,
 		IsProfileCompleted: u.IsProfileCompleted,
 		IsTelegramLinked:   u.IsTelegramLinked,
 		CreatedAt:          u.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	}
+}
+
+func ptrStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // DetermineNextStep returns the next step for the user.

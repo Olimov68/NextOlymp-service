@@ -153,6 +153,9 @@ export interface NewsItem {
 export interface User {
   id: number;
   username: string;
+  email: string;
+  full_name: string;
+  avatar_url: string;
   status: string;
   is_profile_completed: boolean;
   is_telegram_linked: boolean;
@@ -258,6 +261,9 @@ export interface RegisterData {
 
 export const login = (username: string, password: string): Promise<AuthResponse> =>
   api.post("/auth/login", { username, password }).then((r) => r.data.data);
+
+export const googleAuth = (id_token: string): Promise<AuthResponse & { is_new?: boolean }> =>
+  api.post("/auth/google", { id_token }).then((r) => r.data.data);
 
 export const register = (data: RegisterData): Promise<AuthResponse> =>
   api.post("/auth/register", data).then((r) => r.data.data);

@@ -21,6 +21,7 @@ import {
 import { normalizeList } from "@/lib/normalizeList";
 import RegistrationsTable from "@/components/assessment/RegistrationsTable";
 import ResultsTable from "@/components/assessment/ResultsTable";
+import AntiCheatLogsTab from "@/components/assessment/AntiCheatLogsTab";
 import type { AssessmentRegistration, AssessmentResult } from "@/lib/assessment-types";
 
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ import {
   Image as ImageIcon,
   X,
   Upload,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -72,7 +74,7 @@ import { toast } from "sonner";
 /* Types & constants                                                   */
 /* ------------------------------------------------------------------ */
 
-type Tab = "general" | "questions" | "registrations" | "participants" | "results" | "settings";
+type Tab = "general" | "questions" | "registrations" | "participants" | "results" | "settings" | "logs";
 
 interface Option {
   id?: number;
@@ -584,6 +586,7 @@ export default function MockTestDetailPage() {
     { key: "participants", label: "Ishtirokchilar", icon: <UserCheck className="w-4 h-4" /> },
     { key: "results", label: "Natijalar", icon: <Trophy className="w-4 h-4" /> },
     { key: "settings", label: "Sozlamalar", icon: <Settings className="w-4 h-4" /> },
+    { key: "logs", label: "Loglar", icon: <ShieldAlert className="w-4 h-4" /> },
   ];
 
   /* ================================================================ */
@@ -1303,6 +1306,13 @@ export default function MockTestDetailPage() {
             Sozlamalarni saqlash
           </Button>
         </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* Loglar (Anti-cheat) Tab                                       */}
+      {/* ============================================================ */}
+      {tab === "logs" && (
+        <AntiCheatLogsTab sourceType="mock_test" sourceId={Number(id)} />
       )}
     </div>
   );

@@ -9,9 +9,6 @@ import {
   LayoutDashboard,
   Trophy,
   ClipboardCheck,
-  Newspaper,
-  Medal,
-  Award,
   Users,
   LogOut,
   Menu,
@@ -31,11 +28,8 @@ const allNavItems: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, module: null },
   { href: "/admin/olympiads", label: "Olimpiadalar", icon: Trophy, module: "olympiads" },
   { href: "/admin/mock-tests", label: "Mock testlar", icon: ClipboardCheck, module: "mock_tests" },
-  { href: "/admin/news", label: "Yangiliklar", icon: Newspaper, module: "news" },
-  { href: "/admin/results", label: "Natijalar", icon: Medal, module: "results" },
-  { href: "/admin/certificates", label: "Sertifikatlar", icon: Award, module: "certificates" },
   { href: "/admin/users", label: "Foydalanuvchilar", icon: Users, module: "users" },
-{ href: "/admin/chat", label: "Chat moderatsiya", icon: MessageCircle, module: "chat" },
+  { href: "/admin/chat", label: "Chat moderatsiya", icon: MessageCircle, module: "chat" },
 ];
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {

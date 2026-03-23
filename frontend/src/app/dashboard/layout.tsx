@@ -6,9 +6,9 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Trophy, Newspaper, Medal, UserCircle, LogOut, Home,
-  ClipboardCheck, Award, Wallet, Bell, MessageCircle,
-  Menu, X, LayoutDashboard, BarChart3
+  Trophy, UserCircle, LogOut, Home,
+  ClipboardCheck, MessageCircle,
+  Menu, BarChart3
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -20,8 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const mustCompleteProfile = nextStep === "complete_profile";
-  const mustLinkTelegram = nextStep === "link_telegram";
-  const mustCompleteStep = mustCompleteProfile || mustLinkTelegram;
+  const mustCompleteStep = mustCompleteProfile;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,11 +34,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [loading, user, mustCompleteProfile, pathname, router]);
 
-  useEffect(() => {
-    if (!loading && user && mustLinkTelegram && pathname !== "/dashboard/link-telegram") {
-      router.push("/dashboard/link-telegram");
-    }
-  }, [loading, user, mustLinkTelegram, pathname, router]);
 
   if (loading) {
     return (
@@ -57,11 +51,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const menuItems = [
     { href: "/dashboard", label: t("dashboard.olympiads"), icon: Trophy, module: "olympiads" },
     { href: "/dashboard/mock-tests", label: "Mock testlar", icon: ClipboardCheck, module: "mock-tests" },
-    { href: "/dashboard/results", label: t("dashboard.results"), icon: Medal, module: "results" },
     { href: "/dashboard/leaderboard", label: "Reyting", icon: BarChart3, module: "leaderboard" },
-    { href: "/dashboard/certificates", label: "Sertifikatlar", icon: Award, module: "certificates" },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle, module: "chat" },
-    { href: "/dashboard/balance", label: "Balans", icon: Wallet, module: "balance" },
     { href: "/dashboard/profile", label: t("dashboard.profile"), icon: UserCircle, module: "profile" },
   ];
 
