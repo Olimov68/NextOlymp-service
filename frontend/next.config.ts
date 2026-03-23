@@ -11,9 +11,8 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
       {
-        protocol: "http",
-        hostname: "localhost",
-        port: "8080",
+        protocol: "https",
+        hostname: "nextolymp.uz",
       },
     ],
     formats: ["image/avif", "image/webp"],

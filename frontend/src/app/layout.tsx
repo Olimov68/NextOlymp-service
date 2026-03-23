@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   keywords: ["olimpiada", "mock test", "online test", "ta'lim", "NextOlymp", "education", "olympiad"],
   authors: [{ name: "NextOlymp Team" }],
   creator: "NextOlymp",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://nextolymp.uz"),
   openGraph: {
     type: "website",
     locale: "uz_UZ",

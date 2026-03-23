@@ -102,7 +102,7 @@ func Load() (*Config, error) {
 	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
 
 	// CORS origins
-	corsOrigins := strings.Split(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000"), ",")
+	corsOrigins := strings.Split(getEnv("CORS_ALLOWED_ORIGINS", "https://nextolymp.uz,http://localhost:3000"), ",")
 	for i := range corsOrigins {
 		corsOrigins[i] = strings.TrimSpace(corsOrigins[i])
 	}
