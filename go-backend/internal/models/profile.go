@@ -22,8 +22,19 @@ type Profile struct {
 	District   string    `gorm:"size:100;not null" json:"district"`
 	SchoolName string    `gorm:"size:200;not null" json:"school_name"`
 	Grade      int       `gorm:"not null" json:"grade"`
-	PhotoURL   string    `gorm:"size:500" json:"photo_url"`
-	CreatedAt  time.Time `gorm:"autoCreateTime" json:"created_at"`
+	PhotoURL       string    `gorm:"size:500" json:"photo_url"`
+	FaceEmbedding  string    `gorm:"type:text" json:"-"` // JSON array of floats, hidden from API
+
+	// Rating / XP tizimi
+	XP             int       `gorm:"default:0" json:"xp"`
+	RatingScore    float64   `gorm:"default:0" json:"rating_score"`
+	TotalTests     int       `gorm:"default:0" json:"total_tests"`
+	TotalCorrect   int       `gorm:"default:0" json:"total_correct"`
+	TotalQuestions int       `gorm:"default:0" json:"total_questions"`
+	BestPercentage float64   `gorm:"default:0" json:"best_percentage"`
+	Rank           int       `gorm:"default:0" json:"rank"`
+
+	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt  time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 

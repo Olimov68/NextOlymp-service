@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { api } from "./api";
 
 export interface PublicSettings {
@@ -9,6 +9,7 @@ export interface PublicSettings {
   maintenance_mode: boolean;
   registration_enabled: boolean;
   default_language: string;
+  loading: boolean;
 }
 
 const defaultSettings: PublicSettings = {
@@ -17,34 +18,58 @@ const defaultSettings: PublicSettings = {
   maintenance_mode: false,
   registration_enabled: true,
   default_language: "uz",
+  loading: true,
 };
 
-const SettingsContext = createContext<PublicSettings>(defaultSettings);
+interface SettingsContextType {
+  settings: PublicSettings;
+  refetch: () => void;
+}
+
+const SettingsContext = createContext<SettingsContextType>({
+  settings: defaultSettings,
+  refetch: () => {},
+});
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<PublicSettings>(defaultSettings);
 
-  useEffect(() => {
+  const fetchSettings = useCallback(() => {
     api
       .get("/settings/public")
       .then((r) => {
         const data = r.data?.data ?? r.data;
         if (data && typeof data === "object") {
-          setSettings({ ...defaultSettings, ...data });
+          setSettings({ ...defaultSettings, ...data, loading: false });
+        } else {
+          setSettings((prev) => ({ ...prev, loading: false }));
         }
       })
       .catch(() => {
-        // Fallback to defaults silently
+        setSettings((prev) => ({ ...prev, loading: false }));
       });
   }, []);
 
+  useEffect(() => {
+    fetchSettings();
+    // Har 60 sekundda qayta tekshirish (maintenance mode real-time ishlashi uchun)
+    const interval = setInterval(fetchSettings, 60000);
+    return () => clearInterval(interval);
+  }, [fetchSettings]);
+
   return (
-    <SettingsContext.Provider value={settings}>
+    <SettingsContext.Provider value={{ settings, refetch: fetchSettings }}>
       {children}
     </SettingsContext.Provider>
   );
 }
 
 export function useSettings() {
-  return useContext(SettingsContext);
+  const ctx = useContext(SettingsContext);
+  return ctx.settings;
+}
+
+export function useSettingsActions() {
+  const ctx = useContext(SettingsContext);
+  return { refetch: ctx.refetch };
 }

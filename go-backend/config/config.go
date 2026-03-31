@@ -46,8 +46,9 @@ type CORSConfig struct {
 }
 
 type AppConfig struct {
-	Port string
-	Env  string
+	Port    string
+	Env     string
+	BaseURL string
 }
 
 type DBConfig struct {
@@ -101,17 +102,21 @@ func Load() (*Config, error) {
 	redisDB, _ := strconv.Atoi(getEnv("REDIS_DB", "0"))
 
 	// CORS origins
-	corsOrigins := strings.Split(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000"), ",")
+	corsOrigins := strings.Split(getEnv("CORS_ALLOWED_ORIGINS", "https://nextolymp.uz,http://localhost:3000"), ",")
 	for i := range corsOrigins {
 		corsOrigins[i] = strings.TrimSpace(corsOrigins[i])
 	}
 
 	paymeTestMode := getEnv("PAYME_TEST_MODE", "true") == "true"
 
+	appPort := getEnv("APP_PORT", "8080")
+	appBaseURL := getEnv("APP_BASE_URL", fmt.Sprintf("http://localhost:%s", appPort))
+
 	cfg := &Config{
 		App: AppConfig{
-			Port: getEnv("APP_PORT", "8080"),
-			Env:  getEnv("APP_ENV", "development"),
+			Port:    appPort,
+			Env:     getEnv("APP_ENV", "development"),
+			BaseURL: appBaseURL,
 		},
 		DB: DBConfig{
 			Host:     getEnv("DB_HOST", "localhost"),

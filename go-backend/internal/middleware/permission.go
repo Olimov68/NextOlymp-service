@@ -40,8 +40,8 @@ func PermissionRequired(db *gorm.DB, requiredCode string) gin.HandlerFunc {
 		// StaffPermission jadvaldan tekshirish
 		var count int64
 		db.Model(&models.StaffPermission{}).
-			Joins("JOIN permissions ON permissions.id = staff_permissions.permission_id").
-			Where("staff_permissions.staff_user_id = ? AND (permissions.code = ? OR permissions.code = ?)",
+			Joins("JOIN permission ON permission.id = staff_permission.permission_id").
+			Where("staff_permission.staff_user_id = ? AND (permission.code = ? OR permission.code = ?)",
 				staffID.(uint), requiredCode, manageCode).
 			Count(&count)
 
@@ -64,10 +64,10 @@ func GetStaffPermissionCodes(db *gorm.DB, staffID uint, role string) []string {
 
 	var codes []string
 	db.Model(&models.StaffPermission{}).
-		Select("permissions.code").
-		Joins("JOIN permissions ON permissions.id = staff_permissions.permission_id").
-		Where("staff_permissions.staff_user_id = ?", staffID).
-		Pluck("permissions.code", &codes)
+		Select("permission.code").
+		Joins("JOIN permission ON permission.id = staff_permission.permission_id").
+		Where("staff_permission.staff_user_id = ?", staffID).
+		Pluck("permission.code", &codes)
 
 	// manage permission bo'lsa, shu moduldagi barcha actionlarni qo'shish
 	expanded := make(map[string]bool)

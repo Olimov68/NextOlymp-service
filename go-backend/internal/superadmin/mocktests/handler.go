@@ -267,10 +267,10 @@ func (h *Handler) Publish(c *gin.Context) {
 		return
 	}
 	if err := h.svc.Publish(uint(id)); err != nil {
-		response.InternalError(c)
+		response.Error(c, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
-	response.Success(c, http.StatusOK, "Mock test published", nil)
+	response.Success(c, http.StatusOK, "Mock test e'lon qilindi", nil)
 }
 
 // Unpublish PATCH /api/v1/superadmin/mock-tests/:id/unpublish

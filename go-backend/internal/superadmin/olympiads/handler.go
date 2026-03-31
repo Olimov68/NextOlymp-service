@@ -276,11 +276,11 @@ func (h *Handler) Publish(c *gin.Context) {
 	}
 
 	if err := h.svc.Publish(uint(id)); err != nil {
-		response.InternalError(c)
+		response.Error(c, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Olympiad published", nil)
+	response.Success(c, http.StatusOK, "Olimpiada e'lon qilindi", nil)
 }
 
 // Unpublish PATCH /api/v1/superadmin/olympiads/:id/unpublish
@@ -305,5 +305,36 @@ func (h *Handler) Unpublish(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Olympiad unpublished", nil)
+	response.Success(c, http.StatusOK, "Olimpiada qoralamaga qaytarildi", nil)
+}
+
+// ToggleRegistration PATCH /api/v1/superadmin/olympiads/:id/toggle-registration
+func (h *Handler) ToggleRegistration(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Noto'g'ri ID", nil)
+		return
+	}
+
+	o, err := h.svc.GetByID(uint(id))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.NotFound(c, "Olimpiada topilmadi")
+			return
+		}
+		response.InternalError(c)
+		return
+	}
+
+	newState := !o.RegistrationOpen
+	if err := h.svc.ToggleRegistration(uint(id), newState); err != nil {
+		response.InternalError(c)
+		return
+	}
+
+	msg := "Ro'yxatdan o'tish yopildi"
+	if newState {
+		msg = "Ro'yxatdan o'tish ochildi"
+	}
+	response.Success(c, http.StatusOK, msg, gin.H{"registration_open": newState})
 }

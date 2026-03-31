@@ -12,12 +12,27 @@ import { Loader2, Upload, X } from "lucide-react";
 import type { ExamType, AssessmentBase, AssessmentFormData } from "@/lib/assessment-types";
 import { uploadImage } from "@/lib/superadmin-api";
 
+/** Extended initial data that may include mock-test-specific fields */
+type AssessmentInitialData = Partial<AssessmentBase> & {
+  scoring_type?: string;
+  scaling_formula_type?: string;
+};
+
 interface AssessmentFormProps {
   examType: ExamType;
-  initialData?: Partial<AssessmentBase>;
+  initialData?: AssessmentInitialData;
   onSubmit: (data: AssessmentFormData) => void;
   onCancel: () => void;
   loading?: boolean;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
 }
 
 const emptyForm: AssessmentFormData = {
@@ -56,7 +71,10 @@ const emptyForm: AssessmentFormData = {
 function toLocalDatetime(iso?: string): string {
   if (!iso) return "";
   try {
-    return new Date(iso).toISOString().slice(0, 16);
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   } catch {
     return "";
   }
@@ -100,10 +118,10 @@ export default function AssessmentForm({
         give_certificate: initialData.give_certificate ?? false,
         manual_review: initialData.manual_review ?? false,
         admin_approval: initialData.admin_approval ?? false,
-        min_score_for_certificate: (initialData as any)?.min_score_for_certificate ?? 0,
-        scoring_rules: (initialData as any)?.scoring_rules || "",
-        scoring_type: (initialData as any)?.scoring_type || "classic",
-        scaling_formula_type: (initialData as any)?.scaling_formula_type || "linear",
+        min_score_for_certificate: initialData.min_score_for_certificate ?? 0,
+        scoring_rules: initialData.scoring_rules || "",
+        scoring_type: initialData.scoring_type || "classic",
+        scaling_formula_type: initialData.scaling_formula_type || "linear",
       });
     }
   }, [initialData]);
@@ -117,7 +135,23 @@ export default function AssessmentForm({
   };
 
   const handleSubmit = () => {
-    onSubmit(form);
+    // datetime-local formatini RFC3339 ga o'girish (backend uchun)
+    const toRFC3339 = (val: string) => {
+      if (!val) return "";
+      try {
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? val : d.toISOString();
+      } catch {
+        return val;
+      }
+    };
+    onSubmit({
+      ...form,
+      start_time: toRFC3339(form.start_time),
+      end_time: toRFC3339(form.end_time),
+      registration_start_time: toRFC3339(form.registration_start_time),
+      registration_end_time: toRFC3339(form.registration_end_time),
+    });
   };
 
   const isMock = examType === "mock_test";
@@ -343,28 +377,6 @@ export default function AssessmentForm({
         )}
       </section>
 
-      {/* Section: Status */}
-      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-          Status
-        </h3>
-        <div className="max-w-xs space-y-1.5">
-          <Label>Holat</Label>
-          <Select
-            value={form.status}
-            onValueChange={(v) => update("status", v ?? "draft")}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="draft">Qoralama</SelectItem>
-              <SelectItem value="published">Nashr qilish</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </section>
-
       {/* Section: Sozlamalar */}
       <section className="rounded-xl border border-border bg-card p-5 space-y-4">
         <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
@@ -537,8 +549,9 @@ function ImageUploadField({
     try {
       const result = await uploadImage(file);
       onChange(result.url);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Rasm yuklashda xatolik");
+    } catch (err: unknown) {
+      const apiErr = err as ApiError;
+      setError(apiErr?.response?.data?.message || "Rasm yuklashda xatolik");
     } finally {
       setUploading(false);
       e.target.value = "";

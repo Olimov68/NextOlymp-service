@@ -95,28 +95,28 @@ func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB
 		// Verifications
 		vG := admin.Group("/verifications")
 		{
-			vG.GET("", verificationsHandler.List)
-			vG.GET("/:id", verificationsHandler.GetByID)
-			vG.POST("/:id/approve", verificationsHandler.Approve)
-			vG.POST("/:id/reject", verificationsHandler.Reject)
-			vG.POST("/user/:user_id/approve", verificationsHandler.ApproveByUserID)
-			vG.POST("/user/:user_id/reject", verificationsHandler.RejectByUserID)
+			vG.GET("", middleware.PermissionRequired(db, "verifications.view"), verificationsHandler.List)
+			vG.GET("/:id", middleware.PermissionRequired(db, "verifications.view"), verificationsHandler.GetByID)
+			vG.POST("/:id/approve", middleware.PermissionRequired(db, "verifications.manage"), verificationsHandler.Approve)
+			vG.POST("/:id/reject", middleware.PermissionRequired(db, "verifications.manage"), verificationsHandler.Reject)
+			vG.POST("/user/:user_id/approve", middleware.PermissionRequired(db, "verifications.manage"), verificationsHandler.ApproveByUserID)
+			vG.POST("/user/:user_id/reject", middleware.PermissionRequired(db, "verifications.manage"), verificationsHandler.RejectByUserID)
 		}
 
 		// Chat Moderation
 		chatG := admin.Group("/chat")
 		{
-			chatG.GET("/messages", chatHandler.GetMessages)
-			chatG.POST("/messages", chatHandler.AdminSendMessage)
-			chatG.DELETE("/messages/:id", chatHandler.AdminDeleteMessage)
-			chatG.POST("/ban/:user_id", chatHandler.AdminBanUser)
-			chatG.POST("/unban/:user_id", chatHandler.AdminUnbanUser)
-			chatG.POST("/toggle", chatHandler.AdminToggleChat)
-			chatG.GET("/bans", chatHandler.AdminGetBannedUsers)
-			chatG.GET("/online", chatHandler.GetOnlineCount)
-			chatG.GET("/settings", chatHandler.AdminGetSettings)
-			chatG.PUT("/settings", chatHandler.AdminUpdateSettings)
-			chatG.GET("/moderation-logs", chatHandler.AdminGetModerationLogs)
+			chatG.GET("/messages", middleware.PermissionRequired(db, "chat.view"), chatHandler.GetMessages)
+			chatG.POST("/messages", middleware.PermissionRequired(db, "chat.moderate"), chatHandler.AdminSendMessage)
+			chatG.DELETE("/messages/:id", middleware.PermissionRequired(db, "chat.moderate"), chatHandler.AdminDeleteMessage)
+			chatG.POST("/ban/:user_id", middleware.PermissionRequired(db, "chat.moderate"), chatHandler.AdminBanUser)
+			chatG.POST("/unban/:user_id", middleware.PermissionRequired(db, "chat.moderate"), chatHandler.AdminUnbanUser)
+			chatG.POST("/toggle", middleware.PermissionRequired(db, "chat.manage"), chatHandler.AdminToggleChat)
+			chatG.GET("/bans", middleware.PermissionRequired(db, "chat.view"), chatHandler.AdminGetBannedUsers)
+			chatG.GET("/online", middleware.PermissionRequired(db, "chat.view"), chatHandler.GetOnlineCount)
+			chatG.GET("/settings", middleware.PermissionRequired(db, "chat.view"), chatHandler.AdminGetSettings)
+			chatG.PUT("/settings", middleware.PermissionRequired(db, "chat.manage"), chatHandler.AdminUpdateSettings)
+			chatG.GET("/moderation-logs", middleware.PermissionRequired(db, "chat.view"), chatHandler.AdminGetModerationLogs)
 		}
 
 		// Upload

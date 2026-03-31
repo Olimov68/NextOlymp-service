@@ -15,6 +15,10 @@ import {
   X,
   Shield,
   MessageCircle,
+  Newspaper,
+  BarChart3,
+  Award,
+  ShieldCheck,
 } from "lucide-react";
 
 interface NavItem {
@@ -28,7 +32,10 @@ const allNavItems: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, module: null },
   { href: "/admin/olympiads", label: "Olimpiadalar", icon: Trophy, module: "olympiads" },
   { href: "/admin/mock-tests", label: "Mock testlar", icon: ClipboardCheck, module: "mock_tests" },
+  { href: "/admin/results", label: "Natijalar", icon: BarChart3, module: "results" },
   { href: "/admin/users", label: "Foydalanuvchilar", icon: Users, module: "users" },
+  { href: "/admin/news", label: "Yangiliklar", icon: Newspaper, module: "news" },
+  { href: "/admin/certificates", label: "Sertifikatlar", icon: Award, module: "certificates" },
   { href: "/admin/chat", label: "Chat moderatsiya", icon: MessageCircle, module: "chat" },
 ];
 

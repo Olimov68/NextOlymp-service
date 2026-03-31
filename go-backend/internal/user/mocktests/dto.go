@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/nextolympservice/go-backend/internal/models"
+	"github.com/nextolympservice/go-backend/pkg/urlutil"
 )
 
 type ListParams struct {
@@ -29,6 +30,8 @@ type MockTestResponse struct {
 	Status         string    `json:"status"`
 	IsPaid         bool      `json:"is_paid"`
 	Price          *float64  `json:"price,omitempty"`
+	BannerURL      string    `json:"banner_url,omitempty"`
+	IconURL        string    `json:"icon_url,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 }
 
@@ -62,6 +65,8 @@ func ToMockTestResponse(m *models.MockTest) MockTestResponse {
 		Status:         string(m.Status),
 		IsPaid:         m.IsPaid,
 		Price:          m.Price,
+		BannerURL:      urlutil.ToFullURL(m.BannerURL),
+		IconURL:        urlutil.ToFullURL(m.IconURL),
 		CreatedAt:      m.CreatedAt,
 	}
 }

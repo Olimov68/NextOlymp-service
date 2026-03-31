@@ -1,7 +1,7 @@
 package router
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nextolympservice/go-backend/config"
@@ -58,10 +58,13 @@ usermocktests "github.com/nextolympservice/go-backend/internal/user/mocktests"
 	"github.com/nextolympservice/go-backend/internal/models"
 	"github.com/nextolympservice/go-backend/internal/utils"
 	"github.com/nextolympservice/go-backend/pkg/response"
+	"github.com/nextolympservice/go-backend/pkg/urlutil"
 	"gorm.io/gorm"
 )
 
 func Setup(cfg *config.Config, db *gorm.DB, redisClient *cache.RedisClient) *gin.Engine {
+	// URL util ni ishga tushirish (to'liq URL lar uchun)
+	urlutil.Init(cfg.App.BaseURL)
 	if cfg.App.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -71,9 +74,14 @@ func Setup(cfg *config.Config, db *gorm.DB, redisClient *cache.RedisClient) *gin
 	r.Use(gin.Recovery())
 	r.Use(middleware.SecurityHeaders())
 
-	// CORS: production da aniq originlar, development da hamma
-	if cfg.App.Env == "production" && len(cfg.CORS.AllowedOrigins) > 0 {
-		r.Use(middleware.CORSWithOrigins(cfg.CORS.AllowedOrigins))
+	// CORS: production requires explicit origins; development allows all
+	if cfg.App.Env == "production" {
+		if len(cfg.CORS.AllowedOrigins) == 0 || (len(cfg.CORS.AllowedOrigins) == 1 && cfg.CORS.AllowedOrigins[0] == "") {
+			log.Println("WARNING: Production mode with no CORS_ALLOWED_ORIGINS set. Defaulting to deny all cross-origin requests.")
+			r.Use(middleware.CORSWithOrigins([]string{}))
+		} else {
+			r.Use(middleware.CORSWithOrigins(cfg.CORS.AllowedOrigins))
+		}
 	} else {
 		r.Use(middleware.CORS())
 	}
@@ -119,7 +127,7 @@ func Setup(cfg *config.Config, db *gorm.DB, redisClient *cache.RedisClient) *gin
 	mockTestsHandler := usermocktests.NewHandler(usermocktests.NewService(usermocktests.NewRepository(db)))
 	newsHandler := usernews.NewHandler(usernews.NewService(usernews.NewRepository(db)))
 	certsHandler := usercerts.NewHandler(usercerts.NewService(usercerts.NewRepository(db)), cfg.Upload.Dir)
-examsHandler := userexams.NewHandler(db)
+examsHandler := userexams.NewHandler(db, cfg)
 	balanceHandler := userbalance.NewHandler(db)
 	notifsHandler := usernotifs.NewHandler(db)
 	promosHandler := userpromos.NewHandler(db)
@@ -135,8 +143,7 @@ examsHandler := userexams.NewHandler(db)
 	chatHandler := chat.NewHandler(db, chatHub)
 
 	// ─── Upload ──────────────────────────────────────────────────────
-	baseURL := fmt.Sprintf("http://localhost:%s", cfg.App.Port)
-	uploadHandler := upload.NewHandler(cfg.Upload.Dir, baseURL)
+	uploadHandler := upload.NewHandler(cfg.Upload.Dir, cfg.App.BaseURL)
 
 	// ─── Payme ────────────────────────────────────────────────────────────
 	paymeHandler := payme.NewHandler(db, &cfg.Payme)
@@ -221,6 +228,42 @@ examsHandler := userexams.NewHandler(db)
 	{
 		publicNews.GET("", publicNewsHandler.List)
 		publicNews.GET("/:id", publicNewsHandler.GetByID)
+	}
+
+	// ============================================================
+	// PUBLIC OLYMPIADS — /api/v1/olympiads (auth talab qilinmaydi)
+	// ============================================================
+	publicOlympiads := api.Group("/olympiads")
+	{
+		publicOlympiads.GET("", func(c *gin.Context) {
+			var items []models.Olympiad
+			db.Where("status IN ?", []string{"published", "active"}).
+				Order("created_at DESC").
+				Limit(50).
+				Find(&items)
+			var result []gin.H
+			for _, o := range items {
+				result = append(result, gin.H{
+					"id":               o.ID,
+					"title":            o.Title,
+					"slug":             o.Slug,
+					"description":      o.Description,
+					"subject":          o.Subject,
+					"grade":            o.Grade,
+					"language":         o.Language,
+					"start_time":       o.StartTime,
+					"end_time":         o.EndTime,
+					"duration_minutes": o.DurationMins,
+					"total_questions":  o.TotalQuestions,
+					"status":           o.Status,
+					"is_paid":          o.IsPaid,
+					"price":            o.Price,
+					"banner_url":       urlutil.ToFullURL(o.BannerURL),
+					"icon_url":         urlutil.ToFullURL(o.IconURL),
+				})
+			}
+			response.Success(c, 200, "OK", result)
+		})
 	}
 
 	// ============================================================

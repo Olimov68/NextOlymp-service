@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { getNewsList, getNewsItem, createNews, updateNews, deleteNews } from "@/lib/superadmin-api";
 import { uploadPanelImage } from "@/lib/admin-api";
 import { normalizeList } from "@/lib/normalizeList";
+import { getErrorMessage } from "@/lib/api-error";
 
 const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "https://nextolymp.uz/api/v1").replace(/\/api\/v1$/, "");
 function imageUrl(path: string) {
@@ -158,8 +159,8 @@ export default function SuperadminNewsPage() {
       setTypeFilter("all");
       setStatusFilter("all");
       await load();
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.error || "Xatolik yuz berdi";
+    } catch (e: unknown) {
+      const msg = getErrorMessage(e, "Xatolik yuz berdi");
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -318,7 +319,7 @@ export default function SuperadminNewsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Tur</Label>
-                <Select value={form.type} onValueChange={(v: any) => setForm(f => ({ ...f, type: v }))}>
+                <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v as "news" | "announcement" }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="news">Yangilik</SelectItem>
@@ -328,7 +329,7 @@ export default function SuperadminNewsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Status</Label>
-                <Select value={form.status} onValueChange={(v: any) => setForm(f => ({ ...f, status: v }))}>
+                <Select value={form.status} onValueChange={(v) => setForm(f => ({ ...f, status: v as "draft" | "published" | "archived" }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">Qoralama</SelectItem>

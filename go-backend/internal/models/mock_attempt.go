@@ -56,8 +56,9 @@ type MockAttempt struct {
 	// Calculation audit trail
 	CalculationMeta *JSONB `gorm:"type:jsonb" json:"calculation_meta,omitempty"`
 
-	TimeTaken int    `gorm:"default:0" json:"time_taken"`                              // sekundlarda
-	Status    string `gorm:"size:20;default:in_progress;not null" json:"status"`        // in_progress | completed | timed_out | abandoned
+	TimeTaken      int    `gorm:"default:0" json:"time_taken"`                              // sekundlarda
+	Status         string `gorm:"size:20;default:in_progress;not null" json:"status"`        // in_progress | completed | timed_out | abandoned
+	ResultApproved bool   `gorm:"default:false" json:"result_approved"`                     // admin natijani tasdiqlagan
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 
 	// Relations

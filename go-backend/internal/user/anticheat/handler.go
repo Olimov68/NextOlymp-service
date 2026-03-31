@@ -26,9 +26,25 @@ func NewHandler(db *gorm.DB) *Handler {
 type ReportViolationRequest struct {
 	AttemptID   uint   `json:"attempt_id" binding:"required"`
 	AttemptType string `json:"attempt_type" binding:"required,oneof=olympiad mock_test"` // olympiad, mock_test
-	Type        string `json:"type" binding:"required"`                                   // tab_switch, blur, copy_paste, devtools, right_click, fullscreen_exit, offline
+	Type        string `json:"type" binding:"required"`                                   // tab_switch, blur, copy_paste, devtools, right_click, fullscreen_exit, offline, screenshot, screen_record, face_not_found, face_mismatch, multiple_faces, voice_detected
 	Severity    string `json:"severity"`                                                  // info, warning, critical
+	DeviceType  string `json:"device_type"`                                               // web, windows, android
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// BatchViolationRequest — bir nechta qoidabuzarlikni yuborish (Flutter batch report)
+type BatchViolationRequest struct {
+	AttemptID   uint   `json:"attempt_id" binding:"required"`
+	AttemptType string `json:"attempt_type" binding:"required,oneof=olympiad mock_test"`
+	Violations  []struct {
+		Type      string                 `json:"type"`
+		Severity  string                 `json:"severity"`
+		Details   string                 `json:"details"`
+		Timestamp string                 `json:"timestamp"`
+		Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	} `json:"violations"`
+	TotalWarnings int    `json:"total_warnings"`
+	DeviceType    string `json:"device_type"`
 }
 
 // ReportViolation — qoidabuzarlikni xabar qilish (frontend dan keladi)
@@ -36,6 +52,7 @@ func (h *Handler) ReportViolation(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 	uid, _ := userID.(uint)
 
+	// Avval single violation sifatida parse qilib ko'rish
 	var req ReportViolationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri ma'lumot", nil)
@@ -44,6 +61,9 @@ func (h *Handler) ReportViolation(c *gin.Context) {
 
 	if req.Severity == "" {
 		req.Severity = "warning"
+	}
+	if req.DeviceType == "" {
+		req.DeviceType = "web"
 	}
 
 	// Attempt tegishliligini tekshirish
@@ -75,6 +95,7 @@ func (h *Handler) ReportViolation(c *gin.Context) {
 		AttemptType: req.AttemptType,
 		Type:        req.Type,
 		Severity:    req.Severity,
+		DeviceType:  req.DeviceType,
 		Metadata:    metadataJSON,
 		IPAddress:   c.ClientIP(),
 		UserAgent:   c.Request.UserAgent(),

@@ -58,6 +58,18 @@ type MockTest struct {
 	ManualReview           bool `gorm:"default:false" json:"manual_review"`
 	AdminApproval          bool `gorm:"default:false" json:"admin_approval"`
 
+	// Anti-cheat sozlamalari
+	AntiCheatEnabled       bool `gorm:"default:true" json:"anti_cheat_enabled"`
+	FullscreenRequired     bool `gorm:"default:true" json:"fullscreen_required"`
+	TabSwitchDetection     bool `gorm:"default:true" json:"tab_switch_detection"`
+	CopyPastePrevention    bool `gorm:"default:true" json:"copy_paste_prevention"`
+	RightClickBlocked      bool `gorm:"default:true" json:"right_click_blocked"`
+	ScreenshotBlocked      bool `gorm:"default:true" json:"screenshot_blocked"`
+	DevtoolsBlocked        bool `gorm:"default:true" json:"devtools_blocked"`
+	MaxFullscreenViolations int  `gorm:"default:5" json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  int  `gorm:"default:5" json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  int  `gorm:"default:4" json:"max_copy_paste_violations"`
+
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

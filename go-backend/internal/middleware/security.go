@@ -15,8 +15,9 @@ func SecurityHeaders() gin.HandlerFunc {
 		// Referrer policy
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 
-		// Content Security Policy (basic)
-		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:")
+		// Content Security Policy
+		// Next.js requires 'unsafe-inline' for styles; 'unsafe-eval' is removed from scripts for security
+		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
 
 		// HSTS (production uchun)
 		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")

@@ -140,3 +140,10 @@ func (r *Repository) UpdateAttempt(id uint, fields map[string]interface{}) error
 func (r *Repository) UpdateStatus(id uint, status models.MockTestStatus) error {
 	return r.db.Model(&models.MockTest{}).Where("id = ?", id).Update("status", status).Error
 }
+
+// CountQuestions — mock testga tegishli savollar sonini hisoblash
+func (r *Repository) CountQuestions(sourceType string, sourceID uint) int64 {
+	var count int64
+	r.db.Model(&models.Question{}).Where("source_type = ? AND source_id = ? AND is_active = true", sourceType, sourceID).Count(&count)
+	return count
+}

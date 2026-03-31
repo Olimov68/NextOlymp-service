@@ -40,6 +40,7 @@ import {
   getMockTest,
 } from "@/lib/superadmin-api";
 import { normalizeList } from "@/lib/normalizeList";
+import { getErrorMessage } from "@/lib/api-error";
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -116,7 +117,7 @@ export default function MockTestQuestionsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
-  const [mockTest, setMockTest] = useState<any>(null);
+  const [mockTest, setMockTest] = useState<{ title?: string; id?: number; subject?: string; duration_minutes?: number; total_questions?: number } | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -243,8 +244,8 @@ export default function MockTestQuestionsPage() {
       }
       setOpen(false);
       load();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error || "Xatolik yuz berdi");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik yuz berdi"));
     } finally {
       setSaving(false);
     }
@@ -280,11 +281,11 @@ export default function MockTestQuestionsPage() {
         <div className="flex-1">
           <p className="text-sm text-muted-foreground">Mock test</p>
           <h1 className="text-2xl font-bold text-foreground">
-            {mockTest?.title || subjectLabels[mockTest?.subject] || "Savollar"}
+            {mockTest?.title || (mockTest?.subject ? subjectLabels[mockTest.subject] : undefined) || "Savollar"}
           </h1>
           {mockTest && (
             <p className="text-sm text-muted-foreground mt-1">
-              {subjectLabels[mockTest.subject] || mockTest.subject} &bull;{" "}
+              {(mockTest.subject ? subjectLabels[mockTest.subject] : undefined) || mockTest.subject} &bull;{" "}
               {mockTest.duration_minutes} daqiqa &bull; {questions.length} /{" "}
               {mockTest.total_questions} savol
             </p>

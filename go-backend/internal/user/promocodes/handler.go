@@ -44,7 +44,8 @@ type ApplyPromoResponse struct {
 // ApplyPromo — promo kodni tekshiradi va chegirmani hisoblaydi
 // Bu endpoint faqat tekshiradi, to'lovda ishlatish alohida
 func (h *Handler) ApplyPromo(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 
 	var req ApplyPromoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

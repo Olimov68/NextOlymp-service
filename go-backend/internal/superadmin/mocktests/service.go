@@ -201,6 +201,38 @@ func (s *Service) Update(id uint, req *UpdateRequest) (*models.MockTest, error) 
 		}
 	}
 
+	// Anti-cheat
+	if req.AntiCheatEnabled != nil {
+		fields["anti_cheat_enabled"] = *req.AntiCheatEnabled
+	}
+	if req.FullscreenRequired != nil {
+		fields["fullscreen_required"] = *req.FullscreenRequired
+	}
+	if req.TabSwitchDetection != nil {
+		fields["tab_switch_detection"] = *req.TabSwitchDetection
+	}
+	if req.CopyPastePrevention != nil {
+		fields["copy_paste_prevention"] = *req.CopyPastePrevention
+	}
+	if req.RightClickBlocked != nil {
+		fields["right_click_blocked"] = *req.RightClickBlocked
+	}
+	if req.ScreenshotBlocked != nil {
+		fields["screenshot_blocked"] = *req.ScreenshotBlocked
+	}
+	if req.DevtoolsBlocked != nil {
+		fields["devtools_blocked"] = *req.DevtoolsBlocked
+	}
+	if req.MaxFullscreenViolations != nil {
+		fields["max_fullscreen_violations"] = *req.MaxFullscreenViolations
+	}
+	if req.MaxTabSwitchViolations != nil {
+		fields["max_tab_switch_violations"] = *req.MaxTabSwitchViolations
+	}
+	if req.MaxCopyPasteViolations != nil {
+		fields["max_copy_paste_violations"] = *req.MaxCopyPasteViolations
+	}
+
 	if err := s.repo.Update(id, fields); err != nil {
 		return nil, err
 	}
@@ -263,6 +295,20 @@ func (s *Service) Duplicate(id uint) (*models.MockTest, error) {
 }
 
 func (s *Service) Publish(id uint) error {
+	mt, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Savol soni tekshirish
+	actualCount := s.repo.CountQuestions("mock_test", id)
+	if mt.TotalQuestions > 0 && int64(mt.TotalQuestions) != actualCount {
+		return fmt.Errorf("Mock testda %d ta savol bo'lishi kerak, hozirda %d ta mavjud. Avval savollarni to'ldiring", mt.TotalQuestions, actualCount)
+	}
+	if actualCount == 0 {
+		return fmt.Errorf("Mock testda hech qanday savol yo'q. Avval savollar qo'shing")
+	}
+
 	return s.repo.UpdateStatus(id, models.MockTestStatusPublished)
 }
 

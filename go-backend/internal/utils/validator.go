@@ -88,24 +88,75 @@ func ValidatePassword(password string) error {
 	return nil
 }
 
-// FormatValidationErrors converts validator errors to readable map
+// fieldLabels — maydon nomlarini o'zbekcha ko'rsatish
+var fieldLabels = map[string]string{
+	"username":         "Foydalanuvchi nomi",
+	"password":         "Parol",
+	"confirm_password": "Parol tasdig'i",
+	"first_name":       "Ism",
+	"last_name":        "Familiya",
+	"birth_date":       "Tug'ilgan sana",
+	"gender":           "Jins",
+	"region":           "Viloyat",
+	"district":         "Tuman",
+	"school_name":      "Maktab nomi",
+	"grade":            "Sinf",
+	"current_password": "Joriy parol",
+	"new_password":     "Yangi parol",
+	"identifier":       "Foydalanuvchi nomi",
+	"code":             "Tasdiqlash kodi",
+	"id_token":         "Google token",
+	"refresh_token":    "Refresh token",
+	"amount":           "Summa",
+	"title":            "Sarlavha",
+	"description":      "Tavsif",
+	"subject":          "Fan",
+}
+
+// getFieldLabel returns the Uzbek label for a field, or the field name itself
+func getFieldLabel(field string) string {
+	if label, ok := fieldLabels[field]; ok {
+		return label
+	}
+	return field
+}
+
+// FormatValidationErrors converts validator errors to readable map (O'zbekcha)
 func FormatValidationErrors(err error) map[string]string {
 	errors := make(map[string]string)
 
 	if validationErrs, ok := err.(validator.ValidationErrors); ok {
 		for _, e := range validationErrs {
 			field := toSnakeCase(e.Field())
+			label := getFieldLabel(field)
 			switch e.Tag() {
 			case "required":
-				errors[field] = fmt.Sprintf("%s is required", field)
+				errors[field] = fmt.Sprintf("%s kiritilishi shart", label)
 			case "min":
-				errors[field] = fmt.Sprintf("%s must be at least %s characters", field, e.Param())
+				if e.Kind().String() == "string" || e.Type().Kind().String() == "string" {
+					errors[field] = fmt.Sprintf("%s kamida %s ta belgi bo'lishi kerak", label, e.Param())
+				} else {
+					errors[field] = fmt.Sprintf("%s kamida %s bo'lishi kerak", label, e.Param())
+				}
 			case "max":
-				errors[field] = fmt.Sprintf("%s must be at most %s characters", field, e.Param())
+				if e.Kind().String() == "string" || e.Type().Kind().String() == "string" {
+					errors[field] = fmt.Sprintf("%s ko'pi bilan %s ta belgi bo'lishi kerak", label, e.Param())
+				} else {
+					errors[field] = fmt.Sprintf("%s ko'pi bilan %s bo'lishi kerak", label, e.Param())
+				}
 			case "oneof":
-				errors[field] = fmt.Sprintf("%s must be one of: %s", field, e.Param())
+				vals := strings.ReplaceAll(e.Param(), " ", ", ")
+				errors[field] = fmt.Sprintf("%s quyidagilardan biri bo'lishi kerak: %s", label, vals)
+			case "len":
+				errors[field] = fmt.Sprintf("%s aniq %s ta belgi bo'lishi kerak", label, e.Param())
+			case "email":
+				errors[field] = fmt.Sprintf("%s to'g'ri email manzil bo'lishi kerak", label)
+			case "username":
+				errors[field] = fmt.Sprintf("%s kamida 4 ta belgi, faqat harf, raqam, _ va . bo'lishi kerak", label)
+			case "strongpassword":
+				errors[field] = fmt.Sprintf("%s kamida 8 ta belgi, katta harf, kichik harf va raqam bo'lishi kerak", label)
 			default:
-				errors[field] = fmt.Sprintf("%s is invalid", field)
+				errors[field] = fmt.Sprintf("%s noto'g'ri formatda", label)
 			}
 		}
 	}

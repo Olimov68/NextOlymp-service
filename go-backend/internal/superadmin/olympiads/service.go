@@ -24,6 +24,22 @@ func (s *Service) GetByID(id uint) (*models.Olympiad, error) {
 	return s.repo.GetByID(id)
 }
 
+// parseFlexibleTime parses time from multiple formats (RFC3339, datetime-local, date-only)
+func parseFlexibleTime(s string) (time.Time, error) {
+	formats := []string{
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04",
+		"2006-01-02",
+	}
+	for _, f := range formats {
+		if t, err := time.Parse(f, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("vaqt formatini tushunib bo'lmadi: %s", s)
+}
+
 func (s *Service) Create(req *CreateRequest, staffID uint) (*models.Olympiad, error) {
 	slug := generateSlug(req.Title)
 	// Ensure unique slug
@@ -75,29 +91,41 @@ func (s *Service) Create(req *CreateRequest, staffID uint) (*models.Olympiad, er
 		ScoringRules:           req.ScoringRules,
 	}
 
-	if req.StartTime != nil {
-		t, err := time.Parse(time.RFC3339, *req.StartTime)
-		if err == nil {
-			o.StartTime = &t
+	if req.StartTime != nil && *req.StartTime != "" {
+		t, err := parseFlexibleTime(*req.StartTime)
+		if err != nil {
+			return nil, fmt.Errorf("start_time: %w", err)
 		}
+		o.StartTime = &t
 	}
-	if req.EndTime != nil {
-		t, err := time.Parse(time.RFC3339, *req.EndTime)
-		if err == nil {
-			o.EndTime = &t
+	if req.EndTime != nil && *req.EndTime != "" {
+		t, err := parseFlexibleTime(*req.EndTime)
+		if err != nil {
+			return nil, fmt.Errorf("end_time: %w", err)
 		}
+		o.EndTime = &t
 	}
-	if req.RegistrationStartTime != nil {
-		t, err := time.Parse(time.RFC3339, *req.RegistrationStartTime)
-		if err == nil {
-			o.RegistrationStartTime = &t
+	if req.RegistrationStartTime != nil && *req.RegistrationStartTime != "" {
+		t, err := parseFlexibleTime(*req.RegistrationStartTime)
+		if err != nil {
+			return nil, fmt.Errorf("registration_start_time: %w", err)
 		}
+		o.RegistrationStartTime = &t
 	}
-	if req.RegistrationEndTime != nil {
-		t, err := time.Parse(time.RFC3339, *req.RegistrationEndTime)
-		if err == nil {
-			o.RegistrationEndTime = &t
+	if req.RegistrationEndTime != nil && *req.RegistrationEndTime != "" {
+		t, err := parseFlexibleTime(*req.RegistrationEndTime)
+		if err != nil {
+			return nil, fmt.Errorf("registration_end_time: %w", err)
 		}
+		o.RegistrationEndTime = &t
+	}
+
+	// Validate: end_time must be after start_time
+	if o.StartTime != nil && o.EndTime != nil && !o.EndTime.After(*o.StartTime) {
+		return nil, fmt.Errorf("tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak")
+	}
+	if o.RegistrationStartTime != nil && o.RegistrationEndTime != nil && !o.RegistrationEndTime.After(*o.RegistrationStartTime) {
+		return nil, fmt.Errorf("ro'yxatdan o'tish tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak")
 	}
 
 	if err := s.repo.Create(o); err != nil {
@@ -141,17 +169,19 @@ func (s *Service) Update(id uint, req *UpdateRequest) (*models.Olympiad, error) 
 	if req.Price != nil {
 		fields["price"] = *req.Price
 	}
-	if req.StartTime != nil {
-		t, err := time.Parse(time.RFC3339, *req.StartTime)
-		if err == nil {
-			fields["start_time"] = t
+	if req.StartTime != nil && *req.StartTime != "" {
+		t, err := parseFlexibleTime(*req.StartTime)
+		if err != nil {
+			return nil, fmt.Errorf("start_time: %w", err)
 		}
+		fields["start_time"] = t
 	}
-	if req.EndTime != nil {
-		t, err := time.Parse(time.RFC3339, *req.EndTime)
-		if err == nil {
-			fields["end_time"] = t
+	if req.EndTime != nil && *req.EndTime != "" {
+		t, err := parseFlexibleTime(*req.EndTime)
+		if err != nil {
+			return nil, fmt.Errorf("end_time: %w", err)
 		}
+		fields["end_time"] = t
 	}
 
 	// Media
@@ -163,17 +193,19 @@ func (s *Service) Update(id uint, req *UpdateRequest) (*models.Olympiad, error) 
 	}
 
 	// Registration
-	if req.RegistrationStartTime != nil {
-		t, err := time.Parse(time.RFC3339, *req.RegistrationStartTime)
-		if err == nil {
-			fields["registration_start_time"] = t
+	if req.RegistrationStartTime != nil && *req.RegistrationStartTime != "" {
+		t, err := parseFlexibleTime(*req.RegistrationStartTime)
+		if err != nil {
+			return nil, fmt.Errorf("registration_start_time: %w", err)
 		}
+		fields["registration_start_time"] = t
 	}
-	if req.RegistrationEndTime != nil {
-		t, err := time.Parse(time.RFC3339, *req.RegistrationEndTime)
-		if err == nil {
-			fields["registration_end_time"] = t
+	if req.RegistrationEndTime != nil && *req.RegistrationEndTime != "" {
+		t, err := parseFlexibleTime(*req.RegistrationEndTime)
+		if err != nil {
+			return nil, fmt.Errorf("registration_end_time: %w", err)
 		}
+		fields["registration_end_time"] = t
 	}
 	if req.MaxSeats != nil {
 		fields["max_seats"] = *req.MaxSeats
@@ -209,6 +241,38 @@ func (s *Service) Update(id uint, req *UpdateRequest) (*models.Olympiad, error) 
 	}
 	if req.ScoringRules != nil {
 		fields["scoring_rules"] = *req.ScoringRules
+	}
+
+	// Anti-cheat
+	if req.AntiCheatEnabled != nil {
+		fields["anti_cheat_enabled"] = *req.AntiCheatEnabled
+	}
+	if req.FullscreenRequired != nil {
+		fields["fullscreen_required"] = *req.FullscreenRequired
+	}
+	if req.TabSwitchDetection != nil {
+		fields["tab_switch_detection"] = *req.TabSwitchDetection
+	}
+	if req.CopyPastePrevention != nil {
+		fields["copy_paste_prevention"] = *req.CopyPastePrevention
+	}
+	if req.RightClickBlocked != nil {
+		fields["right_click_blocked"] = *req.RightClickBlocked
+	}
+	if req.ScreenshotBlocked != nil {
+		fields["screenshot_blocked"] = *req.ScreenshotBlocked
+	}
+	if req.DevtoolsBlocked != nil {
+		fields["devtools_blocked"] = *req.DevtoolsBlocked
+	}
+	if req.MaxFullscreenViolations != nil {
+		fields["max_fullscreen_violations"] = *req.MaxFullscreenViolations
+	}
+	if req.MaxTabSwitchViolations != nil {
+		fields["max_tab_switch_violations"] = *req.MaxTabSwitchViolations
+	}
+	if req.MaxCopyPasteViolations != nil {
+		fields["max_copy_paste_violations"] = *req.MaxCopyPasteViolations
 	}
 
 	if err := s.repo.Update(id, fields); err != nil {
@@ -261,14 +325,33 @@ func (s *Service) Duplicate(id uint) (*models.Olympiad, error) {
 	return &dup, nil
 }
 
-// Publish sets the olympiad status to published
+// Publish sets the olympiad status to published (savol soni tekshiriladi)
 func (s *Service) Publish(id uint) error {
+	o, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	// Savol soni tekshirish — total_questions bilan haqiqiy savollar soni mos bo'lishi shart
+	actualCount := s.repo.CountQuestions("olympiad", id)
+	if o.TotalQuestions > 0 && int64(o.TotalQuestions) != actualCount {
+		return fmt.Errorf("Olimpiadada %d ta savol bo'lishi kerak, hozirda %d ta mavjud. Avval savollarni to'ldiring", o.TotalQuestions, actualCount)
+	}
+	if actualCount == 0 {
+		return fmt.Errorf("Olimpiadada hech qanday savol yo'q. Avval savollar qo'shing")
+	}
+
 	return s.repo.UpdateStatus(id, string(models.OlympiadStatusPublished))
 }
 
 // Unpublish sets the olympiad status to draft
 func (s *Service) Unpublish(id uint) error {
 	return s.repo.UpdateStatus(id, string(models.OlympiadStatusDraft))
+}
+
+// ToggleRegistration — ro'yxatdan o'tishni ochish/yopish
+func (s *Service) ToggleRegistration(id uint, open bool) error {
+	return s.repo.UpdateField(id, "registration_open", open)
 }
 
 func generateSlug(title string) string {

@@ -108,6 +108,8 @@ export async function uploadPanelImage(file: File): Promise<string> {
 // ============================================
 export const getAdminChatMessages = (params?: Record<string, unknown>) =>
   get("/chat/messages", params);
+export const sendAdminChatMessage = (content: string, replyToId?: number) =>
+  post("/chat/messages", { content, reply_to_id: replyToId });
 export const deleteAdminChatMessage = (id: number) =>
   del(`/chat/messages/${id}`);
 export const banChatUser = (userId: number, data: { reason?: string; type?: string; duration?: number }) =>

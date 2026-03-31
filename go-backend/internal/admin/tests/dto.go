@@ -41,6 +41,18 @@ type CreateOlympiadRequest struct {
 	GiveCertificate       bool `json:"give_certificate"`
 	ManualReview          bool `json:"manual_review"`
 	AdminApproval         bool `json:"admin_approval"`
+
+	// Anti-cheat
+	AntiCheatEnabled       bool `json:"anti_cheat_enabled"`
+	FullscreenRequired     bool `json:"fullscreen_required"`
+	TabSwitchDetection     bool `json:"tab_switch_detection"`
+	CopyPastePrevention    bool `json:"copy_paste_prevention"`
+	RightClickBlocked      bool `json:"right_click_blocked"`
+	ScreenshotBlocked      bool `json:"screenshot_blocked"`
+	DevtoolsBlocked        bool `json:"devtools_blocked"`
+	MaxFullscreenViolations int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  int  `json:"max_copy_paste_violations"`
 }
 
 type UpdateOlympiadRequest struct {
@@ -76,6 +88,18 @@ type UpdateOlympiadRequest struct {
 	GiveCertificate       *bool `json:"give_certificate"`
 	ManualReview          *bool `json:"manual_review"`
 	AdminApproval         *bool `json:"admin_approval"`
+
+	// Anti-cheat
+	AntiCheatEnabled       *bool `json:"anti_cheat_enabled"`
+	FullscreenRequired     *bool `json:"fullscreen_required"`
+	TabSwitchDetection     *bool `json:"tab_switch_detection"`
+	CopyPastePrevention    *bool `json:"copy_paste_prevention"`
+	RightClickBlocked      *bool `json:"right_click_blocked"`
+	ScreenshotBlocked      *bool `json:"screenshot_blocked"`
+	DevtoolsBlocked        *bool `json:"devtools_blocked"`
+	MaxFullscreenViolations *int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  *int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  *int  `json:"max_copy_paste_violations"`
 }
 
 // --- MockTest DTOs ---
@@ -115,6 +139,18 @@ type CreateMockTestRequest struct {
 	GiveCertificate       bool `json:"give_certificate"`
 	ManualReview          bool `json:"manual_review"`
 	AdminApproval         bool `json:"admin_approval"`
+
+	// Anti-cheat
+	AntiCheatEnabled       bool `json:"anti_cheat_enabled"`
+	FullscreenRequired     bool `json:"fullscreen_required"`
+	TabSwitchDetection     bool `json:"tab_switch_detection"`
+	CopyPastePrevention    bool `json:"copy_paste_prevention"`
+	RightClickBlocked      bool `json:"right_click_blocked"`
+	ScreenshotBlocked      bool `json:"screenshot_blocked"`
+	DevtoolsBlocked        bool `json:"devtools_blocked"`
+	MaxFullscreenViolations int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  int  `json:"max_copy_paste_violations"`
 }
 
 type UpdateMockTestRequest struct {
@@ -152,6 +188,18 @@ type UpdateMockTestRequest struct {
 	GiveCertificate       *bool `json:"give_certificate"`
 	ManualReview          *bool `json:"manual_review"`
 	AdminApproval         *bool `json:"admin_approval"`
+
+	// Anti-cheat
+	AntiCheatEnabled       *bool `json:"anti_cheat_enabled"`
+	FullscreenRequired     *bool `json:"fullscreen_required"`
+	TabSwitchDetection     *bool `json:"tab_switch_detection"`
+	CopyPastePrevention    *bool `json:"copy_paste_prevention"`
+	RightClickBlocked      *bool `json:"right_click_blocked"`
+	ScreenshotBlocked      *bool `json:"screenshot_blocked"`
+	DevtoolsBlocked        *bool `json:"devtools_blocked"`
+	MaxFullscreenViolations *int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  *int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  *int  `json:"max_copy_paste_violations"`
 }
 
 type TestListParams struct {
@@ -199,6 +247,18 @@ type OlympiadResponse struct {
 	ManualReview          bool `json:"manual_review"`
 	AdminApproval         bool `json:"admin_approval"`
 
+	// Anti-cheat
+	AntiCheatEnabled       bool `json:"anti_cheat_enabled"`
+	FullscreenRequired     bool `json:"fullscreen_required"`
+	TabSwitchDetection     bool `json:"tab_switch_detection"`
+	CopyPastePrevention    bool `json:"copy_paste_prevention"`
+	RightClickBlocked      bool `json:"right_click_blocked"`
+	ScreenshotBlocked      bool `json:"screenshot_blocked"`
+	DevtoolsBlocked        bool `json:"devtools_blocked"`
+	MaxFullscreenViolations int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  int  `json:"max_copy_paste_violations"`
+
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -239,6 +299,18 @@ type MockTestResponse struct {
 	ManualReview          bool `json:"manual_review"`
 	AdminApproval         bool `json:"admin_approval"`
 
+	// Anti-cheat
+	AntiCheatEnabled       bool `json:"anti_cheat_enabled"`
+	FullscreenRequired     bool `json:"fullscreen_required"`
+	TabSwitchDetection     bool `json:"tab_switch_detection"`
+	CopyPastePrevention    bool `json:"copy_paste_prevention"`
+	RightClickBlocked      bool `json:"right_click_blocked"`
+	ScreenshotBlocked      bool `json:"screenshot_blocked"`
+	DevtoolsBlocked        bool `json:"devtools_blocked"`
+	MaxFullscreenViolations int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  int  `json:"max_copy_paste_violations"`
+
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -255,6 +327,13 @@ func ToOlympiadResponse(o *models.Olympiad) OlympiadResponse {
 		AutoSubmit: o.AutoSubmit, AllowRetake: o.AllowRetake,
 		ShowResultImmediately: o.ShowResultImmediately, GiveCertificate: o.GiveCertificate,
 		ManualReview: o.ManualReview, AdminApproval: o.AdminApproval,
+		AntiCheatEnabled: o.AntiCheatEnabled, FullscreenRequired: o.FullscreenRequired,
+		TabSwitchDetection: o.TabSwitchDetection, CopyPastePrevention: o.CopyPastePrevention,
+		RightClickBlocked: o.RightClickBlocked, ScreenshotBlocked: o.ScreenshotBlocked,
+		DevtoolsBlocked: o.DevtoolsBlocked,
+		MaxFullscreenViolations: o.MaxFullscreenViolations,
+		MaxTabSwitchViolations: o.MaxTabSwitchViolations,
+		MaxCopyPasteViolations: o.MaxCopyPasteViolations,
 		CreatedAt: o.CreatedAt,
 	}
 }
@@ -273,6 +352,13 @@ func ToMockTestResponse(m *models.MockTest) MockTestResponse {
 		AutoSubmit: m.AutoSubmit, AllowRetake: m.AllowRetake,
 		ShowResultImmediately: m.ShowResultImmediately, GiveCertificate: m.GiveCertificate,
 		ManualReview: m.ManualReview, AdminApproval: m.AdminApproval,
+		AntiCheatEnabled: m.AntiCheatEnabled, FullscreenRequired: m.FullscreenRequired,
+		TabSwitchDetection: m.TabSwitchDetection, CopyPastePrevention: m.CopyPastePrevention,
+		RightClickBlocked: m.RightClickBlocked, ScreenshotBlocked: m.ScreenshotBlocked,
+		DevtoolsBlocked: m.DevtoolsBlocked,
+		MaxFullscreenViolations: m.MaxFullscreenViolations,
+		MaxTabSwitchViolations: m.MaxTabSwitchViolations,
+		MaxCopyPasteViolations: m.MaxCopyPasteViolations,
 		CreatedAt: m.CreatedAt,
 	}
 }

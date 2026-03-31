@@ -130,3 +130,15 @@ func (r *Repository) CreateOlympiad(o *models.Olympiad) error {
 func (r *Repository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&models.Olympiad{}).Where("id = ?", id).Update("status", status).Error
 }
+
+// CountQuestions — olimpiadaga tegishli savollar sonini hisoblash
+func (r *Repository) CountQuestions(sourceType string, sourceID uint) int64 {
+	var count int64
+	r.db.Model(&models.Question{}).Where("source_type = ? AND source_id = ? AND is_active = true", sourceType, sourceID).Count(&count)
+	return count
+}
+
+// UpdateField — bitta fieldni yangilash
+func (r *Repository) UpdateField(id uint, field string, value interface{}) error {
+	return r.db.Model(&models.Olympiad{}).Where("id = ?", id).Update(field, value).Error
+}

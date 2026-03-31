@@ -17,8 +17,9 @@ type OlympiadAttempt struct {
 	Percentage float64    `gorm:"default:0" json:"percentage"`
 	Rank       int        `gorm:"default:0" json:"rank"`
 	TimeTaken  int        `gorm:"default:0" json:"time_taken"`
-	Status     string     `gorm:"size:20;default:in_progress;not null" json:"status"` // in_progress | completed | timed_out | disqualified
-	CreatedAt  time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	Status         string     `gorm:"size:20;default:in_progress;not null" json:"status"` // in_progress | completed | timed_out | disqualified
+	ResultApproved bool       `gorm:"default:false" json:"result_approved"`               // admin natijani tasdiqlagan
+	CreatedAt      time.Time  `gorm:"autoCreateTime" json:"created_at"`
 
 	// Relations
 	User     *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`

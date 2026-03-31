@@ -266,3 +266,30 @@ html.theme-transition *::after {
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
+
+/* ─────────────────────────────────────────────────────────────────
+   JIVO CHAT WIDGET — position & z-index overrides
+   ───────────────────────────────────────────────────────────────── */
+jdiv[class*="wrap"],
+jdiv[class*="contentFrame"],
+jdiv[class*="button"] {
+  z-index: 40 !important;
+}
+
+/* Desktop: move chat button up so it doesn't overlap footer content */
+@media (min-width: 768px) {
+  jdiv[class*="wrap"] {
+    bottom: 20px !important;
+    right: 20px !important;
+  }
+}
+
+/* Mobile: smaller & higher to avoid overlapping text/buttons */
+@media (max-width: 767px) {
+  jdiv[class*="wrap"] {
+    bottom: 16px !important;
+    right: 12px !important;
+    transform: scale(0.85);
+    transform-origin: bottom right;
+  }
+}

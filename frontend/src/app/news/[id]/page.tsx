@@ -3,13 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { AnnouncementBar } from "@/components/AnnouncementBar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Calendar, Newspaper } from "lucide-react";
+import { PublicLayout } from "@/components/landing/PublicLayout";
+import { useI18n } from "@/lib/i18n";
+import { translateText } from "@/lib/translate";
+import { ArrowLeft, Calendar, Newspaper, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface NewsItem {
@@ -39,6 +36,13 @@ export default function NewsDetailPage() {
   const [item, setItem] = useState<NewsItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const { t, lang } = useI18n();
+
+  // Translated fields
+  const [tTitle, setTTitle] = useState("");
+  const [tExcerpt, setTExcerpt] = useState("");
+  const [tBody, setTBody] = useState("");
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     api.get(`/news/${id}`)
@@ -47,66 +51,94 @@ export default function NewsDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Auto-translate when lang changes
+  useEffect(() => {
+    if (!item) return;
+    if (lang === "uz") {
+      setTTitle(item.title);
+      setTExcerpt(item.excerpt || "");
+      setTBody(item.body || "");
+      return;
+    }
+    setTranslating(true);
+    Promise.all([
+      translateText(item.title, "uz", lang),
+      item.excerpt ? translateText(item.excerpt, "uz", lang) : Promise.resolve(""),
+      item.body ? translateText(item.body, "uz", lang) : Promise.resolve(""),
+    ]).then(([title, excerpt, body]) => {
+      setTTitle(title);
+      setTExcerpt(excerpt);
+      setTBody(body);
+    }).catch(() => {
+      setTTitle(item.title);
+      setTExcerpt(item.excerpt || "");
+      setTBody(item.body || "");
+    }).finally(() => setTranslating(false));
+  }, [item, lang]);
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-50">
-        <AnnouncementBar />
-        <Header />
-      </div>
-      <main className="py-10">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <Button variant="ghost" size="sm" className="mb-6 gap-2" onClick={() => router.push("/news")}>
-            <ArrowLeft className="h-4 w-4" /> Orqaga
-          </Button>
+    <PublicLayout>
+      <div className="py-10">
+        <div className="max-w-3xl mx-auto px-4">
+          <button
+            onClick={() => router.push("/news")}
+            className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors mb-6 text-sm"
+          >
+            <ArrowLeft className="h-4 w-4" /> {t("common.back")}
+          </button>
 
           {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-64 w-full rounded-2xl" />
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
+            <div className="space-y-4 animate-pulse">
+              <div className="h-64 w-full rounded-2xl bg-white/5" />
+              <div className="h-8 w-3/4 bg-white/10 rounded" />
+              <div className="h-4 w-full bg-white/10 rounded" />
+              <div className="h-4 w-5/6 bg-white/10 rounded" />
             </div>
           ) : error || !item ? (
-            <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center py-24 text-gray-500">
               <Newspaper className="h-14 w-14 mb-4 opacity-20" />
-              <p className="text-lg font-medium">Yangilik topilmadi</p>
-              <Link href="/news"><Button variant="outline" className="mt-4">Barcha yangiliklar</Button></Link>
+              <p className="text-lg font-medium">{t("results.no_results")}</p>
+              <Link href="/news" className="mt-4 px-5 py-2 rounded-xl bg-white/10 text-white hover:bg-white/15 transition-colors text-sm">
+                {t("landing.nav.blog")}
+              </Link>
             </div>
           ) : (
             <article>
-              {/* Cover image */}
               {item.cover_image && (
-                <div className="rounded-2xl overflow-hidden mb-8 border border-border">
-                  <img src={getImageUrl(item.cover_image)!} alt={item.title} className="w-full h-64 md:h-80 object-cover" />
+                <div className="rounded-2xl overflow-hidden mb-8 border border-white/10">
+                  <img src={getImageUrl(item.cover_image)!} alt={tTitle} className="w-full h-64 md:h-80 object-cover" />
                 </div>
               )}
 
-              {/* Meta */}
               <div className="flex items-center gap-3 mb-4">
-                <Badge variant="secondary">{item.type === "news" ? "Yangilik" : "E'lon"}</Badge>
-                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <span className="text-xs bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-full border border-blue-500/20">
+                  {item.type === "news" ? t("landing.nav.blog") : "E'lon"}
+                </span>
+                <span className="flex items-center gap-1 text-sm text-gray-500">
                   <Calendar className="h-3.5 w-3.5" />
                   {new Date(item.published_at || item.created_at).toLocaleDateString("uz-UZ", { year: "numeric", month: "long", day: "numeric" })}
                 </span>
+                {translating && (
+                  <span className="flex items-center gap-1 text-xs text-blue-400">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    {lang === "ru" ? "Перевод..." : "Translating..."}
+                  </span>
+                )}
               </div>
 
-              {/* Title */}
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-4">{item.title}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold mb-4">{tTitle}</h1>
 
-              {/* Excerpt */}
-              {item.excerpt && (
-                <p className="text-base text-muted-foreground mb-6 border-l-2 border-primary pl-4 italic">{item.excerpt}</p>
+              {tExcerpt && (
+                <p className="text-base text-gray-400 mb-6 border-l-2 border-blue-500 pl-4 italic">{tExcerpt}</p>
               )}
 
-              {/* Body */}
-              <div className="prose prose-sm max-w-none text-foreground leading-relaxed whitespace-pre-wrap">
-                {item.body}
+              <div className="prose prose-invert max-w-none text-gray-300 leading-relaxed whitespace-pre-wrap">
+                {tBody}
               </div>
             </article>
           )}
         </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </PublicLayout>
   );
 }

@@ -66,7 +66,8 @@ type QuestionReview struct {
 
 // GetAIAnalysis — mock test natijasi uchun AI tahlil
 func (h *Handler) GetAIAnalysis(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	attemptID, err := strconv.ParseUint(c.Param("attempt_id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri attempt ID")

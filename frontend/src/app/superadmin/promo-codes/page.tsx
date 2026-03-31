@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api-error";
 
 interface PromoCode {
   id: number;
@@ -152,8 +153,8 @@ export default function PromoCodesPage() {
       resetForm();
       fetchCodes();
       fetchStats();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     } finally {
       setCreating(false);
     }
@@ -173,8 +174,8 @@ export default function PromoCodesPage() {
       toast.success("Status o'zgartirildi");
       fetchCodes();
       fetchStats();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     }
   };
 
@@ -185,8 +186,8 @@ export default function PromoCodesPage() {
       toast.success("O'chirildi");
       fetchCodes();
       fetchStats();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Xatolik");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Xatolik"));
     }
   };
 

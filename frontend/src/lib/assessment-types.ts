@@ -31,6 +31,7 @@ export interface AssessmentBase {
   admin_approval: boolean;
   min_score_for_certificate: number;
   scoring_rules: string;
+  registration_open?: boolean;
   registered_count?: number;
   participants_count?: number;
   created_at: string;

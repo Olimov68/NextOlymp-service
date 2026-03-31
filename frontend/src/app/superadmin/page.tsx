@@ -133,7 +133,6 @@ export default function SuperAdminDashboard() {
                 <span className="text-2xl font-bold text-foreground">{s.value}</span>
               </div>
               <p className="text-xs opacity-60">{s.label}</p>
-              {(s as any).sub && <p className="text-[10px] opacity-40 mt-0.5">{(s as any).sub}</p>}
             </CardContent>
           </Card>
         ))}

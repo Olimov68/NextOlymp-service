@@ -34,7 +34,7 @@ func Error(c *gin.Context, status int, message string, errors ...interface{}) {
 }
 
 func ValidationError(c *gin.Context, errors interface{}) {
-	Error(c, http.StatusUnprocessableEntity, "Validation failed", errors)
+	Error(c, http.StatusUnprocessableEntity, "Ma'lumotlar noto'g'ri kiritilgan", errors)
 }
 
 func Unauthorized(c *gin.Context, message string) {

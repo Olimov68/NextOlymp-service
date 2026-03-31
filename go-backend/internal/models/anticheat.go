@@ -12,8 +12,9 @@ type AntiCheatViolation struct {
 	UserID      uint           `gorm:"index;not null" json:"user_id"`
 	AttemptID   uint           `gorm:"index;not null" json:"attempt_id"`
 	AttemptType string         `gorm:"type:varchar(20);not null" json:"attempt_type"` // olympiad, mock_test
-	Type        string         `gorm:"type:varchar(50);not null" json:"type"`         // tab_switch, blur, copy_paste, devtools, right_click, fullscreen_exit, offline
+	Type        string         `gorm:"type:varchar(50);not null" json:"type"`         // tab_switch, blur, copy_paste, devtools, right_click, fullscreen_exit, offline, screenshot, screen_record, face_not_found, face_mismatch, multiple_faces, voice_detected
 	Severity    string         `gorm:"type:varchar(20);default:'warning'" json:"severity"` // info, warning, critical
+	DeviceType  string         `gorm:"type:varchar(20);default:'web'" json:"device_type"`  // web, windows, android
 	Metadata    datatypes.JSON `gorm:"type:jsonb" json:"metadata,omitempty"`
 	IPAddress   string         `gorm:"type:varchar(45)" json:"ip_address"`
 	UserAgent   string         `gorm:"type:text" json:"user_agent"`

@@ -21,7 +21,8 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // List — bildirishnomalar ro'yxati
 func (h *Handler) List(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	page := 1
 	limit := 20
 	if p := c.Query("page"); p != "" {
@@ -62,7 +63,8 @@ func (h *Handler) List(c *gin.Context) {
 
 // MarkAsRead — bitta bildirishnomani o'qilgan deb belgilash
 func (h *Handler) MarkAsRead(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri ID")
@@ -83,7 +85,8 @@ func (h *Handler) MarkAsRead(c *gin.Context) {
 
 // MarkAllAsRead — hammasini o'qilgan deb belgilash
 func (h *Handler) MarkAllAsRead(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 
 	h.db.Model(&models.Notification{}).
 		Where("user_id = ? AND is_read = false", userID).
@@ -94,7 +97,8 @@ func (h *Handler) MarkAllAsRead(c *gin.Context) {
 
 // UnreadCount — o'qilmagan bildirishnomalar soni
 func (h *Handler) UnreadCount(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 
 	var count int64
 	h.db.Model(&models.Notification{}).Where("user_id = ? AND is_read = false", userID).Count(&count)
@@ -104,7 +108,8 @@ func (h *Handler) UnreadCount(c *gin.Context) {
 
 // Delete — bildirishnomani o'chirish
 func (h *Handler) Delete(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri ID")
@@ -148,7 +153,8 @@ type UpdatePreferenceRequest struct {
 
 // GetPreferences — foydalanuvchi bildirishnoma sozlamalarini olish
 func (h *Handler) GetPreferences(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 
 	var pref models.NotificationPreference
 	err := h.db.Where("user_id = ?", userID).First(&pref).Error
@@ -181,7 +187,8 @@ func (h *Handler) GetPreferences(c *gin.Context) {
 
 // UpdatePreferences — bildirishnoma sozlamalarini yangilash
 func (h *Handler) UpdatePreferences(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	uid, _ := c.Get("userID")
+	userID := uid.(uint)
 
 	var req UpdatePreferenceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -110,6 +110,7 @@ paymentsHandler := sapayments.NewHandler(db)
 			oG.POST("/:id/duplicate", olympiadsHandler.Duplicate)
 			oG.PATCH("/:id/publish", olympiadsHandler.Publish)
 			oG.PATCH("/:id/unpublish", olympiadsHandler.Unpublish)
+			oG.PATCH("/:id/toggle-registration", olympiadsHandler.ToggleRegistration)
 		}
 
 		// Mock tests management
@@ -148,7 +149,10 @@ paymentsHandler := sapayments.NewHandler(db)
 		{
 			rG.GET("", resultsHandler.List)
 			rG.GET("/:id", resultsHandler.GetByID)
+			rG.POST("/:id/approve", resultsHandler.ApproveResult)
+			rG.POST("/bulk-approve", resultsHandler.BulkApproveResults)
 			rG.GET("/olympiad/:olympiad_id/ranking", resultsHandler.GetOlympiadRanking)
+			rG.GET("/question-analytics", resultsHandler.QuestionAnalytics)
 		}
 
 		// News / Announcements management
