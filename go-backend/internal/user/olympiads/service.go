@@ -165,8 +165,23 @@ func (s *Service) Join(userID, olympiadID uint) (*RegistrationResponse, error) {
 	}
 
 	// Oldin qo'shilgan-qo'shilmaganligini tekshirish
-	_, err = s.repo.GetRegistration(userID, olympiadID)
+	existingReg, err := s.repo.GetRegistration(userID, olympiadID)
 	if err == nil {
+		// Allaqachon ro'yxatdan o'tgan
+		// Agar qayta topshirish yoqilgan bo'lsa — qayta ruxsat berish
+		if olympiad.AllowRetake {
+			// Statusni qayta registered ga o'zgartirish
+			existingReg.Status = models.OlympiadRegStatusRegistered
+			if updateErr := s.repo.UpdateRegistration(existingReg); updateErr != nil {
+				// Update xatosi bo'lsa ham mavjud registratsiyani qaytarish
+			}
+			return &RegistrationResponse{
+				ID:         existingReg.ID,
+				OlympiadID: existingReg.OlympiadID,
+				Status:     string(existingReg.Status),
+				JoinedAt:   existingReg.JoinedAt,
+			}, nil
+		}
 		return nil, errors.New("Siz bu olimpiadaga allaqachon ro'yxatdan o'tgansiz")
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {

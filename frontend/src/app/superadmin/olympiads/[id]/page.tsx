@@ -149,7 +149,7 @@ export default function OlympiadDetailPage() {
   const [resultsLoading, setResultsLoading] = useState(false);
 
   // Settings (local editable copy)
-  const [settingsForm, setSettingsForm] = useState<Record<string, boolean>>({});
+  const [settingsForm, setSettingsForm] = useState<Record<string, boolean | number>>({});
   const [settingsSaving, setSettingsSaving] = useState(false);
 
   // ========== Data fetchers ==========
@@ -169,6 +169,17 @@ export default function OlympiadDetailPage() {
         give_certificate: item.give_certificate ?? false,
         manual_review: item.manual_review ?? false,
         admin_approval: item.admin_approval ?? false,
+        // Anti-cheat
+        anti_cheat_enabled: item.anti_cheat_enabled !== false,
+        fullscreen_required: item.fullscreen_required !== false,
+        tab_switch_detection: item.tab_switch_detection !== false,
+        copy_paste_prevention: item.copy_paste_prevention !== false,
+        right_click_blocked: item.right_click_blocked !== false,
+        screenshot_blocked: item.screenshot_blocked !== false,
+        devtools_blocked: item.devtools_blocked !== false,
+        max_fullscreen_violations: item.max_fullscreen_violations || 5,
+        max_tab_switch_violations: item.max_tab_switch_violations || 5,
+        max_copy_paste_violations: item.max_copy_paste_violations || 4,
       });
     } catch {
       toast.error("Olimpiada yuklanmadi");
@@ -818,6 +829,99 @@ export default function OlympiadDetailPage() {
               />
             </div>
           </div>
+
+          {/* Anti-cheat sozlamalari */}
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                Anti-cheat tizimi
+              </h3>
+              <SettingToggle
+                label="Yoqish"
+                description=""
+                checked={settingsForm.anti_cheat_enabled as boolean ?? true}
+                onToggle={() => setSettingsForm(s => ({ ...s, anti_cheat_enabled: !s.anti_cheat_enabled }))}
+              />
+            </div>
+            {settingsForm.anti_cheat_enabled && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <SettingToggle
+                    label="To'liq ekran rejimi"
+                    description="Imtihon vaqtida to'liq ekran talab qilinadi"
+                    checked={settingsForm.fullscreen_required as boolean ?? true}
+                    onToggle={() => setSettingsForm(s => ({ ...s, fullscreen_required: !s.fullscreen_required }))}
+                  />
+                  <SettingToggle
+                    label="Tab almashtirish aniqlash"
+                    description="Boshqa oynaga o'tishni aniqlaydi"
+                    checked={settingsForm.tab_switch_detection as boolean ?? true}
+                    onToggle={() => setSettingsForm(s => ({ ...s, tab_switch_detection: !s.tab_switch_detection }))}
+                  />
+                  <SettingToggle
+                    label="Nusxa/Qo'yish bloklash"
+                    description="Copy, Paste, Cut amallarini bloklaydi"
+                    checked={settingsForm.copy_paste_prevention as boolean ?? true}
+                    onToggle={() => setSettingsForm(s => ({ ...s, copy_paste_prevention: !s.copy_paste_prevention }))}
+                  />
+                  <SettingToggle
+                    label="O'ng tugma bloklash"
+                    description="Kontekst menyusini bloklaydi"
+                    checked={settingsForm.right_click_blocked as boolean ?? true}
+                    onToggle={() => setSettingsForm(s => ({ ...s, right_click_blocked: !s.right_click_blocked }))}
+                  />
+                  <SettingToggle
+                    label="Skrinshot bloklash"
+                    description="PrintScreen va Ctrl+Shift+S ni bloklaydi"
+                    checked={settingsForm.screenshot_blocked as boolean ?? true}
+                    onToggle={() => setSettingsForm(s => ({ ...s, screenshot_blocked: !s.screenshot_blocked }))}
+                  />
+                  <SettingToggle
+                    label="DevTools bloklash"
+                    description="F12, Ctrl+Shift+I kabi amallarni bloklaydi"
+                    checked={settingsForm.devtools_blocked as boolean ?? true}
+                    onToggle={() => setSettingsForm(s => ({ ...s, devtools_blocked: !s.devtools_blocked }))}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3 pt-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Fullscreen limit</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={settingsForm.max_fullscreen_violations as number || 5}
+                      onChange={(e) => setSettingsForm(s => ({ ...s, max_fullscreen_violations: Number(e.target.value) || 5 }))}
+                      className="h-9 w-full rounded-lg border border-border bg-transparent px-3 text-sm text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Tab switch limit</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={settingsForm.max_tab_switch_violations as number || 5}
+                      onChange={(e) => setSettingsForm(s => ({ ...s, max_tab_switch_violations: Number(e.target.value) || 5 }))}
+                      className="h-9 w-full rounded-lg border border-border bg-transparent px-3 text-sm text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Copy/Paste limit</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={settingsForm.max_copy_paste_violations as number || 4}
+                      onChange={(e) => setSettingsForm(s => ({ ...s, max_copy_paste_violations: Number(e.target.value) || 4 }))}
+                      className="h-9 w-full rounded-lg border border-border bg-transparent px-3 text-sm text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/50"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <Button onClick={handleSaveSettings} disabled={settingsSaving} className="gap-2">
             {settingsSaving && <Loader2 className="h-4 w-4 animate-spin" />}
             Saqlash

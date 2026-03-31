@@ -137,8 +137,9 @@ func (h *Handler) onMessage(client *Client, msg *IncomingMessage) {
 	}
 
 	// DB ga saqlash
+	uid := client.userID
 	chatMsg := models.ChatMessage{
-		UserID:    client.userID,
+		UserID:    &uid,
 		Content:   content,
 		Type:      "text",
 		ReplyToID: msg.ReplyToID,
@@ -240,21 +241,41 @@ func (h *Handler) GetMessages(c *gin.Context) {
 		PhotoURL  string     `json:"photo_url"`
 		Content   string     `json:"content"`
 		Type      string     `json:"type"`
+		Role      string     `json:"role,omitempty"`
 		ReplyTo   *ReplyInfo `json:"reply_to,omitempty"`
 		CreatedAt string     `json:"created_at"`
 	}
 
 	var result []MessageResponse
 	for _, msg := range messages {
-		var profile models.Profile
-		h.db.Where("user_id = ?", msg.UserID).First(&profile)
+		var username string
+		var photoURL string
 
-		username := msg.User.Username
-		if profile.FirstName != "" {
-			username = profile.FirstName
-			if profile.LastName != "" {
-				username += " " + profile.LastName
+		if msg.Type == "admin" && msg.StaffUserID != nil {
+			// Admin xabar — staff ma'lumotlarini olish
+			var staff models.StaffUser
+			if h.db.First(&staff, *msg.StaffUserID).Error == nil {
+				username = staff.FullName
+				if username == "" {
+					username = staff.Username
+				}
+				username += " (Admin)"
+			} else {
+				username = "Admin"
 			}
+		} else {
+			// Oddiy foydalanuvchi xabari
+			var profile models.Profile
+			h.db.Where("user_id = ?", msg.UserID).First(&profile)
+
+			username = msg.User.Username
+			if profile.FirstName != "" {
+				username = profile.FirstName
+				if profile.LastName != "" {
+					username += " " + profile.LastName
+				}
+			}
+			photoURL = profile.PhotoURL
 		}
 
 		var replyInfo *ReplyInfo
@@ -279,13 +300,24 @@ func (h *Handler) GetMessages(c *gin.Context) {
 			}
 		}
 
+		var userID uint
+		if msg.UserID != nil {
+			userID = *msg.UserID
+		}
+
+		var role string
+		if msg.Type == "admin" {
+			role = "admin"
+		}
+
 		result = append(result, MessageResponse{
 			ID:        msg.ID,
-			UserID:    msg.UserID,
+			UserID:    userID,
 			Username:  username,
-			PhotoURL:  profile.PhotoURL,
+			PhotoURL:  photoURL,
 			Content:   msg.Content,
 			Type:      msg.Type,
+			Role:      role,
 			ReplyTo:   replyInfo,
 			CreatedAt: msg.CreatedAt.Format(time.RFC3339),
 		})
@@ -655,10 +687,11 @@ func (h *Handler) AdminSendMessage(c *gin.Context) {
 
 	// DB ga saqlash
 	chatMsg := models.ChatMessage{
-		UserID:    sid,
-		Content:   content,
-		Type:      "admin",
-		ReplyToID: body.ReplyToID,
+		UserID:      nil,
+		StaffUserID: &sid,
+		Content:     content,
+		Type:        "admin",
+		ReplyToID:   body.ReplyToID,
 	}
 	if err := h.db.Create(&chatMsg).Error; err != nil {
 		response.Error(c, http.StatusInternalServerError, "Xabar saqlanmadi", nil)

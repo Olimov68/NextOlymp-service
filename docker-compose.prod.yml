@@ -148,30 +148,6 @@ services:
     networks:
       - nextolymp
 
-  # ============================================
-  # Telegram Bot
-  # ============================================
-  telegrambot:
-    build:
-      context: ./codebot-main
-      dockerfile: Dockerfile
-    container_name: nextolymp-telegrambot
-    restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
-    environment:
-      BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      BACKEND_WEBHOOK_URL: http://backend:8080/api/v1/telegram/webhook
-      CODE_TTL_MINUTES: "10"
-    healthcheck:
-      test: ["CMD-SHELL", "echo ok"]
-      interval: 60s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    networks:
-      - nextolymp
 
 volumes:
   postgres_data:

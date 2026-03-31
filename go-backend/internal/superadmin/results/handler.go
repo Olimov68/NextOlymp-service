@@ -2,6 +2,7 @@ package saresults
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -193,6 +194,55 @@ func (h *Handler) GetByID(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Mock test natijasi", attempt)
 }
 
+// ApproveResult — natijani tasdiqlash (admin_approval uchun)
+func (h *Handler) ApproveResult(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Noto'g'ri ID")
+		return
+	}
+
+	resultType := c.Query("type") // olympiad | mock_test
+
+	if resultType == "olympiad" {
+		if err := h.db.Model(&models.OlympiadAttempt{}).Where("id = ?", id).
+			Update("result_approved", true).Error; err != nil {
+			response.Error(c, http.StatusInternalServerError, "Natijani tasdiqlashda xatolik")
+			return
+		}
+		response.Success(c, http.StatusOK, "Natija tasdiqlandi", nil)
+		return
+	}
+
+	// Default: mock_test
+	if err := h.db.Model(&models.MockAttempt{}).Where("id = ?", id).
+		Update("result_approved", true).Error; err != nil {
+		response.Error(c, http.StatusInternalServerError, "Natijani tasdiqlashda xatolik")
+		return
+	}
+	response.Success(c, http.StatusOK, "Natija tasdiqlandi", nil)
+}
+
+// BulkApproveResults — bir nechta natijani tasdiqlash
+func (h *Handler) BulkApproveResults(c *gin.Context) {
+	var req struct {
+		IDs  []uint `json:"ids"`
+		Type string `json:"type"` // olympiad | mock_test
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Noto'g'ri ma'lumotlar")
+		return
+	}
+
+	if req.Type == "olympiad" {
+		h.db.Model(&models.OlympiadAttempt{}).Where("id IN ?", req.IDs).Update("result_approved", true)
+	} else {
+		h.db.Model(&models.MockAttempt{}).Where("id IN ?", req.IDs).Update("result_approved", true)
+	}
+
+	response.Success(c, http.StatusOK, "Natijalar tasdiqlandi", nil)
+}
+
 // GetOlympiadRanking — olimpiada bo'yicha reyting
 func (h *Handler) GetOlympiadRanking(c *gin.Context) {
 	olympiadID, err := strconv.ParseUint(c.Param("olympiad_id"), 10, 32)
@@ -235,4 +285,177 @@ func (h *Handler) GetOlympiadRanking(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Reyting", ranking)
+}
+
+// QuestionAnalytics — savollar tahlili (qaysi savol qiyin, xatolar statistikasi)
+func (h *Handler) QuestionAnalytics(c *gin.Context) {
+	sourceType := c.Query("type")   // olympiad | mock_test
+	sourceID := c.Query("source_id") // olympiad_id yoki mock_test_id
+
+	if sourceType == "" || sourceID == "" {
+		response.Error(c, http.StatusBadRequest, "type va source_id majburiy")
+		return
+	}
+
+	sid, err := strconv.ParseUint(sourceID, 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Noto'g'ri source_id")
+		return
+	}
+
+	// Savollarni olish
+	var questions []models.Question
+	h.db.Preload("Options").
+		Where("source_type = ? AND source_id = ? AND is_active = true", sourceType, sid).
+		Order("order_num ASC").Find(&questions)
+
+	if len(questions) == 0 {
+		response.Success(c, http.StatusOK, "Savollar tahlili", gin.H{
+			"questions": []interface{}{},
+			"summary":   gin.H{},
+		})
+		return
+	}
+
+	// Javoblarni olish
+	type AnswerStat struct {
+		QuestionID       uint `gorm:"column:question_id"`
+		SelectedOptionID *uint `gorm:"column:selected_option_id"`
+		IsCorrect        bool `gorm:"column:is_correct"`
+		Count            int  `gorm:"column:cnt"`
+	}
+
+	var answerStats []AnswerStat
+
+	if sourceType == "olympiad" {
+		h.db.Raw(`
+			SELECT oaa.question_id, oaa.selected_option_id, oaa.is_correct, COUNT(*) as cnt
+			FROM olympiad_attempt_answer oaa
+			JOIN olympiad_attempt oa ON oa.id = oaa.attempt_id
+			WHERE oa.olympiad_id = ? AND oa.status IN ('completed','timed_out')
+			GROUP BY oaa.question_id, oaa.selected_option_id, oaa.is_correct
+		`, sid).Scan(&answerStats)
+	} else {
+		h.db.Raw(`
+			SELECT maa.question_id, maa.selected_option_id, maa.is_correct, COUNT(*) as cnt
+			FROM mock_attempt_answer maa
+			JOIN mock_attempt ma ON ma.id = maa.attempt_id
+			WHERE ma.mock_test_id = ? AND ma.status IN ('completed','timed_out')
+			GROUP BY maa.question_id, maa.selected_option_id, maa.is_correct
+		`, sid).Scan(&answerStats)
+	}
+
+	// Har bir savol uchun statistikani hisoblash
+	type QuestionAnalytic struct {
+		QuestionID       uint    `json:"question_id"`
+		QuestionText     string  `json:"question_text"`
+		OrderNum         int     `json:"order_num"`
+		Difficulty       string  `json:"difficulty"`
+		TotalAnswers     int     `json:"total_answers"`
+		CorrectCount     int     `json:"correct_count"`
+		IncorrectCount   int     `json:"incorrect_count"`
+		SkippedCount     int     `json:"skipped_count"`
+		CorrectPercent   float64 `json:"correct_percent"`
+		IncorrectPercent float64 `json:"incorrect_percent"`
+		MostWrongOption  string  `json:"most_wrong_option"`
+		OptionStats      []gin.H `json:"option_stats"`
+	}
+
+	var analytics []QuestionAnalytic
+	totalCorrectAll := 0
+	totalWrongAll := 0
+
+	for _, q := range questions {
+		qa := QuestionAnalytic{
+			QuestionID:   q.ID,
+			QuestionText: q.Text,
+			OrderNum:     q.OrderNum,
+			Difficulty:   q.Difficulty,
+		}
+
+		// Savol uchun barcha javoblarni hisoblash
+		optionCounts := make(map[uint]int)
+		for _, stat := range answerStats {
+			if stat.QuestionID != q.ID {
+				continue
+			}
+			if stat.SelectedOptionID == nil {
+				qa.SkippedCount += stat.Count
+			} else if stat.IsCorrect {
+				qa.CorrectCount += stat.Count
+				optionCounts[*stat.SelectedOptionID] += stat.Count
+			} else {
+				qa.IncorrectCount += stat.Count
+				optionCounts[*stat.SelectedOptionID] += stat.Count
+			}
+		}
+
+		qa.TotalAnswers = qa.CorrectCount + qa.IncorrectCount + qa.SkippedCount
+		if qa.TotalAnswers > 0 {
+			qa.CorrectPercent = math.Round(float64(qa.CorrectCount)/float64(qa.TotalAnswers)*1000) / 10
+			qa.IncorrectPercent = math.Round(float64(qa.IncorrectCount)/float64(qa.TotalAnswers)*1000) / 10
+		}
+
+		totalCorrectAll += qa.CorrectCount
+		totalWrongAll += qa.IncorrectCount
+
+		// Har bir variant uchun statistika
+		var optStats []gin.H
+		maxWrongCount := 0
+		mostWrongLabel := ""
+		for _, opt := range q.Options {
+			count := optionCounts[opt.ID]
+			pct := 0.0
+			if qa.TotalAnswers > 0 {
+				pct = math.Round(float64(count)/float64(qa.TotalAnswers)*1000) / 10
+			}
+			optStats = append(optStats, gin.H{
+				"option_id":  opt.ID,
+				"label":      opt.Label,
+				"text":       opt.Text,
+				"is_correct": opt.IsCorrect,
+				"count":      count,
+				"percent":    pct,
+			})
+			if !opt.IsCorrect && count > maxWrongCount {
+				maxWrongCount = count
+				mostWrongLabel = opt.Label
+			}
+		}
+		qa.OptionStats = optStats
+		qa.MostWrongOption = mostWrongLabel
+
+		analytics = append(analytics, qa)
+	}
+
+	// Umumiy statistika
+	totalAttempts := 0
+	if sourceType == "olympiad" {
+		var count int64
+		h.db.Model(&models.OlympiadAttempt{}).Where("olympiad_id = ? AND status IN ('completed','timed_out')", sid).Count(&count)
+		totalAttempts = int(count)
+	} else {
+		var count int64
+		h.db.Model(&models.MockAttempt{}).Where("mock_test_id = ? AND status IN ('completed','timed_out')", sid).Count(&count)
+		totalAttempts = int(count)
+	}
+
+	// Eng qiyin savollar (50% dan kam to'g'ri)
+	hardestCount := 0
+	for _, qa := range analytics {
+		if qa.CorrectPercent < 50 && qa.TotalAnswers > 0 {
+			hardestCount++
+		}
+	}
+
+	response.Success(c, http.StatusOK, "Savollar tahlili", gin.H{
+		"questions": analytics,
+		"summary": gin.H{
+			"total_questions":  len(questions),
+			"total_attempts":   totalAttempts,
+			"total_correct":    totalCorrectAll,
+			"total_incorrect":  totalWrongAll,
+			"hardest_questions": hardestCount,
+		},
+	})
 }

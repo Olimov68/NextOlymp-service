@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { PermissionGuard } from "@/components/permission-guard";
 import {
   getAdminChatMessages,
   sendAdminChatMessage,
@@ -209,6 +210,7 @@ export default function AdminChatPage() {
   }
 
   return (
+    <PermissionGuard module="chat" showAccessDenied>
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -465,5 +467,6 @@ export default function AdminChatPage() {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 }

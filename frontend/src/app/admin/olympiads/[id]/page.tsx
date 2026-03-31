@@ -40,11 +40,23 @@ import {
 import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 
 // ==================== Overview Tab ====================
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return "Belgilanmagan";
+  try {
+    return new Date(iso).toLocaleString("uz-UZ", {
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+    });
+  } catch {
+    return "Belgilanmagan";
+  }
+}
+
 function OverviewTab({ olympiad }: { olympiad: Olympiad }) {
   const items = [
     { label: "Nomi", value: olympiad.title },
     { label: "Fan", value: olympiad.subject },
-    { label: "Narx", value: olympiad.price === 0 ? "Bepul" : `${olympiad.price} so'm` },
+    { label: "Narx", value: !olympiad.price ? "Bepul" : `${olympiad.price} so'm` },
     { label: "Status", value: olympiad.status },
     {
       label: "Davomiyligi",
@@ -53,20 +65,16 @@ function OverviewTab({ olympiad }: { olympiad: Olympiad }) {
         : "Belgilanmagan",
     },
     {
-      label: "Maksimal urinishlar",
-      value: olympiad.max_attempts ?? "Cheksiz",
+      label: "Maksimal joylar",
+      value: olympiad.max_seats || "Cheksiz",
     },
     {
-      label: "Boshlanish sanasi",
-      value: olympiad.start_date
-        ? new Date(olympiad.start_date).toLocaleDateString("uz-UZ")
-        : "Belgilanmagan",
+      label: "Boshlanish vaqti",
+      value: formatDateTime(olympiad.start_time),
     },
     {
-      label: "Tugash sanasi",
-      value: olympiad.end_date
-        ? new Date(olympiad.end_date).toLocaleDateString("uz-UZ")
-        : "Belgilanmagan",
+      label: "Tugash vaqti",
+      value: formatDateTime(olympiad.end_time),
     },
     { label: "Savollar soni", value: olympiad.questions_count ?? 0 },
     { label: "Ishtirokchilar soni", value: olympiad.participants_count ?? 0 },
@@ -168,6 +176,7 @@ function QuestionsTab({ olympiadId }: { olympiadId: number }) {
   function closeDialog() {
     setDialogOpen(false);
     setEditing(null);
+    setQuestionError("");
     resetForm();
   }
 
@@ -237,9 +246,39 @@ function QuestionsTab({ olympiadId }: { olympiadId: number }) {
     });
   }
 
+  const [questionError, setQuestionError] = useState("");
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setQuestionError("");
+
+    // Validate question text
+    if (!form.text.trim()) {
+      setQuestionError("Savol matni kiritilishi shart");
+      return;
+    }
+
+    // Validate points
+    if (form.points < 1) {
+      setQuestionError("Ball kamida 1 bo'lishi kerak");
+      return;
+    }
+
     const filteredOptions = form.options.filter((opt) => opt.text.trim() !== "");
+
+    // Validate at least 2 options with text
+    if (filteredOptions.length < 2) {
+      setQuestionError("Kamida 2 ta javob varianti kiritilishi kerak");
+      return;
+    }
+
+    // Validate at least one correct answer
+    const hasCorrect = filteredOptions.some((opt) => opt.is_correct);
+    if (!hasCorrect) {
+      setQuestionError("Kamida bitta to'g'ri javob belgilanishi kerak");
+      return;
+    }
+
     if (editing) {
       updateMut.mutate({
         id: editing.id,
@@ -453,6 +492,10 @@ function QuestionsTab({ olympiadId }: { olympiadId: number }) {
               )}
             </div>
 
+            {questionError && (
+              <p className="text-sm text-destructive">{questionError}</p>
+            )}
+
             <Button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700"
@@ -468,8 +511,21 @@ function QuestionsTab({ olympiadId }: { olympiadId: number }) {
 }
 
 // ==================== Settings Tab ====================
+function toLocalDatetime(iso?: string | null): string {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return "";
+  }
+}
+
 function SettingsTab({ olympiad }: { olympiad: Olympiad }) {
   const queryClient = useQueryClient();
+  const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
     title: olympiad.title,
     subject: olympiad.subject,
@@ -477,22 +533,71 @@ function SettingsTab({ olympiad }: { olympiad: Olympiad }) {
     price: olympiad.price,
     status: olympiad.status,
     duration_minutes: olympiad.duration_minutes || 0,
-    max_attempts: olympiad.max_attempts || 0,
-    start_date: olympiad.start_date?.split("T")[0] ?? "",
-    end_date: olympiad.end_date?.split("T")[0] ?? "",
+    max_seats: olympiad.max_seats || 0,
+    start_time: toLocalDatetime(olympiad.start_time),
+    end_time: toLocalDatetime(olympiad.end_time),
   });
 
   const updateMut = useMutation({
-    mutationFn: (data: Partial<Olympiad>) => adminUpdateOlympiad(olympiad.id, data),
+    mutationFn: (data: Record<string, unknown>) => adminUpdateOlympiad(olympiad.id, data as Partial<Olympiad>),
     onSuccess: () => {
+      setFormError("");
       queryClient.invalidateQueries({ queryKey: ["admin-olympiad", String(olympiad.id)] });
       queryClient.invalidateQueries({ queryKey: ["admin-olympiads"] });
+    },
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || "Xatolik yuz berdi";
+      setFormError(msg);
     },
   });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    updateMut.mutate(form);
+    setFormError("");
+
+    if (!form.title.trim()) {
+      setFormError("Sarlavha kiritilishi shart");
+      return;
+    }
+    if (!form.subject.trim()) {
+      setFormError("Fan kiritilishi shart");
+      return;
+    }
+    if (form.duration_minutes < 1) {
+      setFormError("Davomiyligi kamida 1 daqiqa bo'lishi kerak");
+      return;
+    }
+
+    // datetime-local formatini ISO ga o'girish
+    const toISO = (val: string) => {
+      if (!val) return undefined;
+      try {
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? undefined : d.toISOString();
+      } catch {
+        return undefined;
+      }
+    };
+
+    const startISO = toISO(form.start_time);
+    const endISO = toISO(form.end_time);
+
+    if (startISO && endISO && new Date(endISO) <= new Date(startISO)) {
+      setFormError("Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak");
+      return;
+    }
+
+    updateMut.mutate({
+      title: form.title,
+      subject: form.subject,
+      description: form.description,
+      price: form.price,
+      status: form.status,
+      duration_minutes: form.duration_minutes,
+      max_seats: form.max_seats,
+      start_time: startISO,
+      end_time: endISO,
+    });
   }
 
   return (
@@ -503,7 +608,7 @@ function SettingsTab({ olympiad }: { olympiad: Olympiad }) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Nomi</Label>
+            <Label>Nomi *</Label>
             <Input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -511,7 +616,7 @@ function SettingsTab({ olympiad }: { olympiad: Olympiad }) {
             />
           </div>
           <div className="space-y-2">
-            <Label>Fan</Label>
+            <Label>Fan *</Label>
             <Input
               value={form.subject}
               onChange={(e) => setForm({ ...form, subject: e.target.value })}
@@ -547,56 +652,62 @@ function SettingsTab({ olympiad }: { olympiad: Olympiad }) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="draft">Qoralama</SelectItem>
+                  <SelectItem value="published">Nashr qilingan</SelectItem>
+                  <SelectItem value="active">Faol</SelectItem>
+                  <SelectItem value="scheduled">Rejalashtirilgan</SelectItem>
+                  <SelectItem value="finished">Tugagan</SelectItem>
+                  <SelectItem value="archived">Arxivlangan</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Davomiyligi (daqiqa)</Label>
+              <Label>Davomiyligi (daqiqa) *</Label>
               <Input
                 type="number"
                 value={form.duration_minutes}
                 onChange={(e) =>
                   setForm({ ...form, duration_minutes: Number(e.target.value) })
                 }
-                min={0}
+                min={1}
               />
             </div>
             <div className="space-y-2">
-              <Label>Maksimal urinishlar</Label>
+              <Label>Maksimal joylar</Label>
               <Input
                 type="number"
-                value={form.max_attempts}
+                value={form.max_seats}
                 onChange={(e) =>
-                  setForm({ ...form, max_attempts: Number(e.target.value) })
+                  setForm({ ...form, max_seats: Number(e.target.value) })
                 }
                 min={0}
+                placeholder="0 = cheksiz"
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Boshlanish sanasi</Label>
+              <Label>Boshlanish vaqti</Label>
               <Input
-                type="date"
-                value={form.start_date}
-                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                type="datetime-local"
+                value={form.start_time}
+                onChange={(e) => setForm({ ...form, start_time: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Tugash sanasi</Label>
+              <Label>Tugash vaqti</Label>
               <Input
-                type="date"
-                value={form.end_date}
-                onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                type="datetime-local"
+                value={form.end_time}
+                onChange={(e) => setForm({ ...form, end_time: e.target.value })}
               />
             </div>
           </div>
+          {formError && (
+            <p className="text-sm text-destructive">{formError}</p>
+          )}
           <div className="flex items-center gap-3">
             <Button
               type="submit"
@@ -605,7 +716,7 @@ function SettingsTab({ olympiad }: { olympiad: Olympiad }) {
             >
               {updateMut.isPending ? "Saqlanmoqda..." : "Saqlash"}
             </Button>
-            {updateMut.isSuccess && (
+            {updateMut.isSuccess && !formError && (
               <p className="text-sm text-green-600">Muvaffaqiyatli saqlandi!</p>
             )}
           </div>

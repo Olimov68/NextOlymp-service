@@ -41,6 +41,16 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  // Proxy uploads to backend
+  async rewrites() {
+    return [
+      {
+        source: "/uploads/:path*",
+        destination: `${(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1").replace("/api/v1", "")}/uploads/:path*`,
+      },
+    ];
+  },
+
   // Redirects
   async redirects() {
     return [];

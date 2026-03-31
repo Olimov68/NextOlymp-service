@@ -44,8 +44,8 @@ export default function AssessmentCard({ assessment, examType }: AssessmentCardP
   const isFree = !assessment.is_paid || !assessment.price;
   const detailPath =
     examType === "olympiad"
-      ? `/dashboard/olympiads/${assessment.id}`
-      : `/dashboard/mock-tests/${assessment.id}`;
+      ? `/olympiads/${assessment.id}`
+      : `/olympiads/${assessment.id}`;
 
   const startDate = assessment.start_time;
   const endDate = assessment.end_time;

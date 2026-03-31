@@ -263,6 +263,17 @@ export default function MockTestDetailPage() {
         end_time: mt.end_time || "",
         registration_start_time: mt.registration_start_time || "",
         registration_end_time: mt.registration_end_time || "",
+        // Anti-cheat
+        anti_cheat_enabled: mt.anti_cheat_enabled !== false,
+        fullscreen_required: mt.fullscreen_required !== false,
+        tab_switch_detection: mt.tab_switch_detection !== false,
+        copy_paste_prevention: mt.copy_paste_prevention !== false,
+        right_click_blocked: mt.right_click_blocked !== false,
+        screenshot_blocked: mt.screenshot_blocked !== false,
+        devtools_blocked: mt.devtools_blocked !== false,
+        max_fullscreen_violations: mt.max_fullscreen_violations || 5,
+        max_tab_switch_violations: mt.max_tab_switch_violations || 5,
+        max_copy_paste_violations: mt.max_copy_paste_violations || 4,
       });
     } catch {
       toast.error("Mock test yuklanmadi");
@@ -1296,6 +1307,91 @@ export default function MockTestDetailPage() {
                 </button>
               </div>
             ))}
+          </div>
+
+          {/* Anti-cheat sozlamalari */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Anti-cheat tizimi</h3>
+              <button
+                onClick={() => setSettingsForm({ ...settingsForm, anti_cheat_enabled: !settingsForm.anti_cheat_enabled })}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  settingsForm.anti_cheat_enabled ? "bg-orange-600" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    settingsForm.anti_cheat_enabled ? "translate-x-5" : ""
+                  }`}
+                />
+              </button>
+            </div>
+            {settingsForm.anti_cheat_enabled && (
+              <>
+                {[
+                  { key: "fullscreen_required", label: "To'liq ekran rejimi", desc: "Imtihon vaqtida to'liq ekran talab qilinadi" },
+                  { key: "tab_switch_detection", label: "Tab almashtirish aniqlash", desc: "Boshqa oynaga o'tishni aniqlaydi" },
+                  { key: "copy_paste_prevention", label: "Nusxa/Qo'yish bloklash", desc: "Copy, Paste, Cut amallarini bloklaydi" },
+                  { key: "right_click_blocked", label: "O'ng tugma bloklash", desc: "Kontekst menyusini bloklaydi" },
+                  { key: "screenshot_blocked", label: "Skrinshot bloklash", desc: "PrintScreen va Ctrl+Shift+S ni bloklaydi" },
+                  { key: "devtools_blocked", label: "DevTools bloklash", desc: "F12, Ctrl+Shift+I kabi amallarni bloklaydi" },
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <Label>{item.label}</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+                    </div>
+                    <button
+                      onClick={() => setSettingsForm({ ...settingsForm, [item.key]: !settingsForm[item.key] })}
+                      className={`relative w-11 h-6 rounded-full transition-colors ${
+                        settingsForm[item.key] ? "bg-orange-600" : "bg-gray-600"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                          settingsForm[item.key] ? "translate-x-5" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ))}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Fullscreen limit</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={settingsForm.max_fullscreen_violations || 5}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, max_fullscreen_violations: Number(e.target.value) || 5 })}
+                      className="bg-muted border-border"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tab switch limit</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={settingsForm.max_tab_switch_violations || 5}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, max_tab_switch_violations: Number(e.target.value) || 5 })}
+                      className="bg-muted border-border"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Copy/Paste limit</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={settingsForm.max_copy_paste_violations || 4}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, max_copy_paste_violations: Number(e.target.value) || 4 })}
+                      className="bg-muted border-border"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <Button

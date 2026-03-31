@@ -6,9 +6,11 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nextolympservice/go-backend/config"
 	"github.com/nextolympservice/go-backend/internal/models"
 	"github.com/nextolympservice/go-backend/internal/shared/assessment"
 	"github.com/nextolympservice/go-backend/internal/user/notifications"
@@ -17,11 +19,26 @@ import (
 )
 
 type Handler struct {
-	db *gorm.DB
+	db      *gorm.DB
+	baseURL string
 }
 
-func NewHandler(db *gorm.DB) *Handler {
-	return &Handler{db: db}
+func NewHandler(db *gorm.DB, cfg *config.Config) *Handler {
+	return &Handler{
+		db:      db,
+		baseURL: strings.TrimRight(cfg.App.BaseURL, "/"),
+	}
+}
+
+// toFullURL — nisbiy URL ni to'liq URL ga o'giradi (Android/iOS uchun)
+func (h *Handler) toFullURL(url string) string {
+	if url == "" {
+		return ""
+	}
+	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+		return url
+	}
+	return h.baseURL + url
 }
 
 // ============================================
@@ -156,6 +173,17 @@ func (h *Handler) StartMockTest(c *gin.Context) {
 		"show_result_immediately": mockTest.ShowResultImmediately,
 		"shuffle_questions":       mockTest.ShuffleQuestions,
 		"shuffle_answers":         mockTest.ShuffleAnswers,
+		// Anti-cheat sozlamalari
+		"anti_cheat_enabled":        mockTest.AntiCheatEnabled,
+		"fullscreen_required":       mockTest.FullscreenRequired,
+		"tab_switch_detection":      mockTest.TabSwitchDetection,
+		"copy_paste_prevention":     mockTest.CopyPastePrevention,
+		"right_click_blocked":       mockTest.RightClickBlocked,
+		"screenshot_blocked":        mockTest.ScreenshotBlocked,
+		"devtools_blocked":          mockTest.DevtoolsBlocked,
+		"max_fullscreen_violations": mockTest.MaxFullscreenViolations,
+		"max_tab_switch_violations": mockTest.MaxTabSwitchViolations,
+		"max_copy_paste_violations": mockTest.MaxCopyPasteViolations,
 	})
 }
 
@@ -245,6 +273,33 @@ func (h *Handler) FinishMockTest(c *gin.Context) {
 
 	var attempt models.MockAttempt
 	if err := h.db.Where("id = ? AND user_id = ? AND status = ?", attemptID, userID, "in_progress").First(&attempt).Error; err != nil {
+		// Allaqachon yakunlangan bo'lishi mumkin
+		var finishedAttempt models.MockAttempt
+		if err2 := h.db.Where("id = ? AND user_id = ? AND status IN ?", attemptID, userID, []string{"completed", "timed_out"}).First(&finishedAttempt).Error; err2 == nil {
+			var mt models.MockTest
+			h.db.First(&mt, finishedAttempt.MockTestID)
+			if !mt.ShowResultImmediately {
+				response.Success(c, http.StatusOK, "Test allaqachon yakunlangan", gin.H{
+					"attempt_id":     finishedAttempt.ID,
+					"status":         finishedAttempt.Status,
+					"result_pending": true,
+					"message":        "Natijalar admin tomonidan tasdiqlanadi",
+				})
+				return
+			}
+			response.Success(c, http.StatusOK, "Test allaqachon yakunlangan", gin.H{
+				"attempt_id":      finishedAttempt.ID,
+				"score":           finishedAttempt.Score,
+				"max_score":       finishedAttempt.MaxScore,
+				"correct":         finishedAttempt.Correct,
+				"wrong":           finishedAttempt.Wrong,
+				"unanswered":      finishedAttempt.Unanswered,
+				"percentage":      finishedAttempt.Percentage,
+				"time_taken":      finishedAttempt.TimeTaken,
+				"status":          finishedAttempt.Status,
+			})
+			return
+		}
 		response.Error(c, http.StatusNotFound, "Faol urinish topilmadi")
 		return
 	}
@@ -256,9 +311,10 @@ func (h *Handler) FinishMockTest(c *gin.Context) {
 	h.db.First(&mt, attempt.MockTestID)
 	if !mt.ShowResultImmediately {
 		response.Success(c, http.StatusOK, "Test yakunlandi", gin.H{
-			"attempt_id": attempt.ID,
-			"status":     attempt.Status,
-			"message":    "Natijalar admin tomonidan tasdiqlanadi",
+			"attempt_id":     attempt.ID,
+			"status":         attempt.Status,
+			"result_pending": true,
+			"message":        "Natijalar admin tomonidan tasdiqlanadi",
 		})
 		return
 	}
@@ -288,27 +344,80 @@ func (h *Handler) GetMockAttemptResult(c *gin.Context) {
 		return
 	}
 
-	// Rasch natijalarni ham qaytarish
-	resultData := map[string]interface{}{
-		"id":           attempt.ID,
-		"user_id":      attempt.UserID,
-		"mock_test_id": attempt.MockTestID,
-		"mock_test":    attempt.MockTest,
-		"started_at":   attempt.StartedAt,
-		"finished_at":  attempt.FinishedAt,
-		"score":        attempt.Score,
-		"max_score":    attempt.MaxScore,
-		"correct":      attempt.Correct,
-		"wrong":        attempt.Wrong,
-		"unanswered":   attempt.Unanswered,
-		"percentage":   attempt.Percentage,
-		"scoring_type": attempt.ScoringType,
-		"time_taken":   attempt.TimeTaken,
-		"status":       attempt.Status,
-		"answers":      attempt.Answers,
+	// ShowResultImmediately va AdminApproval tekshirish
+	var mt models.MockTest
+	h.db.First(&mt, attempt.MockTestID)
+	if !mt.ShowResultImmediately || mt.AdminApproval {
+		if !attempt.ResultApproved {
+			response.Success(c, http.StatusOK, "Natijalar hali tasdiqlanmagan", gin.H{
+				"attempt_id":     attempt.ID,
+				"status":         attempt.Status,
+				"result_pending": true,
+				"message":        "Natijalar admin tomonidan tasdiqlanadi. Iltimos kuting.",
+			})
+			return
+		}
 	}
 
-	// Rasch fields (faqat mavjud bo'lsa)
+	// Batafsil natija — har bir savol uchun
+	var detailedAnswers []gin.H
+	for _, ans := range attempt.Answers {
+		answerDetail := gin.H{
+			"question_id":        ans.QuestionID,
+			"selected_option_id": ans.SelectedOptionID,
+			"is_correct":         ans.IsCorrect,
+		}
+		if ans.Question != nil {
+			answerDetail["question_text"] = ans.Question.Text
+			answerDetail["question_image_url"] = h.toFullURL(ans.Question.ImageURL)
+			answerDetail["points"] = ans.Question.Points
+			var options []gin.H
+			for _, opt := range ans.Question.Options {
+				options = append(options, gin.H{
+					"id": opt.ID, "label": opt.Label, "text": opt.Text,
+					"image_url": h.toFullURL(opt.ImageURL), "is_correct": opt.IsCorrect,
+				})
+				if opt.IsCorrect {
+					answerDetail["correct_option_id"] = opt.ID
+					answerDetail["correct_option_label"] = opt.Label
+				}
+			}
+			answerDetail["options"] = options
+		}
+		if ans.SelectedOptionID != nil && ans.Question != nil {
+			for _, opt := range ans.Question.Options {
+				if opt.ID == *ans.SelectedOptionID {
+					answerDetail["selected_option_label"] = opt.Label
+					break
+				}
+			}
+		}
+		detailedAnswers = append(detailedAnswers, answerDetail)
+	}
+
+	resultData := map[string]interface{}{
+		"attempt_id":      attempt.ID,
+		"mock_test_id":    attempt.MockTestID,
+		"mock_test_title": "",
+		"started_at":      attempt.StartedAt,
+		"finished_at":     attempt.FinishedAt,
+		"score":           attempt.Score,
+		"max_score":       attempt.MaxScore,
+		"correct":         attempt.Correct,
+		"wrong":           attempt.Wrong,
+		"unanswered":      attempt.Unanswered,
+		"percentage":      attempt.Percentage,
+		"scoring_type":    attempt.ScoringType,
+		"time_taken":      attempt.TimeTaken,
+		"status":          attempt.Status,
+		"total_questions":  attempt.Correct + attempt.Wrong + attempt.Unanswered,
+		"answers":         detailedAnswers,
+	}
+	if attempt.MockTest != nil {
+		resultData["mock_test_title"] = attempt.MockTest.Title
+	}
+
+	// Rasch fields
 	if attempt.ThetaScore != nil {
 		resultData["theta_score"] = attempt.ThetaScore
 	}
@@ -493,6 +602,17 @@ func (h *Handler) StartOlympiad(c *gin.Context) {
 		"show_result_immediately": olympiad.ShowResultImmediately,
 		"shuffle_questions":       olympiad.ShuffleQuestions,
 		"shuffle_answers":         olympiad.ShuffleAnswers,
+		// Anti-cheat sozlamalari
+		"anti_cheat_enabled":        olympiad.AntiCheatEnabled,
+		"fullscreen_required":       olympiad.FullscreenRequired,
+		"tab_switch_detection":      olympiad.TabSwitchDetection,
+		"copy_paste_prevention":     olympiad.CopyPastePrevention,
+		"right_click_blocked":       olympiad.RightClickBlocked,
+		"screenshot_blocked":        olympiad.ScreenshotBlocked,
+		"devtools_blocked":          olympiad.DevtoolsBlocked,
+		"max_fullscreen_violations": olympiad.MaxFullscreenViolations,
+		"max_tab_switch_violations": olympiad.MaxTabSwitchViolations,
+		"max_copy_paste_violations": olympiad.MaxCopyPasteViolations,
 	})
 }
 
@@ -572,7 +692,36 @@ func (h *Handler) FinishOlympiad(c *gin.Context) {
 	}
 
 	var attempt models.OlympiadAttempt
+	// Avval in_progress urinishni qidirish
 	if err := h.db.Where("id = ? AND user_id = ? AND status = ?", attemptID, userID, "in_progress").First(&attempt).Error; err != nil {
+		// Agar allaqachon yakunlangan bo'lsa (masalan, javob berishda vaqt tugagan)
+		var finishedAttempt models.OlympiadAttempt
+		if err2 := h.db.Where("id = ? AND user_id = ? AND status IN ?", attemptID, userID, []string{"completed", "timed_out"}).First(&finishedAttempt).Error; err2 == nil {
+			// Allaqachon yakunlangan — natijani qaytarish
+			var olympiad models.Olympiad
+			h.db.First(&olympiad, finishedAttempt.OlympiadID)
+			if !olympiad.ShowResultImmediately {
+				response.Success(c, http.StatusOK, "Olimpiada allaqachon yakunlangan", gin.H{
+					"attempt_id":     finishedAttempt.ID,
+					"status":         finishedAttempt.Status,
+					"result_pending": true,
+					"message":        "Natijalar admin tomonidan tasdiqlanadi",
+				})
+				return
+			}
+			response.Success(c, http.StatusOK, "Olimpiada allaqachon yakunlangan", gin.H{
+				"attempt_id":      finishedAttempt.ID,
+				"score":           finishedAttempt.Score,
+				"max_score":       finishedAttempt.MaxScore,
+				"correct":         finishedAttempt.Correct,
+				"wrong":           finishedAttempt.Wrong,
+				"unanswered":      finishedAttempt.Unanswered,
+				"percentage":      finishedAttempt.Percentage,
+				"time_taken":      finishedAttempt.TimeTaken,
+				"status":          finishedAttempt.Status,
+			})
+			return
+		}
 		response.Error(c, http.StatusNotFound, "Faol urinish topilmadi")
 		return
 	}
@@ -584,9 +733,10 @@ func (h *Handler) FinishOlympiad(c *gin.Context) {
 	h.db.First(&olympiad, attempt.OlympiadID)
 	if !olympiad.ShowResultImmediately {
 		response.Success(c, http.StatusOK, "Olimpiada yakunlandi", gin.H{
-			"attempt_id": attempt.ID,
-			"status":     attempt.Status,
-			"message":    "Natijalar admin tomonidan tasdiqlanadi",
+			"attempt_id":     attempt.ID,
+			"status":         attempt.Status,
+			"result_pending": true,
+			"message":        "Natijalar admin tomonidan tasdiqlanadi",
 		})
 		return
 	}
@@ -616,7 +766,82 @@ func (h *Handler) GetOlympiadAttemptResult(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Natija", attempt)
+	// ShowResultImmediately va AdminApproval tekshirish
+	var olympiad models.Olympiad
+	h.db.First(&olympiad, attempt.OlympiadID)
+	if !olympiad.ShowResultImmediately || olympiad.AdminApproval {
+		if !attempt.ResultApproved {
+			response.Success(c, http.StatusOK, "Natijalar hali tasdiqlanmagan", gin.H{
+				"attempt_id":     attempt.ID,
+				"status":         attempt.Status,
+				"result_pending": true,
+				"message":        "Natijalar admin tomonidan tasdiqlanadi. Iltimos kuting.",
+			})
+			return
+		}
+	}
+
+	// Batafsil natija — har bir savol uchun
+	var detailedAnswers []gin.H
+	for _, ans := range attempt.Answers {
+		answerDetail := gin.H{
+			"question_id":        ans.QuestionID,
+			"selected_option_id": ans.SelectedOptionID,
+			"is_correct":         ans.IsCorrect,
+		}
+		if ans.Question != nil {
+			answerDetail["question_text"] = ans.Question.Text
+			answerDetail["question_image_url"] = h.toFullURL(ans.Question.ImageURL)
+			answerDetail["points"] = ans.Question.Points
+
+			// To'g'ri javobni topish
+			var options []gin.H
+			for _, opt := range ans.Question.Options {
+				options = append(options, gin.H{
+					"id":         opt.ID,
+					"label":      opt.Label,
+					"text":       opt.Text,
+					"image_url":  h.toFullURL(opt.ImageURL),
+					"is_correct": opt.IsCorrect,
+				})
+				if opt.IsCorrect {
+					answerDetail["correct_option_id"] = opt.ID
+					answerDetail["correct_option_label"] = opt.Label
+				}
+			}
+			answerDetail["options"] = options
+		}
+		if ans.SelectedOptionID != nil {
+			// Tanlangan variant labelini topish
+			if ans.Question != nil {
+				for _, opt := range ans.Question.Options {
+					if opt.ID == *ans.SelectedOptionID {
+						answerDetail["selected_option_label"] = opt.Label
+						break
+					}
+				}
+			}
+		}
+		detailedAnswers = append(detailedAnswers, answerDetail)
+	}
+
+	response.Success(c, http.StatusOK, "Natija", gin.H{
+		"attempt_id":      attempt.ID,
+		"olympiad_id":     attempt.OlympiadID,
+		"olympiad_title":  olympiad.Title,
+		"status":          attempt.Status,
+		"score":           attempt.Score,
+		"max_score":       attempt.MaxScore,
+		"correct":         attempt.Correct,
+		"wrong":           attempt.Wrong,
+		"unanswered":      attempt.Unanswered,
+		"percentage":      attempt.Percentage,
+		"time_taken":      attempt.TimeTaken,
+		"started_at":      attempt.StartedAt,
+		"finished_at":     attempt.FinishedAt,
+		"total_questions": attempt.Correct + attempt.Wrong + attempt.Unanswered,
+		"answers":         detailedAnswers,
+	})
 }
 
 // ============================================
@@ -732,6 +957,10 @@ func (h *Handler) finishMockAttempt(attempt *models.MockAttempt) map[string]inte
 		fmt.Sprintf("/dashboard/results?attempt=%d", attempt.ID),
 		"mock_test", &attempt.MockTestID)
 
+	// XP va Reyting yangilash
+	h.updateUserXP(attempt.UserID, correct, totalQuestions, percentage)
+
+	result["total_questions"] = totalQuestions
 	return result
 }
 
@@ -889,17 +1118,54 @@ func (h *Handler) finishOlympiadAttempt(attempt *models.OlympiadAttempt) map[str
 		fmt.Sprintf("/dashboard/results?attempt=%d", attempt.ID),
 		"olympiad", &attempt.OlympiadID)
 
+	// XP va Reyting yangilash
+	h.updateUserXP(attempt.UserID, correct, int(totalQuestions), percentage)
+
 	return map[string]interface{}{
-		"attempt_id": attempt.ID,
-		"score":      score,
-		"max_score":  maxScore,
-		"correct":    correct,
-		"wrong":      wrong,
-		"unanswered": unanswered,
-		"percentage": percentage,
-		"time_taken": attempt.TimeTaken,
-		"status":     attempt.Status,
+		"attempt_id":      attempt.ID,
+		"score":           score,
+		"max_score":       maxScore,
+		"correct":         correct,
+		"wrong":           wrong,
+		"unanswered":      unanswered,
+		"percentage":      percentage,
+		"time_taken":      attempt.TimeTaken,
+		"status":          attempt.Status,
+		"total_questions":  int(totalQuestions),
 	}
+}
+
+// updateUserXP — o'quvchi XP va reytingini yangilash
+func (h *Handler) updateUserXP(userID uint, correct, totalQuestions int, percentage float64) {
+	// XP hisoblash: har bir to'g'ri javob uchun 10 XP + bonus
+	xpEarned := correct * 10
+	// 80% dan yuqori bo'lsa bonus
+	if percentage >= 90 {
+		xpEarned += 50
+	} else if percentage >= 80 {
+		xpEarned += 30
+	} else if percentage >= 70 {
+		xpEarned += 15
+	}
+
+	// Profile yangilash
+	h.db.Exec(`
+		UPDATE profile SET
+			xp = COALESCE(xp, 0) + ?,
+			total_tests = COALESCE(total_tests, 0) + 1,
+			total_correct = COALESCE(total_correct, 0) + ?,
+			total_questions = COALESCE(total_questions, 0) + ?,
+			rating_score = CASE
+				WHEN COALESCE(total_tests, 0) = 0 THEN ?
+				ELSE (COALESCE(rating_score, 0) * COALESCE(total_tests, 0) + ?) / (COALESCE(total_tests, 0) + 1)
+			END,
+			best_percentage = CASE
+				WHEN ? > COALESCE(best_percentage, 0) THEN ?
+				ELSE COALESCE(best_percentage, 0)
+			END,
+			updated_at = NOW()
+		WHERE user_id = ?
+	`, xpEarned, correct, totalQuestions, percentage, percentage, percentage, percentage, userID)
 }
 
 func (h *Handler) calculateTimeLeft(startedAt time.Time, durationMins int) int {
@@ -946,13 +1212,13 @@ func (h *Handler) hideCorrectAnswers(questions []models.Question) []safeQuestion
 	var safe []safeQuestion
 	for _, q := range questions {
 		sq := safeQuestion{
-			ID: q.ID, Text: q.Text, ImageURL: q.ImageURL,
+			ID: q.ID, Text: q.Text, ImageURL: h.toFullURL(q.ImageURL),
 			Difficulty: q.Difficulty, Points: q.Points, OrderNum: q.OrderNum,
 		}
 		for _, o := range q.Options {
 			sq.Options = append(sq.Options, safeOption{
 				ID: o.ID, Label: o.Label, Text: o.Text,
-				ImageURL: o.ImageURL, OrderNum: o.OrderNum,
+				ImageURL: h.toFullURL(o.ImageURL), OrderNum: o.OrderNum,
 			})
 		}
 		safe = append(safe, sq)

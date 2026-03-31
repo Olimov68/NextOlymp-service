@@ -82,6 +82,18 @@ type UpdateRequest struct {
 	// Scoring
 	MinScoreForCertificate *int    `json:"min_score_for_certificate"`
 	ScoringRules           *string `json:"scoring_rules"`
+
+	// Anti-cheat
+	AntiCheatEnabled        *bool `json:"anti_cheat_enabled"`
+	FullscreenRequired      *bool `json:"fullscreen_required"`
+	TabSwitchDetection      *bool `json:"tab_switch_detection"`
+	CopyPastePrevention     *bool `json:"copy_paste_prevention"`
+	RightClickBlocked       *bool `json:"right_click_blocked"`
+	ScreenshotBlocked       *bool `json:"screenshot_blocked"`
+	DevtoolsBlocked         *bool `json:"devtools_blocked"`
+	MaxFullscreenViolations *int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  *int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  *int  `json:"max_copy_paste_violations"`
 }
 
 type ListParams struct {
@@ -135,6 +147,18 @@ type OlympiadResponse struct {
 	// Scoring
 	MinScoreForCertificate int    `json:"min_score_for_certificate"`
 	ScoringRules           string `json:"scoring_rules"`
+
+	// Anti-cheat
+	AntiCheatEnabled       bool `json:"anti_cheat_enabled"`
+	FullscreenRequired     bool `json:"fullscreen_required"`
+	TabSwitchDetection     bool `json:"tab_switch_detection"`
+	CopyPastePrevention    bool `json:"copy_paste_prevention"`
+	RightClickBlocked      bool `json:"right_click_blocked"`
+	ScreenshotBlocked      bool `json:"screenshot_blocked"`
+	DevtoolsBlocked        bool `json:"devtools_blocked"`
+	MaxFullscreenViolations int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  int  `json:"max_copy_paste_violations"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -251,6 +275,17 @@ func ToResponse(o *models.Olympiad) OlympiadResponse {
 
 		MinScoreForCertificate: o.MinScoreForCertificate,
 		ScoringRules:           o.ScoringRules,
+
+		AntiCheatEnabled:       o.AntiCheatEnabled,
+		FullscreenRequired:     o.FullscreenRequired,
+		TabSwitchDetection:     o.TabSwitchDetection,
+		CopyPastePrevention:    o.CopyPastePrevention,
+		RightClickBlocked:      o.RightClickBlocked,
+		ScreenshotBlocked:      o.ScreenshotBlocked,
+		DevtoolsBlocked:        o.DevtoolsBlocked,
+		MaxFullscreenViolations: o.MaxFullscreenViolations,
+		MaxTabSwitchViolations:  o.MaxTabSwitchViolations,
+		MaxCopyPasteViolations:  o.MaxCopyPasteViolations,
 
 		CreatedAt: o.CreatedAt,
 		UpdatedAt: o.UpdatedAt,

@@ -39,7 +39,7 @@ func Connect(cfg *config.Config) (*gorm.DB, error) {
 	return db, nil
 }
 
-func Migrate(db *gorm.DB) error {
+func Migrate(db *gorm.DB, cfg *config.Config) error {
 	// telegram_codes schema changed (user_id → telegram_id), drop and recreate
 	if db.Migrator().HasColumn(&models.TelegramCode{}, "user_id") {
 		db.Migrator().DropTable(&models.TelegramCode{})
@@ -119,6 +119,9 @@ func Migrate(db *gorm.DB) error {
 	db.Exec("UPDATE \"user\" SET google_id = NULL WHERE google_id = ''")
 	db.Exec("UPDATE \"user\" SET email = NULL WHERE email = ''")
 
+	// Fix: nisbiy URL larni to'liq URL ga o'girish (Android/iOS uchun)
+	migrateRelativeURLs(db, cfg)
+
 	// Verify tables were created
 	var count int64
 	db.Raw("SELECT COUNT(*) FROM pg_class WHERE relkind='r' AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')").Scan(&count)
@@ -146,16 +149,17 @@ func seedSuperAdmin(db *gorm.DB) {
 	const superadminUsername = "Asilbek9900"
 	const superadminPassword = "Alimoff9900"
 
-	var count int64
-	db.Model(&models.StaffUser{}).Where("role = ?", "superadmin").Count(&count)
-	if count > 0 {
-		log.Println("SuperAdmin already exists")
-		return
-	}
-
 	hash, err := utils.HashPassword(superadminPassword)
 	if err != nil {
 		log.Println("Warning: failed to hash superadmin password:", err)
+		return
+	}
+
+	// Agar mavjud bo'lsa — parolni yangilash
+	var existing models.StaffUser
+	if err := db.Where("username = ?", superadminUsername).First(&existing).Error; err == nil {
+		db.Model(&existing).Update("password_hash", hash)
+		log.Println("SuperAdmin password updated")
 		return
 	}
 
@@ -176,29 +180,27 @@ func seedSuperAdmin(db *gorm.DB) {
 }
 
 func seedPermissions(db *gorm.DB) {
-	var count int64
-	db.Model(&models.Permission{}).Count(&count)
-	if count > 0 {
-		return
-	}
+	// Avval eski .edit kodlarni .update ga yangilash (migration)
+	migratePermissionCodes(db)
 
 	permissions := []models.Permission{
 		// Olympiads
 		{Code: "olympiads.view", Name: "Olimpiadalarni ko'rish", Module: "olympiads"},
 		{Code: "olympiads.create", Name: "Olimpiada yaratish", Module: "olympiads"},
-		{Code: "olympiads.edit", Name: "Olimpiada tahrirlash", Module: "olympiads"},
+		{Code: "olympiads.update", Name: "Olimpiada tahrirlash", Module: "olympiads"},
 		{Code: "olympiads.delete", Name: "Olimpiada o'chirish", Module: "olympiads"},
 		{Code: "olympiads.manage", Name: "Olimpiadalarni boshqarish", Module: "olympiads"},
 		// Mock tests
 		{Code: "mock_tests.view", Name: "Mock testlarni ko'rish", Module: "mock_tests"},
 		{Code: "mock_tests.create", Name: "Mock test yaratish", Module: "mock_tests"},
-		{Code: "mock_tests.edit", Name: "Mock test tahrirlash", Module: "mock_tests"},
+		{Code: "mock_tests.update", Name: "Mock test tahrirlash", Module: "mock_tests"},
 		{Code: "mock_tests.delete", Name: "Mock test o'chirish", Module: "mock_tests"},
 		{Code: "mock_tests.manage", Name: "Mock testlarni boshqarish", Module: "mock_tests"},
 		// Users
 		{Code: "users.view", Name: "Foydalanuvchilarni ko'rish", Module: "users"},
-		{Code: "users.edit", Name: "Foydalanuvchilarni tahrirlash", Module: "users"},
+		{Code: "users.update", Name: "Foydalanuvchilarni tahrirlash", Module: "users"},
 		{Code: "users.block", Name: "Foydalanuvchilarni bloklash", Module: "users"},
+		{Code: "users.delete", Name: "Foydalanuvchini o'chirish", Module: "users"},
 		{Code: "users.verify", Name: "Foydalanuvchilarni tasdiqlash", Module: "users"},
 		{Code: "users.manage", Name: "Foydalanuvchilarni boshqarish", Module: "users"},
 		// Chat
@@ -211,16 +213,58 @@ func seedPermissions(db *gorm.DB) {
 		// News
 		{Code: "news.view", Name: "Yangiliklar ko'rish", Module: "news"},
 		{Code: "news.create", Name: "Yangilik yaratish", Module: "news"},
-		{Code: "news.edit", Name: "Yangilik tahrirlash", Module: "news"},
+		{Code: "news.update", Name: "Yangilik tahrirlash", Module: "news"},
+		{Code: "news.delete", Name: "Yangilik o'chirish", Module: "news"},
 		{Code: "news.manage", Name: "Yangiliklar boshqarish", Module: "news"},
 		// Certificates
 		{Code: "certificates.view", Name: "Sertifikatlar ko'rish", Module: "certificates"},
 		{Code: "certificates.manage", Name: "Sertifikatlar boshqarish", Module: "certificates"},
+		// Verifications
+		{Code: "verifications.view", Name: "Verifikatsiyalarni ko'rish", Module: "verifications"},
+		{Code: "verifications.manage", Name: "Verifikatsiyalarni boshqarish", Module: "verifications"},
 	}
 
 	for _, p := range permissions {
 		db.FirstOrCreate(&p, models.Permission{Code: p.Code})
 	}
 
-	log.Printf("Permissions seeded: %d permissions", len(permissions))
+	log.Printf("Permissions seeded/updated: %d permissions", len(permissions))
+}
+
+// migratePermissionCodes — eski .edit kodlarni .update ga o'zgartiradi
+// migrateRelativeURLs — eski nisbiy URL larni to'liq URL ga o'giradi
+func migrateRelativeURLs(db *gorm.DB, cfg *config.Config) {
+	baseURL := cfg.App.BaseURL
+	if baseURL == "" || baseURL == "http://localhost:8080" {
+		return // development muhitda o'zgartirishning keragi yo'q
+	}
+
+	// Question rasmlarini to'liq URL ga o'girish
+	db.Exec(`UPDATE question SET image_url = CONCAT(?, image_url) WHERE image_url LIKE '/uploads/%'`, baseURL)
+	// QuestionOption rasmlarini to'liq URL ga o'girish
+	db.Exec(`UPDATE question_option SET image_url = CONCAT(?, image_url) WHERE image_url LIKE '/uploads/%'`, baseURL)
+	// Olympiad banner/icon
+	db.Exec(`UPDATE olympiad SET banner_url = CONCAT(?, banner_url) WHERE banner_url LIKE '/uploads/%'`, baseURL)
+	db.Exec(`UPDATE olympiad SET icon_url = CONCAT(?, icon_url) WHERE icon_url LIKE '/uploads/%'`, baseURL)
+	// MockTest banner/icon
+	db.Exec(`UPDATE mock_test SET banner_url = CONCAT(?, banner_url) WHERE banner_url LIKE '/uploads/%'`, baseURL)
+	db.Exec(`UPDATE mock_test SET icon_url = CONCAT(?, icon_url) WHERE icon_url LIKE '/uploads/%'`, baseURL)
+	// News rasmlari
+	db.Exec(`UPDATE content SET image_url = CONCAT(?, image_url) WHERE image_url LIKE '/uploads/%'`, baseURL)
+	// Profile rasm
+	db.Exec(`UPDATE profile SET photo_url = CONCAT(?, photo_url) WHERE photo_url LIKE '/uploads/%'`, baseURL)
+
+	log.Println("Relative URLs migrated to full URLs")
+}
+
+func migratePermissionCodes(db *gorm.DB) {
+	renames := map[string]string{
+		"olympiads.edit":  "olympiads.update",
+		"mock_tests.edit": "mock_tests.update",
+		"news.edit":       "news.update",
+		"users.edit":      "users.update",
+	}
+	for oldCode, newCode := range renames {
+		db.Model(&models.Permission{}).Where("code = ?", oldCode).Update("code", newCode)
+	}
 }

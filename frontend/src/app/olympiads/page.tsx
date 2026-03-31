@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { PublicLayout } from "@/components/landing/PublicLayout";
 import { useI18n } from "@/lib/i18n";
 import {
-  Trophy, Search, Clock, Users, BookOpen, Calendar, ChevronRight,
+  Trophy, Search, Clock, BookOpen, Calendar, ChevronRight, Users,
 } from "lucide-react";
-import { listOlympiads } from "@/lib/user-api";
+import { api } from "@/lib/api";
 import { normalizeList } from "@/lib/normalizeList";
-import { useAuth } from "@/lib/auth-context";
 
 interface Olympiad {
   id: number;
@@ -26,6 +24,8 @@ interface Olympiad {
   status: string;
   is_paid: boolean;
   price?: number;
+  banner_url?: string;
+  icon_url?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -40,8 +40,6 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function OlympiadsPage() {
-  const router = useRouter();
-  const { user } = useAuth();
   const { t } = useI18n();
   const [items, setItems] = useState<Olympiad[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +48,8 @@ export default function OlympiadsPage() {
   const [priceFilter, setPriceFilter] = useState("all");
 
   useEffect(() => {
-    listOlympiads({ page: 1, page_size: 50 })
-      .then((data: unknown) => setItems(normalizeList<Olympiad>(data)))
+    api.get("/olympiads")
+      .then((r) => setItems(normalizeList<Olympiad>(r.data?.data ?? r.data)))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, []);
@@ -64,11 +62,6 @@ export default function OlympiadsPage() {
     const matchPrice = priceFilter === "all" || (priceFilter === "free" ? !i.is_paid : i.is_paid);
     return matchSearch && matchSubject && matchPrice;
   });
-
-  const handleJoin = (id: number) => {
-    if (!user) { router.push("/login"); return; }
-    router.push(`/dashboard/olympiads/${id}`);
-  };
 
   return (
     <PublicLayout>
@@ -166,18 +159,10 @@ export default function OlympiadsPage() {
                     </p>
                   )}
 
-                  <button
-                    className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all mt-auto flex items-center justify-center gap-2 ${
-                      item.status === "ended"
-                        ? "bg-white/5 text-gray-500 cursor-not-allowed"
-                        : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/25"
-                    }`}
-                    onClick={() => handleJoin(item.id)}
-                    disabled={item.status === "ended"}
-                  >
-                    {item.status === "ended" ? "Tugagan" : t("olympiads.details")}
-                    {item.status !== "ended" && <ChevronRight className="h-4 w-4" />}
-                  </button>
+                  <div className="w-full py-2.5 rounded-xl font-semibold text-sm text-center mt-auto bg-gradient-to-r from-blue-500/20 to-indigo-600/20 text-blue-300 border border-blue-500/20 flex items-center justify-center gap-2">
+                    {t("olympiads.details")}
+                    <ChevronRight className="h-4 w-4" />
+                  </div>
                 </div>
               ))}
             </div>

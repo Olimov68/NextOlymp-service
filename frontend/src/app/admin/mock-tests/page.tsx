@@ -70,6 +70,17 @@ const emptyForm = {
   is_paid: false,
   price: 0,
   status: "draft",
+  // Anti-cheat
+  anti_cheat_enabled: true,
+  fullscreen_required: true,
+  tab_switch_detection: true,
+  copy_paste_prevention: true,
+  right_click_blocked: true,
+  screenshot_blocked: true,
+  devtools_blocked: true,
+  max_fullscreen_violations: 5,
+  max_tab_switch_violations: 5,
+  max_copy_paste_violations: 4,
 };
 
 const subjects = [
@@ -217,6 +228,17 @@ export default function AdminMockTestsPage() {
       is_paid: item.is_paid || false,
       price: item.price || 0,
       status: item.status || "draft",
+      // Anti-cheat
+      anti_cheat_enabled: (item as Record<string, unknown>).anti_cheat_enabled !== false,
+      fullscreen_required: (item as Record<string, unknown>).fullscreen_required !== false,
+      tab_switch_detection: (item as Record<string, unknown>).tab_switch_detection !== false,
+      copy_paste_prevention: (item as Record<string, unknown>).copy_paste_prevention !== false,
+      right_click_blocked: (item as Record<string, unknown>).right_click_blocked !== false,
+      screenshot_blocked: (item as Record<string, unknown>).screenshot_blocked !== false,
+      devtools_blocked: (item as Record<string, unknown>).devtools_blocked !== false,
+      max_fullscreen_violations: ((item as Record<string, unknown>).max_fullscreen_violations as number) || 5,
+      max_tab_switch_violations: ((item as Record<string, unknown>).max_tab_switch_violations as number) || 5,
+      max_copy_paste_violations: ((item as Record<string, unknown>).max_copy_paste_violations as number) || 4,
     });
   };
 
@@ -377,6 +399,116 @@ export default function AdminMockTestsPage() {
               }
               className="border-border"
             />
+          </div>
+        )}
+      </div>
+      {/* Anti-cheat sozlamalari */}
+      <div className="border border-border rounded-lg p-4 space-y-3 bg-muted/30">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">Anti-cheat tizimi</h3>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.anti_cheat_enabled}
+              onChange={(e) => setForm({ ...form, anti_cheat_enabled: e.target.checked })}
+              className="rounded accent-blue-600"
+            />
+            <span className="text-sm text-muted-foreground">Yoqish</span>
+          </label>
+        </div>
+        {form.anti_cheat_enabled && (
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.fullscreen_required}
+                  onChange={(e) => setForm({ ...form, fullscreen_required: e.target.checked })}
+                  className="rounded accent-blue-600"
+                />
+                <span className="text-sm">To&apos;liq ekran</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.tab_switch_detection}
+                  onChange={(e) => setForm({ ...form, tab_switch_detection: e.target.checked })}
+                  className="rounded accent-blue-600"
+                />
+                <span className="text-sm">Tab almashtirish</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.copy_paste_prevention}
+                  onChange={(e) => setForm({ ...form, copy_paste_prevention: e.target.checked })}
+                  className="rounded accent-blue-600"
+                />
+                <span className="text-sm">Nusxa/Qo&apos;yish</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.right_click_blocked}
+                  onChange={(e) => setForm({ ...form, right_click_blocked: e.target.checked })}
+                  className="rounded accent-blue-600"
+                />
+                <span className="text-sm">O&apos;ng tugma</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.screenshot_blocked}
+                  onChange={(e) => setForm({ ...form, screenshot_blocked: e.target.checked })}
+                  className="rounded accent-blue-600"
+                />
+                <span className="text-sm">Skrinshot</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.devtools_blocked}
+                  onChange={(e) => setForm({ ...form, devtools_blocked: e.target.checked })}
+                  className="rounded accent-blue-600"
+                />
+                <span className="text-sm">DevTools</span>
+              </label>
+            </div>
+            <div className="grid grid-cols-3 gap-2 pt-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Fullscreen limit</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={form.max_fullscreen_violations}
+                  onChange={(e) => setForm({ ...form, max_fullscreen_violations: Number(e.target.value) })}
+                  className="border-border h-8 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Tab switch limit</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={form.max_tab_switch_violations}
+                  onChange={(e) => setForm({ ...form, max_tab_switch_violations: Number(e.target.value) })}
+                  className="border-border h-8 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Copy/Paste limit</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={form.max_copy_paste_violations}
+                  onChange={(e) => setForm({ ...form, max_copy_paste_violations: Number(e.target.value) })}
+                  className="border-border h-8 text-sm"
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>

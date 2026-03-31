@@ -77,6 +77,10 @@ func (r *Repository) CreateRegistration(reg *models.OlympiadRegistration) error 
 	return r.db.Create(reg).Error
 }
 
+func (r *Repository) UpdateRegistration(reg *models.OlympiadRegistration) error {
+	return r.db.Save(reg).Error
+}
+
 // GetLatestAttempt — user ning oxirgi urinishini olish
 func (r *Repository) GetLatestAttempt(userID, olympiadID uint) (*models.OlympiadAttempt, error) {
 	var attempt models.OlympiadAttempt

@@ -41,9 +41,8 @@ export function Footer() {
             <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-4">{t("footer.platform")}</h4>
             <ul className="space-y-2.5">
               {[
-                { label: t("footer.mock_tests"), href: "/dashboard/mock-tests" },
-                { label: t("footer.olympiads_link"), href: "/dashboard/olympiads" },
-                { label: t("footer.rating_link"), href: "/dashboard/leaderboard" },
+                { label: t("footer.mock_tests"), href: "/olympiads" },
+                { label: t("footer.olympiads_link"), href: "/olympiads" },
                 { label: t("footer.blog_link"), href: "/news" },
               ].map((l, i) => (
                 <li key={i}>

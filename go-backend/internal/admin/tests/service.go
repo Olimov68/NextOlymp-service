@@ -92,6 +92,17 @@ func (s *Service) CreateOlympiad(req *CreateOlympiadRequest, createdByID uint) (
 		GiveCertificate:       req.GiveCertificate,
 		ManualReview:          req.ManualReview,
 		AdminApproval:         req.AdminApproval,
+
+		AntiCheatEnabled:       req.AntiCheatEnabled,
+		FullscreenRequired:     req.FullscreenRequired,
+		TabSwitchDetection:     req.TabSwitchDetection,
+		CopyPastePrevention:    req.CopyPastePrevention,
+		RightClickBlocked:      req.RightClickBlocked,
+		ScreenshotBlocked:      req.ScreenshotBlocked,
+		DevtoolsBlocked:        req.DevtoolsBlocked,
+		MaxFullscreenViolations: req.MaxFullscreenViolations,
+		MaxTabSwitchViolations:  req.MaxTabSwitchViolations,
+		MaxCopyPasteViolations:  req.MaxCopyPasteViolations,
 	}
 
 	if err := s.repo.CreateOlympiad(o); err != nil {
@@ -108,8 +119,7 @@ func (s *Service) CreateOlympiad(req *CreateOlympiadRequest, createdByID uint) (
 }
 
 func (s *Service) UpdateOlympiad(id uint, req *UpdateOlympiadRequest) (*OlympiadResponse, error) {
-	o, err := s.repo.GetOlympiadByID(id)
-	if err != nil {
+	if _, err := s.repo.GetOlympiadByID(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("olympiad not found")
 		}
@@ -196,12 +206,41 @@ func (s *Service) UpdateOlympiad(id uint, req *UpdateOlympiadRequest) (*Olympiad
 	if req.AdminApproval != nil {
 		fields["admin_approval"] = *req.AdminApproval
 	}
+	if req.AntiCheatEnabled != nil {
+		fields["anti_cheat_enabled"] = *req.AntiCheatEnabled
+	}
+	if req.FullscreenRequired != nil {
+		fields["fullscreen_required"] = *req.FullscreenRequired
+	}
+	if req.TabSwitchDetection != nil {
+		fields["tab_switch_detection"] = *req.TabSwitchDetection
+	}
+	if req.CopyPastePrevention != nil {
+		fields["copy_paste_prevention"] = *req.CopyPastePrevention
+	}
+	if req.RightClickBlocked != nil {
+		fields["right_click_blocked"] = *req.RightClickBlocked
+	}
+	if req.ScreenshotBlocked != nil {
+		fields["screenshot_blocked"] = *req.ScreenshotBlocked
+	}
+	if req.DevtoolsBlocked != nil {
+		fields["devtools_blocked"] = *req.DevtoolsBlocked
+	}
+	if req.MaxFullscreenViolations != nil {
+		fields["max_fullscreen_violations"] = *req.MaxFullscreenViolations
+	}
+	if req.MaxTabSwitchViolations != nil {
+		fields["max_tab_switch_violations"] = *req.MaxTabSwitchViolations
+	}
+	if req.MaxCopyPasteViolations != nil {
+		fields["max_copy_paste_violations"] = *req.MaxCopyPasteViolations
+	}
 
 	if err := s.repo.UpdateOlympiad(id, fields); err != nil {
 		return nil, errors.New("failed to update olympiad")
 	}
 
-	_ = o
 	updated, _ := s.repo.GetOlympiadByID(id)
 	res := ToOlympiadResponse(updated)
 	return &res, nil
@@ -304,6 +343,17 @@ func (s *Service) CreateMockTest(req *CreateMockTestRequest, createdByID uint) (
 		GiveCertificate:       req.GiveCertificate,
 		ManualReview:          req.ManualReview,
 		AdminApproval:         req.AdminApproval,
+
+		AntiCheatEnabled:       req.AntiCheatEnabled,
+		FullscreenRequired:     req.FullscreenRequired,
+		TabSwitchDetection:     req.TabSwitchDetection,
+		CopyPastePrevention:    req.CopyPastePrevention,
+		RightClickBlocked:      req.RightClickBlocked,
+		ScreenshotBlocked:      req.ScreenshotBlocked,
+		DevtoolsBlocked:        req.DevtoolsBlocked,
+		MaxFullscreenViolations: req.MaxFullscreenViolations,
+		MaxTabSwitchViolations:  req.MaxTabSwitchViolations,
+		MaxCopyPasteViolations:  req.MaxCopyPasteViolations,
 	}
 
 	if err := s.repo.CreateMockTest(m); err != nil {
@@ -418,6 +468,36 @@ func (s *Service) UpdateMockTest(id uint, req *UpdateMockTestRequest) (*MockTest
 	}
 	if req.AdminApproval != nil {
 		fields["admin_approval"] = *req.AdminApproval
+	}
+	if req.AntiCheatEnabled != nil {
+		fields["anti_cheat_enabled"] = *req.AntiCheatEnabled
+	}
+	if req.FullscreenRequired != nil {
+		fields["fullscreen_required"] = *req.FullscreenRequired
+	}
+	if req.TabSwitchDetection != nil {
+		fields["tab_switch_detection"] = *req.TabSwitchDetection
+	}
+	if req.CopyPastePrevention != nil {
+		fields["copy_paste_prevention"] = *req.CopyPastePrevention
+	}
+	if req.RightClickBlocked != nil {
+		fields["right_click_blocked"] = *req.RightClickBlocked
+	}
+	if req.ScreenshotBlocked != nil {
+		fields["screenshot_blocked"] = *req.ScreenshotBlocked
+	}
+	if req.DevtoolsBlocked != nil {
+		fields["devtools_blocked"] = *req.DevtoolsBlocked
+	}
+	if req.MaxFullscreenViolations != nil {
+		fields["max_fullscreen_violations"] = *req.MaxFullscreenViolations
+	}
+	if req.MaxTabSwitchViolations != nil {
+		fields["max_tab_switch_violations"] = *req.MaxTabSwitchViolations
+	}
+	if req.MaxCopyPasteViolations != nil {
+		fields["max_copy_paste_violations"] = *req.MaxCopyPasteViolations
 	}
 
 	if err := s.repo.UpdateMockTest(id, fields); err != nil {

@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
-import { AuthProvider } from "@/lib/auth-context";
 import { SettingsProvider } from "@/lib/settings-context";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 import { Toaster } from "sonner";
+import { JivoChat } from "@/components/JivoChat";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -67,17 +66,15 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`}>
         <Providers>
           <SettingsProvider>
-            <AuthProvider>
-              <ErrorBoundary>
-                <MaintenanceGuard>
-                  {children}
-                </MaintenanceGuard>
-              </ErrorBoundary>
-            </AuthProvider>
+            <ErrorBoundary>
+              <MaintenanceGuard>
+                {children}
+              </MaintenanceGuard>
+            </ErrorBoundary>
           </SettingsProvider>
         </Providers>
         <Toaster richColors position="top-right" />
-        <Script src="//code.jivo.ru/widget/GovfNB8EWK" strategy="lazyOnload" />
+        <JivoChat />
       </body>
     </html>
   );

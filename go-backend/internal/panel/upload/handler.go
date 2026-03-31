@@ -67,8 +67,9 @@ func (h *Handler) UploadImage(c *gin.Context) {
 		return
 	}
 
-	// Return URL
-	imageURL := fmt.Sprintf("/uploads/panel/%s", filename)
+	// Return full URL (Android/iOS ilovalar uchun to'liq URL kerak)
+	baseURL := strings.TrimRight(h.cfg.App.BaseURL, "/")
+	imageURL := fmt.Sprintf("%s/uploads/panel/%s", baseURL, filename)
 	response.Success(c, http.StatusOK, "Rasm yuklandi", gin.H{
 		"url":      imageURL,
 		"filename": filename,

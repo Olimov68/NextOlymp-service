@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/nextolympservice/go-backend/internal/models"
+	"github.com/nextolympservice/go-backend/pkg/urlutil"
 )
 
 type ListParams struct {
@@ -30,6 +31,8 @@ type OlympiadResponse struct {
 	Status         string     `json:"status"`
 	IsPaid         bool       `json:"is_paid"`
 	Price          *float64   `json:"price,omitempty"`
+	BannerURL      string     `json:"banner_url,omitempty"`
+	IconURL        string     `json:"icon_url,omitempty"`
 	CreatedAt      time.Time  `json:"created_at"`
 }
 
@@ -64,6 +67,8 @@ func ToOlympiadResponse(o *models.Olympiad) OlympiadResponse {
 		Status:         string(o.Status),
 		IsPaid:         o.IsPaid,
 		Price:          o.Price,
+		BannerURL:      urlutil.ToFullURL(o.BannerURL),
+		IconURL:        urlutil.ToFullURL(o.IconURL),
 		CreatedAt:      o.CreatedAt,
 	}
 }

@@ -206,9 +206,9 @@ export function BenefitsSection() {
               <ArrowRight className="h-4 w-4" />
             </Button>
           </a>
-          <Link href="/dashboard/mock-tests">
+          <Link href="/olympiads">
             <Button size="lg" variant="outline" className="gap-2">
-              {lang === "ru" ? "Начать mock тесты" : lang === "en" ? "Start Mock Tests" : "Mock testlarni boshlash"}
+              {lang === "ru" ? "Смотреть тесты" : lang === "en" ? "View Tests" : "Testlarni ko'rish"}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>

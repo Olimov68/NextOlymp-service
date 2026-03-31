@@ -76,6 +76,18 @@ type UpdateRequest struct {
 	GiveCertificate       *bool `json:"give_certificate"`
 	ManualReview          *bool `json:"manual_review"`
 	AdminApproval         *bool `json:"admin_approval"`
+
+	// Anti-cheat
+	AntiCheatEnabled        *bool `json:"anti_cheat_enabled"`
+	FullscreenRequired      *bool `json:"fullscreen_required"`
+	TabSwitchDetection      *bool `json:"tab_switch_detection"`
+	CopyPastePrevention     *bool `json:"copy_paste_prevention"`
+	RightClickBlocked       *bool `json:"right_click_blocked"`
+	ScreenshotBlocked       *bool `json:"screenshot_blocked"`
+	DevtoolsBlocked         *bool `json:"devtools_blocked"`
+	MaxFullscreenViolations *int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  *int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  *int  `json:"max_copy_paste_violations"`
 }
 
 type ListParams struct {
@@ -126,6 +138,18 @@ type MockTestResponse struct {
 	GiveCertificate       bool `json:"give_certificate"`
 	ManualReview          bool `json:"manual_review"`
 	AdminApproval         bool `json:"admin_approval"`
+
+	// Anti-cheat
+	AntiCheatEnabled       bool `json:"anti_cheat_enabled"`
+	FullscreenRequired     bool `json:"fullscreen_required"`
+	TabSwitchDetection     bool `json:"tab_switch_detection"`
+	CopyPastePrevention    bool `json:"copy_paste_prevention"`
+	RightClickBlocked      bool `json:"right_click_blocked"`
+	ScreenshotBlocked      bool `json:"screenshot_blocked"`
+	DevtoolsBlocked        bool `json:"devtools_blocked"`
+	MaxFullscreenViolations int  `json:"max_fullscreen_violations"`
+	MaxTabSwitchViolations  int  `json:"max_tab_switch_violations"`
+	MaxCopyPasteViolations  int  `json:"max_copy_paste_violations"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -245,6 +269,18 @@ func ToResponse(m *models.MockTest) MockTestResponse {
 		GiveCertificate:       m.GiveCertificate,
 		ManualReview:          m.ManualReview,
 		AdminApproval:         m.AdminApproval,
+
+		AntiCheatEnabled:       m.AntiCheatEnabled,
+		FullscreenRequired:     m.FullscreenRequired,
+		TabSwitchDetection:     m.TabSwitchDetection,
+		CopyPastePrevention:    m.CopyPastePrevention,
+		RightClickBlocked:      m.RightClickBlocked,
+		ScreenshotBlocked:      m.ScreenshotBlocked,
+		DevtoolsBlocked:        m.DevtoolsBlocked,
+		MaxFullscreenViolations: m.MaxFullscreenViolations,
+		MaxTabSwitchViolations:  m.MaxTabSwitchViolations,
+		MaxCopyPasteViolations:  m.MaxCopyPasteViolations,
+
 		CreatedAt:             m.CreatedAt,
 		UpdatedAt:             m.UpdatedAt,
 	}

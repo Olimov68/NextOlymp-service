@@ -32,11 +32,27 @@ type ReportViolationRequest struct {
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
+// BatchViolationRequest — bir nechta qoidabuzarlikni yuborish (Flutter batch report)
+type BatchViolationRequest struct {
+	AttemptID   uint   `json:"attempt_id" binding:"required"`
+	AttemptType string `json:"attempt_type" binding:"required,oneof=olympiad mock_test"`
+	Violations  []struct {
+		Type      string                 `json:"type"`
+		Severity  string                 `json:"severity"`
+		Details   string                 `json:"details"`
+		Timestamp string                 `json:"timestamp"`
+		Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	} `json:"violations"`
+	TotalWarnings int    `json:"total_warnings"`
+	DeviceType    string `json:"device_type"`
+}
+
 // ReportViolation — qoidabuzarlikni xabar qilish (frontend dan keladi)
 func (h *Handler) ReportViolation(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 	uid, _ := userID.(uint)
 
+	// Avval single violation sifatida parse qilib ko'rish
 	var req ReportViolationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Noto'g'ri ma'lumot", nil)

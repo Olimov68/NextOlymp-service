@@ -218,18 +218,18 @@ export default function Home() {
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.45 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <a href="#features">
+            <Link href="/register">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
                 className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-8 py-4 text-base font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-shadow cursor-pointer">
-                <Rocket className="h-5 w-5" /> {t("hero.cta1")}
+                <ArrowRight className="h-5 w-5" /> {t("hero.cta1")}
               </motion.div>
-            </a>
-            <Link href="/news">
+            </Link>
+            <a href="#how-it-works">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
                 className="inline-flex items-center gap-2 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 text-white px-8 py-4 text-base font-semibold hover:bg-white/10 transition-colors cursor-pointer">
                 <Play className="h-5 w-5" /> {t("hero.cta2")}
               </motion.div>
-            </Link>
+            </a>
           </motion.div>
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
@@ -246,7 +246,7 @@ export default function Home() {
                 <div className="w-3 h-3 rounded-full bg-red-500" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500" />
                 <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="ml-3 text-xs text-gray-500">nextolymp.uz/dashboard</span>
+                <span className="ml-3 text-xs text-gray-500">nextolymp.uz</span>
               </div>
               <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
                 {previewCards.map((s, i) => (
@@ -485,16 +485,16 @@ export default function Home() {
                 {t("cta.desc")}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="https://play.google.com/store/apps/details?id=com.nextolymp" target="_blank" rel="noreferrer">
+                <Link href="/register">
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
                     className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-10 py-4 text-lg font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-shadow cursor-pointer">
-                    <Smartphone className="h-5 w-5" /> {t("cta.android")}
+                    <ArrowRight className="h-5 w-5" /> {t("hero.cta1")}
                   </motion.div>
-                </a>
-                <a href="https://nextolymp.uz/download/windows" target="_blank" rel="noreferrer">
+                </Link>
+                <a href="https://play.google.com/store/apps/details?id=com.nextolymp" target="_blank" rel="noreferrer">
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
                     className="inline-flex items-center gap-2 rounded-2xl bg-white/10 border border-white/10 text-white px-10 py-4 text-lg font-semibold hover:bg-white/15 transition-all cursor-pointer">
-                    {t("cta.windows")} <ArrowRight className="h-5 w-5" />
+                    <Smartphone className="h-5 w-5" /> {t("cta.android")}
                   </motion.div>
                 </a>
               </div>

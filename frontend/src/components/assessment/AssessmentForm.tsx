@@ -71,7 +71,10 @@ const emptyForm: AssessmentFormData = {
 function toLocalDatetime(iso?: string): string {
   if (!iso) return "";
   try {
-    return new Date(iso).toISOString().slice(0, 16);
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   } catch {
     return "";
   }
@@ -132,7 +135,23 @@ export default function AssessmentForm({
   };
 
   const handleSubmit = () => {
-    onSubmit(form);
+    // datetime-local formatini RFC3339 ga o'girish (backend uchun)
+    const toRFC3339 = (val: string) => {
+      if (!val) return "";
+      try {
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? val : d.toISOString();
+      } catch {
+        return val;
+      }
+    };
+    onSubmit({
+      ...form,
+      start_time: toRFC3339(form.start_time),
+      end_time: toRFC3339(form.end_time),
+      registration_start_time: toRFC3339(form.registration_start_time),
+      registration_end_time: toRFC3339(form.registration_end_time),
+    });
   };
 
   const isMock = examType === "mock_test";
@@ -356,28 +375,6 @@ export default function AssessmentForm({
             />
           </div>
         )}
-      </section>
-
-      {/* Section: Status */}
-      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-          Status
-        </h3>
-        <div className="max-w-xs space-y-1.5">
-          <Label>Holat</Label>
-          <Select
-            value={form.status}
-            onValueChange={(v) => update("status", v ?? "draft")}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="draft">Qoralama</SelectItem>
-              <SelectItem value="published">Nashr qilish</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </section>
 
       {/* Section: Sozlamalar */}

@@ -90,9 +90,9 @@ func (r *Repository) AssignPermissions(staffID uint, permIDs []uint, grantedBy u
 func (r *Repository) GetPermissionCodes(staffID uint) []string {
 	var codes []string
 	r.db.Model(&models.StaffPermission{}).
-		Select("permissions.code").
-		Joins("JOIN permissions ON permissions.id = staff_permissions.permission_id").
-		Where("staff_permissions.staff_user_id = ?", staffID).
-		Pluck("permissions.code", &codes)
+		Select("permission.code").
+		Joins("JOIN permission ON permission.id = staff_permission.permission_id").
+		Where("staff_permission.staff_user_id = ?", staffID).
+		Pluck("permission.code", &codes)
 	return codes
 }

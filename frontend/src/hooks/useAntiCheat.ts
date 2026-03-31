@@ -28,6 +28,13 @@ export interface UseAntiCheatOptions {
   maxTabSwitchViolations?: number; // default 5
   maxCopyPasteViolations?: number; // default 4
   onKickedOut: () => void; // called when max violations reached
+  // Per-feature toggles (all default to true when enabled)
+  fullscreenRequired?: boolean;
+  tabSwitchDetection?: boolean;
+  copyPastePrevention?: boolean;
+  rightClickBlocked?: boolean;
+  screenshotBlocked?: boolean;
+  devtoolsBlocked?: boolean;
   // Backend reporting (optional)
   attemptId?: number;
   attemptType?: "olympiad" | "mock_test";
@@ -64,6 +71,12 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
     maxFullscreenViolations = 5,
     maxTabSwitchViolations = 5,
     maxCopyPasteViolations = 4,
+    fullscreenRequired = true,
+    tabSwitchDetection = true,
+    copyPastePrevention = true,
+    rightClickBlocked = true,
+    screenshotBlocked = true,
+    devtoolsBlocked = true,
     onKickedOut,
     onAutoSubmit,
     attemptId,
@@ -289,6 +302,7 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
 
     // --- Fullscreen change ---
     const handleFullscreenChange = () => {
+      if (!fullscreenRequired) return;
       if (!document.fullscreenElement && !isKickedOutRef.current) {
         addViolation("fullscreen");
       }
@@ -296,6 +310,7 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
 
     // --- Visibility change (tab switch) ---
     const handleVisibilityChange = () => {
+      if (!tabSwitchDetection) return;
       if (document.hidden && !isKickedOutRef.current) {
         addViolation("tabSwitch");
       }
@@ -303,6 +318,7 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
 
     // --- Window blur (alt-tab) ---
     const handleBlur = () => {
+      if (!tabSwitchDetection) return;
       if (isKickedOutRef.current) return;
       // Debounce to avoid double-counting with fullscreen exit
       if (blurDebounceRef.current) return;
@@ -318,26 +334,31 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
 
     // --- Copy/Paste/Cut ---
     const handleCopy = (e: ClipboardEvent) => {
+      if (!copyPastePrevention) return;
       e.preventDefault();
       addViolation("copyPaste");
     };
     const handlePaste = (e: ClipboardEvent) => {
+      if (!copyPastePrevention) return;
       e.preventDefault();
       addViolation("copyPaste");
     };
     const handleCut = (e: ClipboardEvent) => {
+      if (!copyPastePrevention) return;
       e.preventDefault();
       addViolation("copyPaste");
     };
 
     // --- Right click ---
     const handleContextMenu = (e: MouseEvent) => {
+      if (!rightClickBlocked) return;
       e.preventDefault();
       addViolation("rightClick");
     };
 
     // --- Select start ---
     const handleSelectStart = (e: Event) => {
+      if (!copyPastePrevention) return;
       e.preventDefault();
     };
 
@@ -346,21 +367,21 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
       if (isKickedOutRef.current) return;
 
       // PrintScreen
-      if (e.key === "PrintScreen") {
+      if (e.key === "PrintScreen" && screenshotBlocked) {
         e.preventDefault();
         addViolation("screenshot");
         return;
       }
 
       // Ctrl+Shift+S (screenshot / save)
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s" && screenshotBlocked) {
         e.preventDefault();
         addViolation("screenshot");
         return;
       }
 
       // F12 (devtools)
-      if (e.key === "F12") {
+      if (e.key === "F12" && devtoolsBlocked) {
         e.preventDefault();
         addViolation("devtools");
         return;
@@ -370,7 +391,8 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
       if (
         e.ctrlKey &&
         e.shiftKey &&
-        ["i", "j", "c"].includes(e.key.toLowerCase())
+        ["i", "j", "c"].includes(e.key.toLowerCase()) &&
+        devtoolsBlocked
       ) {
         e.preventDefault();
         addViolation("devtools");
@@ -378,21 +400,21 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
       }
 
       // Ctrl+U (view source)
-      if (e.ctrlKey && e.key.toLowerCase() === "u") {
+      if (e.ctrlKey && e.key.toLowerCase() === "u" && devtoolsBlocked) {
         e.preventDefault();
         addViolation("devtools");
         return;
       }
 
       // Ctrl+A (select all)
-      if (e.ctrlKey && e.key.toLowerCase() === "a") {
+      if (e.ctrlKey && e.key.toLowerCase() === "a" && copyPastePrevention) {
         e.preventDefault();
         addViolation("copyPaste");
         return;
       }
 
       // Ctrl+C, Ctrl+V, Ctrl+X
-      if (e.ctrlKey && ["c", "v", "x"].includes(e.key.toLowerCase())) {
+      if (e.ctrlKey && ["c", "v", "x"].includes(e.key.toLowerCase()) && copyPastePrevention) {
         e.preventDefault();
         addViolation("copyPaste");
         return;
@@ -402,6 +424,7 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
     // --- DevTools detection (resize heuristic) ---
     let devToolsDetected = false;
     const handleResize = () => {
+      if (!devtoolsBlocked) return;
       if (isKickedOutRef.current) return;
       const widthThreshold = window.outerWidth - window.innerWidth > 160;
       const heightThreshold = window.outerHeight - window.innerHeight > 160;
@@ -432,9 +455,11 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
     window.addEventListener("resize", handleResize);
     window.addEventListener("offline", handleOffline);
 
-    // CSS: prevent text selection
-    document.body.style.userSelect = "none";
-    document.body.style.webkitUserSelect = "none";
+    // CSS: prevent text selection (only if copy/paste is blocked)
+    if (copyPastePrevention) {
+      document.body.style.userSelect = "none";
+      document.body.style.webkitUserSelect = "none";
+    }
 
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
@@ -453,7 +478,7 @@ export function useAntiCheat(options: UseAntiCheatOptions): UseAntiCheatReturn {
       document.body.style.userSelect = "";
       document.body.style.webkitUserSelect = "";
     };
-  }, [enabled, addViolation, reportToBackend]);
+  }, [enabled, addViolation, reportToBackend, fullscreenRequired, tabSwitchDetection, copyPastePrevention, rightClickBlocked, screenshotBlocked, devtoolsBlocked]);
 
   // Cleanup warning timer on unmount
   useEffect(() => {
