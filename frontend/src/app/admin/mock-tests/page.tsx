@@ -56,6 +56,16 @@ interface MockTest {
   price: number;
   status: string;
   created_at: string;
+  anti_cheat_enabled?: boolean;
+  fullscreen_required?: boolean;
+  tab_switch_detection?: boolean;
+  copy_paste_prevention?: boolean;
+  right_click_blocked?: boolean;
+  screenshot_blocked?: boolean;
+  devtools_blocked?: boolean;
+  max_fullscreen_violations?: number;
+  max_tab_switch_violations?: number;
+  max_copy_paste_violations?: number;
 }
 
 const emptyForm = {
@@ -229,16 +239,16 @@ export default function AdminMockTestsPage() {
       price: item.price || 0,
       status: item.status || "draft",
       // Anti-cheat
-      anti_cheat_enabled: (item as Record<string, unknown>).anti_cheat_enabled !== false,
-      fullscreen_required: (item as Record<string, unknown>).fullscreen_required !== false,
-      tab_switch_detection: (item as Record<string, unknown>).tab_switch_detection !== false,
-      copy_paste_prevention: (item as Record<string, unknown>).copy_paste_prevention !== false,
-      right_click_blocked: (item as Record<string, unknown>).right_click_blocked !== false,
-      screenshot_blocked: (item as Record<string, unknown>).screenshot_blocked !== false,
-      devtools_blocked: (item as Record<string, unknown>).devtools_blocked !== false,
-      max_fullscreen_violations: ((item as Record<string, unknown>).max_fullscreen_violations as number) || 5,
-      max_tab_switch_violations: ((item as Record<string, unknown>).max_tab_switch_violations as number) || 5,
-      max_copy_paste_violations: ((item as Record<string, unknown>).max_copy_paste_violations as number) || 4,
+      anti_cheat_enabled: item.anti_cheat_enabled !== false,
+      fullscreen_required: item.fullscreen_required !== false,
+      tab_switch_detection: item.tab_switch_detection !== false,
+      copy_paste_prevention: item.copy_paste_prevention !== false,
+      right_click_blocked: item.right_click_blocked !== false,
+      screenshot_blocked: item.screenshot_blocked !== false,
+      devtools_blocked: item.devtools_blocked !== false,
+      max_fullscreen_violations: item.max_fullscreen_violations || 5,
+      max_tab_switch_violations: item.max_tab_switch_violations || 5,
+      max_copy_paste_violations: item.max_copy_paste_violations || 4,
     });
   };
 
