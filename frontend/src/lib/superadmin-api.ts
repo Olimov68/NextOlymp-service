@@ -25,8 +25,11 @@ saApi.interceptors.response.use(
   }
 );
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ApiData = Record<string, any>;
+
 // Helper
-const get = (url: string, params?: Record<string, unknown>) =>
+const get = (url: string, params?: ApiData) =>
   saApi.get(`/superadmin${url}`, { params }).then((r) => r.data);
 const post = (url: string, data?: unknown) =>
   saApi.post(`/superadmin${url}`, data).then((r) => r.data);
@@ -45,10 +48,10 @@ export const getDashboard = () => get("/dashboard");
 // ============================================
 // Admins
 // ============================================
-export const getAdmins = (params?: Record<string, unknown>) => get("/admins", params);
+export const getAdmins = (params?: ApiData) => get("/admins", params);
 export const getAdmin = (id: number) => get(`/admins/${id}`);
-export const createAdmin = (data: Record<string, unknown>) => post("/admins", data);
-export const updateAdmin = (id: number, data: Record<string, unknown>) => put(`/admins/${id}`, data);
+export const createAdmin = (data: ApiData) => post("/admins", data);
+export const updateAdmin = (id: number, data: ApiData) => put(`/admins/${id}`, data);
 export const deleteAdmin = (id: number) => del(`/admins/${id}`);
 export const blockAdmin = (id: number) => patch(`/admins/${id}/block`);
 export const unblockAdmin = (id: number) => patch(`/admins/${id}/unblock`);
@@ -56,7 +59,7 @@ export const unblockAdmin = (id: number) => patch(`/admins/${id}/unblock`);
 // ============================================
 // Users
 // ============================================
-export const getUsers = (params?: Record<string, unknown>) => get("/users", params);
+export const getUsers = (params?: ApiData) => get("/users", params);
 export const getUser = (id: number) => get(`/users/${id}`);
 export const createUser = (data: { username: string; password: string }) => post("/users", data);
 export const blockUser = (id: number) => patch(`/users/${id}/block`);
@@ -67,14 +70,14 @@ export const deleteUser = (id: number) => del(`/users/${id}`);
 // ============================================
 // Olympiads
 // ============================================
-export const getOlympiads = (params?: Record<string, unknown>) => get("/olympiads", params);
+export const getOlympiads = (params?: ApiData) => get("/olympiads", params);
 export const getOlympiad = (id: number) => get(`/olympiads/${id}`);
-export const createOlympiad = (data: Record<string, unknown>) => post("/olympiads", data);
-export const updateOlympiad = (id: number, data: Record<string, unknown>) => put(`/olympiads/${id}`, data);
+export const createOlympiad = (data: ApiData) => post("/olympiads", data);
+export const updateOlympiad = (id: number, data: ApiData) => put(`/olympiads/${id}`, data);
 export const deleteOlympiad = (id: number) => del(`/olympiads/${id}`);
-export const getOlympiadRegistrations = (id: number, params?: Record<string, unknown>) => get(`/olympiads/${id}/registrations`, params);
-export const getOlympiadParticipants = (id: number, params?: Record<string, unknown>) => get(`/olympiads/${id}/participants`, params);
-export const getOlympiadResults = (id: number, params?: Record<string, unknown>) => get(`/olympiads/${id}/results`, params);
+export const getOlympiadRegistrations = (id: number, params?: ApiData) => get(`/olympiads/${id}/registrations`, params);
+export const getOlympiadParticipants = (id: number, params?: ApiData) => get(`/olympiads/${id}/participants`, params);
+export const getOlympiadResults = (id: number, params?: ApiData) => get(`/olympiads/${id}/results`, params);
 export const approveOlympiadResult = (olympiadId: number, resultId: number) => post(`/olympiads/${olympiadId}/results/${resultId}/approve`);
 export const duplicateOlympiad = (id: number) => post(`/olympiads/${id}/duplicate`);
 export const publishOlympiad = (id: number) => patch(`/olympiads/${id}/publish`);
@@ -84,14 +87,14 @@ export const toggleOlympiadRegistration = (id: number) => patch(`/olympiads/${id
 // ============================================
 // Mock Tests
 // ============================================
-export const getMockTests = (params?: Record<string, unknown>) => get("/mock-tests", params);
+export const getMockTests = (params?: ApiData) => get("/mock-tests", params);
 export const getMockTest = (id: number) => get(`/mock-tests/${id}`);
-export const createMockTest = (data: Record<string, unknown>) => post("/mock-tests", data);
-export const updateMockTest = (id: number, data: Record<string, unknown>) => put(`/mock-tests/${id}`, data);
+export const createMockTest = (data: ApiData) => post("/mock-tests", data);
+export const updateMockTest = (id: number, data: ApiData) => put(`/mock-tests/${id}`, data);
 export const deleteMockTest = (id: number) => del(`/mock-tests/${id}`);
-export const getMockTestRegistrations = (id: number, params?: Record<string, unknown>) => get(`/mock-tests/${id}/registrations`, params);
-export const getMockTestParticipants = (id: number, params?: Record<string, unknown>) => get(`/mock-tests/${id}/participants`, params);
-export const getMockTestResults = (id: number, params?: Record<string, unknown>) => get(`/mock-tests/${id}/results`, params);
+export const getMockTestRegistrations = (id: number, params?: ApiData) => get(`/mock-tests/${id}/registrations`, params);
+export const getMockTestParticipants = (id: number, params?: ApiData) => get(`/mock-tests/${id}/participants`, params);
+export const getMockTestResults = (id: number, params?: ApiData) => get(`/mock-tests/${id}/results`, params);
 export const approveMockTestResult = (mockTestId: number, resultId: number) => post(`/mock-tests/${mockTestId}/results/${resultId}/approve`);
 export const duplicateMockTest = (id: number) => post(`/mock-tests/${id}/duplicate`);
 export const publishMockTest = (id: number) => patch(`/mock-tests/${id}/publish`);
@@ -100,38 +103,38 @@ export const unpublishMockTest = (id: number) => patch(`/mock-tests/${id}/unpubl
 // ============================================
 // Questions
 // ============================================
-export const getQuestions = (params?: Record<string, unknown>) => get("/questions", params);
+export const getQuestions = (params?: ApiData) => get("/questions", params);
 export const getQuestion = (id: number) => get(`/questions/${id}`);
 export const getQuestionsBySource = (params: { source_type: string; source_id: number }) =>
-  get("/questions/by-source", params as unknown as Record<string, unknown>);
-export const createQuestion = (data: Record<string, unknown>) => post("/questions", data);
-export const bulkCreateQuestions = (data: { questions: Record<string, unknown>[] }) => post("/questions/bulk", data);
-export const updateQuestion = (id: number, data: Record<string, unknown>) => put(`/questions/${id}`, data);
+  get("/questions/by-source", params);
+export const createQuestion = (data: ApiData) => post("/questions", data);
+export const bulkCreateQuestions = (data: { questions: ApiData[] }) => post("/questions/bulk", data);
+export const updateQuestion = (id: number, data: ApiData) => put(`/questions/${id}`, data);
 export const deleteQuestion = (id: number) => del(`/questions/${id}`);
 
 // ============================================
 // Results
 // ============================================
-export const getResults = (params?: Record<string, unknown>) => get("/results", params);
+export const getResults = (params?: ApiData) => get("/results", params);
 export const getResult = (id: number, type: string) => get(`/results/${id}`, { type });
 export const getOlympiadRanking = (olympiadId: number) => get(`/results/olympiad/${olympiadId}/ranking`);
 
 // ============================================
 // News
 // ============================================
-export const getNewsList = (params?: Record<string, unknown>) => get("/news", params);
+export const getNewsList = (params?: ApiData) => get("/news", params);
 export const getNewsItem = (id: number) => get(`/news/${id}`);
-export const createNews = (data: Record<string, unknown>) => post("/news", data);
-export const updateNews = (id: number, data: Record<string, unknown>) => put(`/news/${id}`, data);
+export const createNews = (data: ApiData) => post("/news", data);
+export const updateNews = (id: number, data: ApiData) => put(`/news/${id}`, data);
 export const deleteNews = (id: number) => del(`/news/${id}`);
 
 // ============================================
 // Certificates
 // ============================================
-export const getCertificates = (params?: Record<string, unknown>) => get("/certificates", params);
+export const getCertificates = (params?: ApiData) => get("/certificates", params);
 export const getCertificate = (id: number) => get(`/certificates/${id}`);
-export const createCertificate = (data: Record<string, unknown>) => post("/certificates", data);
-export const updateCertificate = (id: number, data: Record<string, unknown>) => put(`/certificates/${id}`, data);
+export const createCertificate = (data: ApiData) => post("/certificates", data);
+export const updateCertificate = (id: number, data: ApiData) => put(`/certificates/${id}`, data);
 export const regenerateCertificate = (id: number) => post(`/certificates/${id}/regenerate`);
 export const revokeCertificate = (id: number) => post(`/certificates/${id}/revoke`);
 export const downloadCertificatePDF = async (id: number) => {
@@ -146,30 +149,30 @@ export const downloadCertificatePDF = async (id: number) => {
 };
 
 // Certificate Templates
-export const getCertTemplates = (params?: Record<string, unknown>) => get("/certificate-templates", params);
+export const getCertTemplates = (params?: ApiData) => get("/certificate-templates", params);
 export const getCertTemplate = (id: number) => get(`/certificate-templates/${id}`);
-export const createCertTemplate = (data: Record<string, unknown>) => post("/certificate-templates", data);
-export const updateCertTemplate = (id: number, data: Record<string, unknown>) => put(`/certificate-templates/${id}`, data);
+export const createCertTemplate = (data: ApiData) => post("/certificate-templates", data);
+export const updateCertTemplate = (id: number, data: ApiData) => put(`/certificate-templates/${id}`, data);
 export const deleteCertTemplate = (id: number) => del(`/certificate-templates/${id}`);
 
 // ============================================
 // Payments
 // ============================================
-export const getPayments = (params?: Record<string, unknown>) => get("/payments", params);
+export const getPayments = (params?: ApiData) => get("/payments", params);
 export const getPayment = (id: number) => get(`/payments/${id}`);
 export const getPaymentStats = () => get("/payments/stats");
-export const updatePaymentStatus = (id: number, data: Record<string, unknown>) => patch(`/payments/${id}/status`, data);
+export const updatePaymentStatus = (id: number, data: ApiData) => patch(`/payments/${id}/status`, data);
 export const approvePayment = (id: number) => post(`/payments/${id}/approve`);
 export const refundPayment = (id: number, data: { reason: string }) => post(`/payments/${id}/refund`, data);
-export const createManualPayment = (data: Record<string, unknown>) => post("/payments/manual", data);
+export const createManualPayment = (data: ApiData) => post("/payments/manual", data);
 
 // ============================================
 // Promo Codes (under payments)
 // ============================================
-export const getPromoCodes = (params?: Record<string, unknown>) => get("/payments/promo-codes", params);
+export const getPromoCodes = (params?: ApiData) => get("/payments/promo-codes", params);
 export const getPromoCode = (id: number) => get(`/payments/promo-codes/${id}`);
-export const createPromoCode = (data: Record<string, unknown>) => post("/payments/promo-codes", data);
-export const updatePromoCode = (id: number, data: Record<string, unknown>) => put(`/payments/promo-codes/${id}`, data);
+export const createPromoCode = (data: ApiData) => post("/payments/promo-codes", data);
+export const updatePromoCode = (id: number, data: ApiData) => put(`/payments/promo-codes/${id}`, data);
 export const deletePromoCode = (id: number) => del(`/payments/promo-codes/${id}`);
 export const togglePromoCode = (id: number) => patch(`/payments/promo-codes/${id}/toggle`);
 export const getPromoCodeUsages = (id: number) => get(`/payments/promo-codes/${id}/usages`);
@@ -178,7 +181,7 @@ export const getPromoCodeStats = () => get("/payments/promo-codes/stats");
 // ============================================
 // Permissions
 // ============================================
-export const getPermissions = (params?: Record<string, unknown>) => get("/permissions", params);
+export const getPermissions = (params?: ApiData) => get("/permissions", params);
 export const seedPermissions = () => post("/permissions/seed");
 export const getStaffPermissions = (staffId: number) => get(`/permissions/staff/${staffId}`);
 export const assignPermissions = (staffId: number, data: { permission_ids: number[] }) =>
@@ -188,18 +191,18 @@ export const assignPermissions = (staffId: number, data: { permission_ids: numbe
 // Security
 // ============================================
 export const getSecuritySettings = () => get("/security/settings");
-export const updateSecuritySettings = (data: Record<string, unknown>) => put("/security/settings", data);
+export const updateSecuritySettings = (data: ApiData) => put("/security/settings", data);
 
 // ============================================
 // Audit Logs
 // ============================================
-export const getAuditLogs = (params?: Record<string, unknown>) => get("/audit-logs", params);
+export const getAuditLogs = (params?: ApiData) => get("/audit-logs", params);
 
 // ============================================
 // Settings
 // ============================================
 export const getSettings = () => get("/settings");
-export const updateSettings = (data: Record<string, unknown>) => put("/settings", data);
+export const updateSettings = (data: ApiData) => put("/settings", data);
 
 // ============================================
 // Chat Moderation
@@ -207,7 +210,7 @@ export const updateSettings = (data: Record<string, unknown>) => put("/settings"
 // ============================================
 // Verifications
 // ============================================
-export const getVerifications = (params?: Record<string, unknown>) => get("/verifications", params);
+export const getVerifications = (params?: ApiData) => get("/verifications", params);
 export const getVerification = (id: number) => get(`/verifications/${id}`);
 export const approveVerification = (id: number, data?: { note?: string }) => post(`/verifications/${id}/approve`, data);
 export const rejectVerification = (id: number, data: { reason: string }) => post(`/verifications/${id}/reject`, data);
@@ -217,7 +220,7 @@ export const rejectUserByID = (userId: number, reason: string) => post(`/verific
 // ============================================
 // Chat Moderation
 // ============================================
-export const getChatMessages = (params?: Record<string, unknown>) => get("/chat/messages", params);
+export const getChatMessages = (params?: ApiData) => get("/chat/messages", params);
 export const sendChatMessage = (content: string, replyToId?: number) => post("/chat/messages", { content, reply_to_id: replyToId || undefined });
 export const deleteChatMessage = (id: number) => del(`/chat/messages/${id}`);
 export const banChatUser = (userId: number, data: { reason?: string; type?: string; duration?: number }) =>
@@ -227,14 +230,14 @@ export const toggleChat = (data: { is_open: boolean }) => post("/chat/toggle", d
 export const getChatBans = () => get("/chat/bans");
 export const getChatOnline = () => get("/chat/online");
 export const getChatSettings = () => get("/chat/settings");
-export const updateChatSettings = (data: Record<string, unknown>) => put("/chat/settings", data);
-export const getChatModerationLogs = (params?: Record<string, unknown>) => get("/chat/moderation-logs", params);
+export const updateChatSettings = (data: ApiData) => put("/chat/settings", data);
+export const getChatModerationLogs = (params?: ApiData) => get("/chat/moderation-logs", params);
 
 // ============================================
 // Anti-Cheat Violations
 // ============================================
-export const getAntiCheatViolations = (params?: Record<string, unknown>) => get("/anticheat/violations", params);
-export const getAntiCheatStats = (params?: Record<string, unknown>) => get("/anticheat/violations/stats", params);
+export const getAntiCheatViolations = (params?: ApiData) => get("/anticheat/violations", params);
+export const getAntiCheatStats = (params?: ApiData) => get("/anticheat/violations/stats", params);
 
 // ============================================
 // Upload

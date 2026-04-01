@@ -236,10 +236,10 @@ export default function MockTestQuestionsPage() {
             is_correct: o.is_correct,
             order_num: i,
           })),
-        } as Record<string, unknown>);
+        });
         toast.success("Savol yangilandi");
       } else {
-        await createQuestion(payload as Record<string, unknown>);
+        await createQuestion(payload);
         toast.success("Savol yaratildi");
       }
       setOpen(false);

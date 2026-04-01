@@ -148,10 +148,10 @@ export default function SuperadminNewsPage() {
     setSaving(true);
     try {
       if (editItem) {
-        await updateNews(editItem.id, { ...form } as Record<string, unknown>);
+        await updateNews(editItem.id, { ...form });
         toast.success("Yangilik yangilandi");
       } else {
-        await createNews({ ...form } as Record<string, unknown>);
+        await createNews({ ...form });
         toast.success("Yangilik yaratildi");
       }
       setOpen(false);

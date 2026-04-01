@@ -74,10 +74,10 @@ export function OlympiadsSection() {
                       <BookOpen className="h-4 w-4" />
                       {t("olympiads.subject")}: {o.subject}
                     </div>
-                    {o.start_date && (
+                    {o.start_time && (
                       <div className="flex items-center gap-2">
-                        📅 {t("olympiads.date")}: {new Date(o.start_date).toLocaleDateString("uz-UZ")}
-                        {o.end_date && ` - ${new Date(o.end_date).toLocaleDateString("uz-UZ")}`}
+                        📅 {t("olympiads.date")}: {new Date(o.start_time).toLocaleDateString("uz-UZ")}
+                        {o.end_time && ` - ${new Date(o.end_time).toLocaleDateString("uz-UZ")}`}
                       </div>
                     )}
                     <div className="flex items-center gap-2">

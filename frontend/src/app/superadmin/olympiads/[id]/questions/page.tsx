@@ -212,10 +212,10 @@ export default function OlympiadQuestionsPage() {
             order_num: i,
             image_url: o.image_url || undefined,
           })),
-        } as Record<string, unknown>);
+        });
         toast.success("Savol yangilandi");
       } else {
-        await createQuestion(payload as Record<string, unknown>);
+        await createQuestion(payload);
         toast.success("Savol yaratildi");
       }
       setOpen(false);

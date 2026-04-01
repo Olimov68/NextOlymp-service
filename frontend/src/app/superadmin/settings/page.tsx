@@ -51,7 +51,7 @@ export default function SettingsPage() {
     setError("");
     setSuccess("");
     try {
-      await updateSettings(settings as unknown as Record<string, unknown>);
+      await updateSettings(settings);
       setSuccess("Sozlamalar saqlandi");
       setTimeout(() => setSuccess(""), 3000);
     } catch (e: unknown) {
