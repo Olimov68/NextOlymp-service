@@ -55,6 +55,19 @@ interface Olympiad {
   price: number;
   status: string;
   created_at: string;
+  registration_start_time?: string;
+  registration_end_time?: string;
+  max_seats?: number;
+  anti_cheat_enabled?: boolean;
+  fullscreen_required?: boolean;
+  tab_switch_detection?: boolean;
+  copy_paste_prevention?: boolean;
+  right_click_blocked?: boolean;
+  screenshot_blocked?: boolean;
+  devtools_blocked?: boolean;
+  max_fullscreen_violations?: number;
+  max_tab_switch_violations?: number;
+  max_copy_paste_violations?: number;
 }
 
 const emptyForm = {
@@ -235,34 +248,34 @@ export default function AdminOlympiadsPage() {
         const pad = (n: number) => String(n).padStart(2, "0");
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       })() : "",
-      registration_start_time: (item as Record<string, unknown>).registration_start_time ? (() => {
-        const d = new Date((item as Record<string, unknown>).registration_start_time as string);
+      registration_start_time: item.registration_start_time ? (() => {
+        const d = new Date(item.registration_start_time);
         if (isNaN(d.getTime())) return "";
         const pad = (n: number) => String(n).padStart(2, "0");
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       })() : "",
-      registration_end_time: (item as Record<string, unknown>).registration_end_time ? (() => {
-        const d = new Date((item as Record<string, unknown>).registration_end_time as string);
+      registration_end_time: item.registration_end_time ? (() => {
+        const d = new Date(item.registration_end_time);
         if (isNaN(d.getTime())) return "";
         const pad = (n: number) => String(n).padStart(2, "0");
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       })() : "",
-      max_seats: ((item as Record<string, unknown>).max_seats as number) || 0,
+      max_seats: item.max_seats || 0,
       duration_mins: item.duration_mins,
       is_paid: item.is_paid,
       price: item.price || 0,
       status: item.status,
       // Anti-cheat
-      anti_cheat_enabled: (item as Record<string, unknown>).anti_cheat_enabled !== false,
-      fullscreen_required: (item as Record<string, unknown>).fullscreen_required !== false,
-      tab_switch_detection: (item as Record<string, unknown>).tab_switch_detection !== false,
-      copy_paste_prevention: (item as Record<string, unknown>).copy_paste_prevention !== false,
-      right_click_blocked: (item as Record<string, unknown>).right_click_blocked !== false,
-      screenshot_blocked: (item as Record<string, unknown>).screenshot_blocked !== false,
-      devtools_blocked: (item as Record<string, unknown>).devtools_blocked !== false,
-      max_fullscreen_violations: ((item as Record<string, unknown>).max_fullscreen_violations as number) || 5,
-      max_tab_switch_violations: ((item as Record<string, unknown>).max_tab_switch_violations as number) || 5,
-      max_copy_paste_violations: ((item as Record<string, unknown>).max_copy_paste_violations as number) || 4,
+      anti_cheat_enabled: item.anti_cheat_enabled !== false,
+      fullscreen_required: item.fullscreen_required !== false,
+      tab_switch_detection: item.tab_switch_detection !== false,
+      copy_paste_prevention: item.copy_paste_prevention !== false,
+      right_click_blocked: item.right_click_blocked !== false,
+      screenshot_blocked: item.screenshot_blocked !== false,
+      devtools_blocked: item.devtools_blocked !== false,
+      max_fullscreen_violations: item.max_fullscreen_violations || 5,
+      max_tab_switch_violations: item.max_tab_switch_violations || 5,
+      max_copy_paste_violations: item.max_copy_paste_violations || 4,
     });
   };
 

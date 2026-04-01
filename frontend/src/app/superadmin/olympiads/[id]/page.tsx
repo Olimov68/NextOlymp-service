@@ -437,10 +437,10 @@ export default function OlympiadDetailPage() {
       };
 
       if (editQuestion) {
-        await updateQuestion(editQuestion.id, payload as Record<string, unknown>);
+        await updateQuestion(editQuestion.id, payload);
         toast.success("Savol yangilandi");
       } else {
-        await createQuestion(payload as Record<string, unknown>);
+        await createQuestion(payload);
         toast.success("Savol yaratildi");
       }
       setQuestionDialogOpen(false);
@@ -483,7 +483,7 @@ export default function OlympiadDetailPage() {
     if (!olympiad) return;
     setSettingsSaving(true);
     try {
-      await updateOlympiad(olympiad.id, settingsForm as Record<string, unknown>);
+      await updateOlympiad(olympiad.id, settingsForm);
       toast.success("Sozlamalar saqlandi");
       fetchOlympiad();
     } catch {

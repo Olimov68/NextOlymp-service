@@ -303,7 +303,7 @@ export default function ChatModerationPage() {
     if (!settings) return;
     setSettingsSaving(true);
     try {
-      await updateChatSettings(settings as unknown as Record<string, unknown>);
+      await updateChatSettings(settings);
       toast.success("Sozlamalar saqlandi");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
