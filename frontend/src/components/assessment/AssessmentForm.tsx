@@ -147,10 +147,10 @@ export default function AssessmentForm({
     };
     onSubmit({
       ...form,
-      start_time: toRFC3339(form.start_time),
-      end_time: toRFC3339(form.end_time),
-      registration_start_time: toRFC3339(form.registration_start_time),
-      registration_end_time: toRFC3339(form.registration_end_time),
+      start_time: toRFC3339(form.start_time ?? ""),
+      end_time: toRFC3339(form.end_time ?? ""),
+      registration_start_time: toRFC3339(form.registration_start_time ?? ""),
+      registration_end_time: toRFC3339(form.registration_end_time ?? ""),
     });
   };
 

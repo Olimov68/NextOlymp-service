@@ -782,49 +782,49 @@ export default function OlympiadDetailPage() {
               <SettingToggle
                 label="Savollarni aralashtirish"
                 description="Har bir foydalanuvchi uchun savollar tartibi boshqacha"
-                checked={settingsForm.shuffle_questions ?? false}
+                checked={Boolean(settingsForm.shuffle_questions ?? false)}
                 onToggle={() => setSettingsForm(s => ({ ...s, shuffle_questions: !s.shuffle_questions }))}
               />
               <SettingToggle
                 label="Javoblarni aralashtirish"
                 description="Javob variantlari tartibini o'zgartirish"
-                checked={settingsForm.shuffle_answers ?? false}
+                checked={Boolean(settingsForm.shuffle_answers ?? false)}
                 onToggle={() => setSettingsForm(s => ({ ...s, shuffle_answers: !s.shuffle_answers }))}
               />
               <SettingToggle
                 label="Avtomatik topshirish"
                 description="Vaqt tugaganda avtomatik yuboriladi"
-                checked={settingsForm.auto_submit ?? true}
+                checked={Boolean(settingsForm.auto_submit ?? true)}
                 onToggle={() => setSettingsForm(s => ({ ...s, auto_submit: !s.auto_submit }))}
               />
               <SettingToggle
                 label="Qayta topshirishga ruxsat"
                 description="Foydalanuvchi qayta urinishi mumkin"
-                checked={settingsForm.allow_retake ?? false}
+                checked={Boolean(settingsForm.allow_retake ?? false)}
                 onToggle={() => setSettingsForm(s => ({ ...s, allow_retake: !s.allow_retake }))}
               />
               <SettingToggle
                 label="Natijani darhol ko'rsatish"
                 description="Imtihon tugagandan so'ng natija ko'rinadi"
-                checked={settingsForm.show_result_immediately ?? false}
+                checked={Boolean(settingsForm.show_result_immediately ?? false)}
                 onToggle={() => setSettingsForm(s => ({ ...s, show_result_immediately: !s.show_result_immediately }))}
               />
               <SettingToggle
                 label="Sertifikat berish"
                 description="Muvaffaqiyatli ishtirokchilarga sertifikat"
-                checked={settingsForm.give_certificate ?? false}
+                checked={Boolean(settingsForm.give_certificate ?? false)}
                 onToggle={() => setSettingsForm(s => ({ ...s, give_certificate: !s.give_certificate }))}
               />
               <SettingToggle
                 label="Qo'lda tekshirish"
                 description="Natijalar qo'lda tekshiriladi"
-                checked={settingsForm.manual_review ?? false}
+                checked={Boolean(settingsForm.manual_review ?? false)}
                 onToggle={() => setSettingsForm(s => ({ ...s, manual_review: !s.manual_review }))}
               />
               <SettingToggle
                 label="Admin tasdiqlashi"
                 description="Ro'yxatdan o'tish admin tomonidan tasdiqlanadi"
-                checked={settingsForm.admin_approval ?? false}
+                checked={Boolean(settingsForm.admin_approval ?? false)}
                 onToggle={() => setSettingsForm(s => ({ ...s, admin_approval: !s.admin_approval }))}
               />
             </div>
