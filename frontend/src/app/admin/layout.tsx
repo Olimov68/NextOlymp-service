@@ -47,15 +47,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   const isLoginPage = pathname === "/admin/login";
 
-  // Redirect if not authenticated or if superadmin
+  // Redirect if not authenticated
   useEffect(() => {
     if (isLoginPage || loading) return;
     if (!staff) {
       router.push("/admin/login");
-      return;
-    }
-    if (staff.role === "superadmin") {
-      router.push("/superadmin");
       return;
     }
   }, [staff, loading, router, isLoginPage]);
