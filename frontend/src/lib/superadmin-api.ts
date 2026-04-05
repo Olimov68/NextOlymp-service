@@ -19,7 +19,9 @@ saApi.interceptors.response.use(
       localStorage.removeItem("panel_access_token");
       localStorage.removeItem("panel_refresh_token");
       localStorage.removeItem("panel_staff");
-      window.location.href = "/admin/login";
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/admin/login";
+      }
     }
     return Promise.reject(err);
   }
