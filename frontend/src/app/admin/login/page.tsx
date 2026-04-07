@@ -28,12 +28,8 @@ export default function AdminLoginPage() {
       localStorage.setItem("panel_refresh_token", data.tokens.refresh_token);
       localStorage.setItem("panel_staff", JSON.stringify(data.staff));
 
-      // Role bo'yicha yo'naltirish
-      if (data.staff.role === "superadmin") {
-        router.push("/superadmin");
-      } else {
-        router.push("/admin");
-      }
+      // Hammasi admin panelga
+      router.push("/admin");
     } catch {
       setError("Username yoki parol noto'g'ri");
     } finally {

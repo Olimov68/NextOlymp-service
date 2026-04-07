@@ -41,21 +41,27 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const token = localStorage.getItem("panel_access_token");
     const staffStr = localStorage.getItem("panel_staff");
     if (!token || !staffStr) {
-      router.push("/admin/login");
+      // No token - redirect to login, but don't loop
+      if (!window.location.pathname.includes("/login")) {
+        router.push("/admin/login");
+      }
       return;
     }
     try {
       const parsed = JSON.parse(staffStr) as PanelStaff;
-      if (parsed.role !== "superadmin") {
-        router.push("/admin");
-        return;
-      }
       setStaff(parsed);
     } catch {
-      router.push("/admin/login");
+      // Invalid data - clear and redirect
+      localStorage.removeItem("panel_access_token");
+      localStorage.removeItem("panel_refresh_token");
+      localStorage.removeItem("panel_staff");
+      if (!window.location.pathname.includes("/login")) {
+        router.push("/admin/login");
+      }
     }
   }, [router]);
 
