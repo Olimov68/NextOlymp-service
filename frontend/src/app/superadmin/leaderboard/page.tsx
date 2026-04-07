@@ -12,7 +12,7 @@ import { regions as allRegions } from "@/lib/regions";
 
 const LIMIT = 20;
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "").replace("/api/v1", "");
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://nextolymp.uz/api/v1").replace("/api/v1", "");
 
 function rankBadge(rank: number) {
   if (rank === 1) return <Crown className="h-4 w-4 text-amber-400" />;
