@@ -38,6 +38,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Install curl for healthcheck (before switching to non-root user)
+RUN apk add --no-cache curl
+
 # Non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -54,7 +57,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-RUN apk add --no-cache curl
 HEALTHCHECK --interval=30s --timeout=10s --retries=5 --start-period=30s \
     CMD curl -f http://localhost:3000/ || exit 1
 
