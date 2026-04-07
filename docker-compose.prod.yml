@@ -72,6 +72,8 @@ services:
   # Go Backend API
   # ============================================
   backend:
+    image: ${DOCKER_USERNAME:-nextolymp}/nextolymp-backend:${IMAGE_TAG:-latest}
+    pull_policy: always
     build:
       context: ./go-backend
       dockerfile: Dockerfile
@@ -130,6 +132,8 @@ services:
   # Next.js Frontend
   # ============================================
   frontend:
+    image: ${DOCKER_USERNAME:-nextolymp}/nextolymp-frontend:${IMAGE_TAG:-latest}
+    pull_policy: always
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -145,31 +149,6 @@ services:
       start_period: 30s
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nextolymp.uz/api/v1}
-    networks:
-      - nextolymp
-
-  # ============================================
-  # Telegram Bot
-  # ============================================
-  telegrambot:
-    build:
-      context: ./codebot-main
-      dockerfile: Dockerfile
-    container_name: nextolymp-telegrambot
-    restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
-    environment:
-      BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      BACKEND_WEBHOOK_URL: http://backend:8080/api/v1/telegram/webhook
-      CODE_TTL_MINUTES: "10"
-    healthcheck:
-      test: ["CMD-SHELL", "echo ok"]
-      interval: 60s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
     networks:
       - nextolymp
 
