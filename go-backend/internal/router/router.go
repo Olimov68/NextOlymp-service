@@ -83,6 +83,7 @@ func Setup(cfg *config.Config, db *gorm.DB, redisClient *cache.RedisClient) *gin
 		r.Use(middleware.CORS())
 	}
 
+	log.Printf("Static /uploads serving from: %s", cfg.Upload.Dir)
 	r.Static("/uploads", cfg.Upload.Dir)
 
 	// JWT managers

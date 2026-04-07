@@ -16,11 +16,12 @@ type CreateRequest struct {
 	EndTime        *string  `json:"end_time"`
 	DurationMins   int      `json:"duration_minutes" binding:"required,min=1"`
 	TotalQuestions int      `json:"total_questions"`
-	Rules          string   `json:"rules"`
-	ScoringType    string   `json:"scoring_type"`
-	Status         string   `json:"status"`
-	IsPaid         bool     `json:"is_paid"`
-	Price          *float64 `json:"price"`
+	Rules              string   `json:"rules"`
+	ScoringType        string   `json:"scoring_type"`
+	ScalingFormulaType string   `json:"scaling_formula_type"`
+	Status             string   `json:"status"`
+	IsPaid             bool     `json:"is_paid"`
+	Price              *float64 `json:"price"`
 
 	// Media
 	BannerURL string `json:"banner_url"`
@@ -43,20 +44,21 @@ type CreateRequest struct {
 }
 
 type UpdateRequest struct {
-	Title          *string  `json:"title"`
-	Description    *string  `json:"description"`
-	Subject        *string  `json:"subject"`
-	Grade          *int     `json:"grade"`
-	Language       *string  `json:"language"`
-	StartTime      *string  `json:"start_time"`
-	EndTime        *string  `json:"end_time"`
-	DurationMins   *int     `json:"duration_minutes"`
-	TotalQuestions *int     `json:"total_questions"`
-	Rules          *string  `json:"rules"`
-	ScoringType    *string  `json:"scoring_type"`
-	Status         *string  `json:"status"`
-	IsPaid         *bool    `json:"is_paid"`
-	Price          *float64 `json:"price"`
+	Title              *string  `json:"title"`
+	Description        *string  `json:"description"`
+	Subject            *string  `json:"subject"`
+	Grade              *int     `json:"grade"`
+	Language           *string  `json:"language"`
+	StartTime          *string  `json:"start_time"`
+	EndTime            *string  `json:"end_time"`
+	DurationMins       *int     `json:"duration_minutes"`
+	TotalQuestions    *int      `json:"total_questions"`
+	Rules              *string  `json:"rules"`
+	ScoringType        *string  `json:"scoring_type"`
+	ScalingFormulaType *string  `json:"scaling_formula_type"`
+	Status             *string  `json:"status"`
+	IsPaid             *bool    `json:"is_paid"`
+	Price              *float64 `json:"price"`
 
 	// Media
 	BannerURL *string `json:"banner_url"`
@@ -101,12 +103,13 @@ type MockTestResponse struct {
 	EndTime        *time.Time `json:"end_time,omitempty"`
 	DurationMins   int        `json:"duration_minutes"`
 	TotalQuestions int        `json:"total_questions"`
-	Rules          string     `json:"rules"`
-	ScoringType    string     `json:"scoring_type"`
-	Status         string     `json:"status"`
-	IsPaid         bool       `json:"is_paid"`
-	Price          *float64   `json:"price,omitempty"`
-	CreatedByID    *uint      `json:"created_by_id,omitempty"`
+	Rules              string   `json:"rules"`
+	ScoringType        string   `json:"scoring_type"`
+	ScalingFormulaType string   `json:"scaling_formula_type"`
+	Status             string   `json:"status"`
+	IsPaid             bool     `json:"is_paid"`
+	Price              *float64 `json:"price,omitempty"`
+	CreatedByID        *uint    `json:"created_by_id,omitempty"`
 
 	// Media
 	BannerURL string `json:"banner_url"`
@@ -228,6 +231,7 @@ func ToResponse(m *models.MockTest) MockTestResponse {
 		TotalQuestions:        m.TotalQuestions,
 		Rules:                 m.Rules,
 		ScoringType:           m.ScoringType,
+		ScalingFormulaType:    m.ScalingFormulaType,
 		Status:                string(m.Status),
 		IsPaid:                m.IsPaid,
 		Price:                 m.Price,

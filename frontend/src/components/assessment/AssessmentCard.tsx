@@ -76,8 +76,8 @@ export default function AssessmentCard({ assessment, examType }: AssessmentCardP
       </h3>
       <p className="text-sm text-muted-foreground mb-1">{assessment.subject}</p>
 
-      {/* Grade badge */}
-      {assessment.grade > 0 && (
+      {/* Grade badge — faqat olimpiadalar uchun (mock test hamma uchun ochiq) */}
+      {examType === "olympiad" && assessment.grade > 0 && (
         <Badge variant="outline" className="w-fit text-xs mb-3">
           {assessment.grade}-sinf
         </Badge>

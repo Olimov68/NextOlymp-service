@@ -41,9 +41,13 @@ func (s *Service) Create(req *CreateRequest, staffID uint) (*models.MockTest, er
 	if req.Language != "" {
 		lang = req.Language
 	}
-	scoring := "standard"
+	scoring := "simple"
 	if req.ScoringType != "" {
 		scoring = req.ScoringType
+	}
+	scaling := "none"
+	if req.ScalingFormulaType != "" {
+		scaling = req.ScalingFormulaType
 	}
 
 	m := &models.MockTest{
@@ -57,6 +61,7 @@ func (s *Service) Create(req *CreateRequest, staffID uint) (*models.MockTest, er
 		TotalQuestions:        req.TotalQuestions,
 		Rules:                 req.Rules,
 		ScoringType:           scoring,
+		ScalingFormulaType:    scaling,
 		Status:                status,
 		IsPaid:                req.IsPaid,
 		Price:                 req.Price,
@@ -130,6 +135,9 @@ func (s *Service) Update(id uint, req *UpdateRequest) (*models.MockTest, error) 
 	}
 	if req.ScoringType != nil {
 		fields["scoring_type"] = *req.ScoringType
+	}
+	if req.ScalingFormulaType != nil {
+		fields["scaling_formula_type"] = *req.ScalingFormulaType
 	}
 	if req.Status != nil {
 		fields["status"] = *req.Status

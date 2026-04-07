@@ -34,6 +34,35 @@ func NewHandler(db *gorm.DB, hub *Hub) *Handler {
 	return &Handler{db: db, hub: hub}
 }
 
+// systemAdminUsername — admin xabarlarining "user_id" FK constraint'ini qoniqtirish uchun
+// barcha admin xabarlari shu maxsus user'ga tegishli bo'ladi. Display qatlamida
+// `Type == "admin"` va `StaffID != nil` bo'lsa, username/role staff'dan olinadi.
+const systemAdminUsername = "__system_admin__"
+
+// getOrCreateSystemAdminUser — bir martalik chaqirilib, system admin user'ni qaytaradi.
+// Ushbu user faqat chat_messages.user_id FK ni qoniqtirish uchun ishlatiladi.
+func (h *Handler) getOrCreateSystemAdminUser() (*models.User, error) {
+	var u models.User
+	err := h.db.Where("username = ?", systemAdminUsername).First(&u).Error
+	if err == nil {
+		return &u, nil
+	}
+	if err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	u = models.User{
+		Username:           systemAdminUsername,
+		FullName:           "System Admin",
+		Status:             models.UserStatusActive,
+		IsProfileCompleted: true,
+		IsVerified:         true,
+	}
+	if err := h.db.Create(&u).Error; err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
 // GetHub — hub ni olish
 func (h *Handler) GetHub() *Hub {
 	return h.hub
@@ -214,6 +243,7 @@ func (h *Handler) GetMessages(c *gin.Context) {
 		Preload("User", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, status")
 		}).
+		Preload("Staff").
 		Order("created_at DESC").
 		Limit(limit)
 
@@ -240,12 +270,33 @@ func (h *Handler) GetMessages(c *gin.Context) {
 		PhotoURL  string     `json:"photo_url"`
 		Content   string     `json:"content"`
 		Type      string     `json:"type"`
+		Role      string     `json:"role,omitempty"`
 		ReplyTo   *ReplyInfo `json:"reply_to,omitempty"`
 		CreatedAt string     `json:"created_at"`
 	}
 
 	var result []MessageResponse
 	for _, msg := range messages {
+		// Admin xabari bo'lsa, username/role/photo staff'dan olinadi
+		if msg.Type == "admin" && msg.Staff != nil {
+			adminName := msg.Staff.FullName
+			if adminName == "" {
+				adminName = msg.Staff.Username
+			}
+			result = append(result, MessageResponse{
+				ID:        msg.ID,
+				UserID:    *msg.StaffID, // frontend differentsiatsiyasi uchun staff ID
+				Username:  adminName,
+				PhotoURL:  "",
+				Content:   msg.Content,
+				Type:      "admin",
+				Role:      string(msg.Staff.Role),
+				CreatedAt: msg.CreatedAt.Format(time.RFC3339),
+			})
+			continue
+		}
+
+		// Oddiy foydalanuvchi xabari
 		var profile models.Profile
 		h.db.Where("user_id = ?", msg.UserID).First(&profile)
 
@@ -260,12 +311,20 @@ func (h *Handler) GetMessages(c *gin.Context) {
 		var replyInfo *ReplyInfo
 		if msg.ReplyToID != nil && *msg.ReplyToID > 0 {
 			var replyMsg models.ChatMessage
-			if h.db.Preload("User").First(&replyMsg, *msg.ReplyToID).Error == nil {
-				var replyProfile models.Profile
-				h.db.Where("user_id = ?", replyMsg.UserID).First(&replyProfile)
-				rUsername := replyMsg.User.Username
-				if replyProfile.FirstName != "" {
-					rUsername = replyProfile.FirstName
+			if h.db.Preload("User").Preload("Staff").First(&replyMsg, *msg.ReplyToID).Error == nil {
+				var rUsername string
+				if replyMsg.Type == "admin" && replyMsg.Staff != nil {
+					rUsername = replyMsg.Staff.FullName
+					if rUsername == "" {
+						rUsername = replyMsg.Staff.Username
+					}
+				} else {
+					var replyProfile models.Profile
+					h.db.Where("user_id = ?", replyMsg.UserID).First(&replyProfile)
+					rUsername = replyMsg.User.Username
+					if replyProfile.FirstName != "" {
+						rUsername = replyProfile.FirstName
+					}
 				}
 				rContent := replyMsg.Content
 				if len(rContent) > 100 {
@@ -653,14 +712,24 @@ func (h *Handler) AdminSendMessage(c *gin.Context) {
 		return
 	}
 
-	// DB ga saqlash
+	// Admin xabari user_id FK ni qoniqtirish uchun "system admin" user'iga tegishli bo'ladi.
+	sysUser, err := h.getOrCreateSystemAdminUser()
+	if err != nil {
+		log.Printf("[Chat] system admin user error: %v", err)
+		response.Error(c, http.StatusInternalServerError, "Xabar saqlanmadi", nil)
+		return
+	}
+
+	staffIDPtr := sid
 	chatMsg := models.ChatMessage{
-		UserID:    sid,
+		UserID:    sysUser.ID,
+		StaffID:   &staffIDPtr,
 		Content:   content,
 		Type:      "admin",
 		ReplyToID: body.ReplyToID,
 	}
 	if err := h.db.Create(&chatMsg).Error; err != nil {
+		log.Printf("[Chat] save admin message error: %v", err)
 		response.Error(c, http.StatusInternalServerError, "Xabar saqlanmadi", nil)
 		return
 	}

@@ -26,14 +26,6 @@ const paidOptions = [
   { value: "paid", label: "Pullik" },
 ];
 
-const gradeOptions = [
-  { value: "", label: "Barcha sinflar" },
-  ...Array.from({ length: 7 }, (_, i) => ({
-    value: String(i + 5),
-    label: `${i + 5}-sinf`,
-  })),
-];
-
 const languageOptions = [
   { value: "", label: "Barcha tillar" },
   { value: "uz", label: "O\u2018zbek" },
@@ -134,7 +126,6 @@ export default function MockTestsListPage() {
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
   const [paidFilter, setPaidFilter] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("");
   const [languageFilter, setLanguageFilter] = useState("");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 12;
@@ -158,11 +149,10 @@ export default function MockTestsListPage() {
       if (subjectFilter && m.subject !== subjectFilter) return false;
       if (paidFilter === "free" && !isFree(m)) return false;
       if (paidFilter === "paid" && isFree(m)) return false;
-      if (gradeFilter && m.grade !== Number(gradeFilter)) return false;
       if (languageFilter && m.language !== languageFilter) return false;
       return true;
     });
-  }, [mockTests, search, subjectFilter, paidFilter, gradeFilter, languageFilter]);
+  }, [mockTests, search, subjectFilter, paidFilter, languageFilter]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = useMemo(() => {
@@ -170,7 +160,7 @@ export default function MockTestsListPage() {
     return filtered.slice(start, start + PAGE_SIZE);
   }, [filtered, page]);
 
-  useMemo(() => { setPage(1); }, [search, subjectFilter, paidFilter, gradeFilter, languageFilter]);
+  useMemo(() => { setPage(1); }, [search, subjectFilter, paidFilter, languageFilter]);
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -210,12 +200,6 @@ export default function MockTestsListPage() {
         <select value={paidFilter} onChange={(e) => setPaidFilter(e.target.value)} className={selectClasses}>
           {paidOptions.map((p) => (
             <option key={p.value} value={p.value}>{p.label}</option>
-          ))}
-        </select>
-
-        <select value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)} className={selectClasses}>
-          {gradeOptions.map((g) => (
-            <option key={g.value} value={g.value}>{g.label}</option>
           ))}
         </select>
 

@@ -6,13 +6,20 @@ import (
 	"gorm.io/gorm"
 )
 
-// ChatMessage — chat xabari
+// ChatMessage — chat xabari.
+//
+// Eslatma: admin/superadmin xabarlari (Type == "admin") uchun StaffID to'ldiriladi
+// (FK -> staff_user). Bu holatda UserID maxsus "system admin" foydalanuvchining
+// ID'siga teng bo'ladi (FK constraint'ni qoniqtirish uchun). Display qatlamida
+// `Type == "admin"` bo'lsa, username/role/photo staff'dan olinadi.
 type ChatMessage struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
 	UserID    uint           `gorm:"index;not null" json:"user_id"`
+	StaffID   *uint          `gorm:"index" json:"staff_id,omitempty"`
 	RoomID    uint           `gorm:"index;default:1" json:"room_id"`
 	ReplyToID *uint          `gorm:"index" json:"reply_to_id,omitempty"`
 	User      User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Staff     *StaffUser     `gorm:"foreignKey:StaffID" json:"staff,omitempty"`
 	Content   string         `gorm:"type:text;not null" json:"content"`
 	Type      string         `gorm:"type:varchar(20);default:'text'" json:"type"` // text, system, admin
 	IsDeleted bool           `gorm:"default:false" json:"is_deleted"`

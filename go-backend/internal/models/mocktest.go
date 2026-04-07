@@ -14,9 +14,11 @@ const (
 )
 
 const (
+	MockTestRegStatusPending    MockTestRegistrationStatus = "pending_approval" // admin tasdig'ini kutmoqda
 	MockTestRegStatusRegistered MockTestRegistrationStatus = "registered"
 	MockTestRegStatusCompleted  MockTestRegistrationStatus = "completed"
 	MockTestRegStatusCancelled  MockTestRegistrationStatus = "cancelled"
+	MockTestRegStatusRejected   MockTestRegistrationStatus = "rejected"
 )
 
 type MockTest struct {

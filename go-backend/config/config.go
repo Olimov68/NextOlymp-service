@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -142,7 +143,7 @@ func Load() (*Config, error) {
 			RefreshExpiryHours: refreshExpiry,
 		},
 		Upload: UploadConfig{
-			Dir:       getEnv("UPLOAD_DIR", "./uploads"),
+			Dir:       resolveUploadDir(getEnv("UPLOAD_DIR", "./uploads")),
 			MaxSizeMB: maxSize,
 		},
 		Telegram: TelegramConfig{
@@ -182,4 +183,17 @@ func getEnv(key, fallback string) string {
 		return val
 	}
 	return fallback
+}
+
+// resolveUploadDir converts relative upload paths to absolute paths so that
+// upload writes and static serving stay consistent regardless of cwd.
+func resolveUploadDir(dir string) string {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir
+	}
+	if err := os.MkdirAll(abs, 0o755); err != nil {
+		return abs
+	}
+	return abs
 }

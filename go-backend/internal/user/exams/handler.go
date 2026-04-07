@@ -11,17 +11,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nextolympservice/go-backend/internal/models"
 	"github.com/nextolympservice/go-backend/internal/shared/assessment"
+	"github.com/nextolympservice/go-backend/internal/shared/xp"
 	"github.com/nextolympservice/go-backend/internal/user/notifications"
 	"github.com/nextolympservice/go-backend/pkg/response"
 	"gorm.io/gorm"
 )
 
 type Handler struct {
-	db *gorm.DB
+	db        *gorm.DB
+	xpService *xp.Service
 }
 
 func NewHandler(db *gorm.DB) *Handler {
-	return &Handler{db: db}
+	return &Handler{db: db, xpService: xp.New(db)}
 }
 
 // ============================================
@@ -285,6 +287,17 @@ func (h *Handler) GetMockAttemptResult(c *gin.Context) {
 
 	if attempt.Status == "in_progress" {
 		response.Error(c, http.StatusBadRequest, "Test hali yakunlanmagan")
+		return
+	}
+
+	// ManualReview tufayli pending bo'lgan attempt natijalari foydalanuvchiga ko'rsatilmaydi
+	if attempt.Status == "pending_review" {
+		response.Success(c, http.StatusOK, "Natija tasdiqlanmoqda", gin.H{
+			"id":          attempt.ID,
+			"status":      "pending_review",
+			"message":     "Natijangiz admin tomonidan tekshirilmoqda. Tasdiqlangandan so'ng ko'rsatiladi.",
+			"finished_at": attempt.FinishedAt,
+		})
 		return
 	}
 
@@ -616,6 +629,17 @@ func (h *Handler) GetOlympiadAttemptResult(c *gin.Context) {
 		return
 	}
 
+	// ManualReview tufayli pending bo'lgan natija foydalanuvchiga ko'rsatilmaydi
+	if attempt.Status == "pending_review" {
+		response.Success(c, http.StatusOK, "Natija tasdiqlanmoqda", gin.H{
+			"id":          attempt.ID,
+			"status":      "pending_review",
+			"message":     "Natijangiz admin tomonidan tekshirilmoqda. Tasdiqlangandan so'ng ko'rsatiladi.",
+			"finished_at": attempt.FinishedAt,
+		})
+		return
+	}
+
 	response.Success(c, http.StatusOK, "Natija", attempt)
 }
 
@@ -676,6 +700,11 @@ func (h *Handler) finishMockAttempt(attempt *models.MockAttempt) map[string]inte
 		attempt.Status = "completed"
 	}
 
+	// ManualReview yoqilgan bo'lsa, attempt status pending_review bo'ladi
+	if mockTest.ManualReview {
+		attempt.Status = "pending_review"
+	}
+
 	attempt.ScoringType = mockTest.ScoringType
 
 	// ============================================
@@ -721,6 +750,25 @@ func (h *Handler) finishMockAttempt(attempt *models.MockAttempt) map[string]inte
 	h.db.Model(&models.MockTestRegistration{}).
 		Where("user_id = ? AND mock_test_id = ?", attempt.UserID, attempt.MockTestID).
 		Update("status", "completed")
+
+	// XP berish (faqat yakunlangan urinishlar uchun)
+	if attempt.Status == "completed" || attempt.Status == "timed_out" {
+		if award, err := h.xpService.AwardForTest(attempt.UserID, xp.AttemptInput{
+			Correct:    correct,
+			MaxScore:   int(maxScore),
+			Percentage: percentage,
+			IsOlympiad: false,
+		}); err == nil && award != nil {
+			result["xp_awarded"] = award
+		}
+	}
+
+	// Sertifikat berish (agar mock testda yoqilgan bo'lsa va attempt yakunlangan)
+	if mockTest.GiveCertificate && (attempt.Status == "completed" || attempt.Status == "timed_out") {
+		if certIssued := h.issueCertificateIfEligible(attempt.UserID, &mockTest, attempt); certIssued != nil {
+			result["certificate"] = certIssued
+		}
+	}
 
 	// Bildirishnoma
 	notifMsg := fmt.Sprintf("Siz %s testida %.1f%% natija ko'rsatdingiz", mockTest.Title, percentage)
@@ -875,12 +923,36 @@ func (h *Handler) finishOlympiadAttempt(attempt *models.OlympiadAttempt) map[str
 		attempt.Status = "completed"
 	}
 
+	// ManualReview yoqilgan bo'lsa, attempt status pending_review bo'ladi
+	if olympiad.ManualReview {
+		attempt.Status = "pending_review"
+	}
+
 	h.db.Save(attempt)
 
 	// Registration statusini yangilash
 	h.db.Model(&models.OlympiadRegistration{}).
 		Where("user_id = ? AND olympiad_id = ?", attempt.UserID, attempt.OlympiadID).
 		Update("status", "completed")
+
+	// XP berish (olimpiada uchun 2x koeffitsient)
+	var xpAwarded *xp.AwardResult
+	if attempt.Status == "completed" || attempt.Status == "timed_out" {
+		if award, err := h.xpService.AwardForTest(attempt.UserID, xp.AttemptInput{
+			Correct:    correct,
+			MaxScore:   int(maxScore),
+			Percentage: percentage,
+			IsOlympiad: true,
+		}); err == nil {
+			xpAwarded = award
+		}
+	}
+
+	// Sertifikat berish (agar olimpiadada yoqilgan bo'lsa)
+	var certIssued map[string]interface{}
+	if olympiad.GiveCertificate && (attempt.Status == "completed" || attempt.Status == "timed_out") {
+		certIssued = h.issueCertificateForOlympiad(attempt.UserID, &olympiad, attempt)
+	}
 
 	// Bildirishnoma
 	notifications.CreateNotification(h.db, attempt.UserID, "result_published",
@@ -889,7 +961,7 @@ func (h *Handler) finishOlympiadAttempt(attempt *models.OlympiadAttempt) map[str
 		fmt.Sprintf("/dashboard/results?attempt=%d", attempt.ID),
 		"olympiad", &attempt.OlympiadID)
 
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"attempt_id": attempt.ID,
 		"score":      score,
 		"max_score":  maxScore,
@@ -900,6 +972,13 @@ func (h *Handler) finishOlympiadAttempt(attempt *models.OlympiadAttempt) map[str
 		"time_taken": attempt.TimeTaken,
 		"status":     attempt.Status,
 	}
+	if xpAwarded != nil {
+		out["xp_awarded"] = xpAwarded
+	}
+	if certIssued != nil {
+		out["certificate"] = certIssued
+	}
+	return out
 }
 
 func (h *Handler) calculateTimeLeft(startedAt time.Time, durationMins int) int {

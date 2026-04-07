@@ -79,9 +79,9 @@ const emptyForm = {
   title: "",
   description: "",
   subject: "matematika",
-  grade: 0,
   language: "uz",
   scoring_type: "simple",
+  scaling_formula_type: "none",
   participation_type: "free",
   price: 0,
   duration_minutes: 60,
@@ -98,17 +98,6 @@ const subjects = [
   { value: "ingliz_tili", label: "Ingliz tili" },
   { value: "biologiya", label: "Biologiya" },
   { value: "kimyo", label: "Kimyo" },
-];
-
-const grades = [
-  { value: "0", label: "Hammasi" },
-  { value: "5", label: "5-sinf" },
-  { value: "6", label: "6-sinf" },
-  { value: "7", label: "7-sinf" },
-  { value: "8", label: "8-sinf" },
-  { value: "9", label: "9-sinf" },
-  { value: "10", label: "10-sinf" },
-  { value: "11", label: "11-sinf" },
 ];
 
 const statuses = [
@@ -160,7 +149,6 @@ export default function MockTestsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("");
   const [languageFilter, setLanguageFilter] = useState("");
   const [isPaidFilter, setIsPaidFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -183,7 +171,6 @@ export default function MockTestsPage() {
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
       if (subjectFilter) params.subject = subjectFilter;
-      if (gradeFilter) params.grade = Number(gradeFilter);
       if (languageFilter) params.language = languageFilter;
       if (isPaidFilter === "free") params.is_paid = false;
       else if (isPaidFilter === "paid") params.is_paid = true;
@@ -201,7 +188,7 @@ export default function MockTestsPage() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, statusFilter, subjectFilter, gradeFilter, languageFilter, isPaidFilter]);
+  }, [page, search, statusFilter, subjectFilter, languageFilter, isPaidFilter]);
 
   /* Actions ------------------------------------------------------- */
   const handlePublish = async (id: number) => {
@@ -253,9 +240,9 @@ export default function MockTestsPage() {
       title: item.title || "",
       description: item.description || "",
       subject: item.subject || "matematika",
-      grade: item.grade || 0,
       language: item.language || "uz",
       scoring_type: item.scoring_type || "simple",
+      scaling_formula_type: item.scaling_formula_type || "none",
       participation_type: item.is_paid ? "paid" : (item.participation_type || "free"),
       price: item.price || 0,
       duration_minutes: item.duration_minutes || 60,
@@ -270,7 +257,7 @@ export default function MockTestsPage() {
     try {
       const payload: Record<string, unknown> = {
         ...form,
-        grade: Number(form.grade) || 0,
+        grade: 0, // mock test sinf chegarasiga ega emas
         price: form.participation_type === "paid" ? Number(form.price) : 0,
         duration_minutes: Number(form.duration_minutes),
         total_questions: Number(form.total_questions),
@@ -288,7 +275,6 @@ export default function MockTestsPage() {
       setSearch("");
       setStatusFilter("");
       setSubjectFilter("");
-      setGradeFilter("");
       setLanguageFilter("");
       setIsPaidFilter("");
       await fetchData();
@@ -380,24 +366,6 @@ export default function MockTestsPage() {
           </SelectContent>
         </Select>
         <Select
-          value={gradeFilter || "all"}
-          onValueChange={(v) => {
-            setGradeFilter(!v || v === "all" || v === "0" ? "" : v ?? "");
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[130px] bg-muted border-border">
-            <SelectValue placeholder="Sinf" />
-          </SelectTrigger>
-          <SelectContent>
-            {grades.map((g) => (
-              <SelectItem key={g.value} value={g.value}>
-                {g.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
           value={languageFilter || "all"}
           onValueChange={(v) => {
             setLanguageFilter(!v || v === "all" ? "" : v ?? "");
@@ -444,7 +412,6 @@ export default function MockTestsPage() {
               <TableHead>ID</TableHead>
               <TableHead>Sarlavha</TableHead>
               <TableHead>Fan</TableHead>
-              <TableHead>Sinf</TableHead>
               <TableHead>Til</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Baholash</TableHead>
@@ -457,7 +424,7 @@ export default function MockTestsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center py-8">
+                <TableCell colSpan={10} className="text-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
@@ -480,7 +447,6 @@ export default function MockTestsPage() {
                     {item.title || "—"}
                   </TableCell>
                   <TableCell>{subjectLabels[item.subject] || item.subject}</TableCell>
-                  <TableCell>{item.grade ? `${item.grade}-sinf` : "—"}</TableCell>
                   <TableCell>{languageLabels[item.language] || item.language}</TableCell>
                   <TableCell>
                     <Badge className={statusColors[item.status] || "bg-gray-600"}>
@@ -628,45 +594,24 @@ export default function MockTestsPage() {
               />
             </div>
 
-            {/* Grade & Language */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Sinf</Label>
-                <Select
-                  value={String(form.grade || 0)}
-                  onValueChange={(v) => setForm({ ...form, grade: Number(v) || 0 })}
-                >
-                  <SelectTrigger className="bg-muted border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">Belgilanmagan</SelectItem>
-                    {grades.filter((g) => g.value !== "0").map((g) => (
-                      <SelectItem key={g.value} value={g.value}>
-                        {g.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Til</Label>
-                <Select
-                  value={form.language}
-                  onValueChange={(v) => setForm({ ...form, language: v ?? "uz" })}
-                >
-                  <SelectTrigger className="bg-muted border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((l) => (
-                      <SelectItem key={l.value} value={l.value}>
-                        {l.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Language — mock test sinf chegarasiga ega emas (hamma uchun ochiq) */}
+            <div className="space-y-1.5">
+              <Label>Til</Label>
+              <Select
+                value={form.language}
+                onValueChange={(v) => setForm({ ...form, language: v ?? "uz" })}
+              >
+                <SelectTrigger className="bg-muted border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>
+                      {l.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Scoring type */}
@@ -689,7 +634,39 @@ export default function MockTestsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Rasch — IRT modeli (T-ball, A+/A/B+/B/C+/C daraja). PDF mezoni asosida.
+              </p>
             </div>
+
+            {/* Scaling formula — faqat Rasch tanlanganda */}
+            {form.scoring_type === "rasch" && (
+              <div className="space-y-1.5">
+                <Label>Tabaqalashtirilgan ball formulasi</Label>
+                <Select
+                  value={form.scaling_formula_type || "none"}
+                  onValueChange={(v) =>
+                    setForm({ ...form, scaling_formula_type: v ?? "none" })
+                  }
+                >
+                  <SelectTrigger className="bg-muted border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Yo&apos;q (faqat T-ball)</SelectItem>
+                    <SelectItem value="prop_93_65">
+                      Mutaxassislik 1-fan (Ball × 93 / 65, max 93)
+                    </SelectItem>
+                    <SelectItem value="prop_63_65">
+                      Mutaxassislik 2-fan (Ball × 63 / 65, max 63)
+                    </SelectItem>
+                    <SelectItem value="lang_75">
+                      Til fanlari (75 ballik shkala)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Participation type & Price */}
             <div className="space-y-1.5">

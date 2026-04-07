@@ -14,9 +14,11 @@ import (
 
 	panelupload "github.com/nextolympservice/go-backend/internal/panel/upload"
 	saadmins "github.com/nextolympservice/go-backend/internal/superadmin/admins"
+	saapprovals "github.com/nextolympservice/go-backend/internal/superadmin/approvals"
 	saaudit "github.com/nextolympservice/go-backend/internal/superadmin/audit"
 	sacerts "github.com/nextolympservice/go-backend/internal/superadmin/certificates"
 	sadashboard "github.com/nextolympservice/go-backend/internal/superadmin/dashboard"
+	saleaderboard "github.com/nextolympservice/go-backend/internal/superadmin/leaderboard"
 samocktests "github.com/nextolympservice/go-backend/internal/superadmin/mocktests"
 	sanews "github.com/nextolympservice/go-backend/internal/superadmin/news"
 	saolympiads "github.com/nextolympservice/go-backend/internal/superadmin/olympiads"
@@ -36,6 +38,8 @@ samocktests "github.com/nextolympservice/go-backend/internal/superadmin/mocktest
 func Register(api *gin.RouterGroup, panelJWT *utils.PanelJWTManager, db *gorm.DB, cfg *config.Config, chatHandler *chat.Handler) {
 	// Handlers
 	dashHandler := sadashboard.NewHandler(db)
+	leaderboardHandler := saleaderboard.NewHandler(db)
+	approvalsHandler := saapprovals.NewHandler(db)
 	adminsHandler := saadmins.NewHandler(db)
 	usersHandler := sausers.NewHandler(db)
 	olympiadsHandler := saolympiads.NewHandler(db)
@@ -150,6 +154,29 @@ paymentsHandler := sapayments.NewHandler(db)
 			rG.GET("", resultsHandler.List)
 			rG.GET("/:id", resultsHandler.GetByID)
 			rG.GET("/olympiad/:olympiad_id/ranking", resultsHandler.GetOlympiadRanking)
+		}
+
+		// Leaderboard (XP/Level reytingi)
+		sa.GET("/leaderboard", leaderboardHandler.List)
+
+		// Approvals — admin_approval va manual_review pending elementlarini boshqarish
+		apG := sa.Group("/approvals")
+		{
+			// Pending registrations (admin_approval)
+			apG.GET("/mock-registrations", approvalsHandler.ListPendingMockRegistrations)
+			apG.POST("/mock-registrations/:id/approve", approvalsHandler.ApproveMockRegistration)
+			apG.POST("/mock-registrations/:id/reject", approvalsHandler.RejectMockRegistration)
+
+			apG.GET("/olympiad-registrations", approvalsHandler.ListPendingOlympiadRegistrations)
+			apG.POST("/olympiad-registrations/:id/approve", approvalsHandler.ApproveOlympiadRegistration)
+			apG.POST("/olympiad-registrations/:id/reject", approvalsHandler.RejectOlympiadRegistration)
+
+			// Pending attempts (manual_review)
+			apG.GET("/mock-attempts", approvalsHandler.ListPendingMockAttempts)
+			apG.POST("/mock-attempts/:id/approve", approvalsHandler.ApproveMockAttempt)
+
+			apG.GET("/olympiad-attempts", approvalsHandler.ListPendingOlympiadAttempts)
+			apG.POST("/olympiad-attempts/:id/approve", approvalsHandler.ApproveOlympiadAttempt)
 		}
 
 		// News / Announcements management

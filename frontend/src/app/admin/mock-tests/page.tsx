@@ -47,7 +47,6 @@ interface MockTest {
   title: string;
   description: string;
   subject: string;
-  grade: number;
   language: string;
   duration_minutes: number;
   total_questions: number;
@@ -62,7 +61,6 @@ const emptyForm = {
   title: "",
   description: "",
   subject: "",
-  grade: 0,
   language: "uz",
   duration_minutes: 60,
   total_questions: 0,
@@ -140,7 +138,7 @@ export default function AdminMockTestsPage() {
     try {
       const payload: Record<string, unknown> = {
         ...form,
-        grade: Number(form.grade),
+        grade: 0, // mock test sinf chegarasiga ega emas
         duration_minutes: Number(form.duration_minutes),
         total_questions: Number(form.total_questions),
       };
@@ -169,7 +167,7 @@ export default function AdminMockTestsPage() {
     try {
       const payload: Record<string, unknown> = {
         ...form,
-        grade: Number(form.grade),
+        grade: 0, // mock test sinf chegarasiga ega emas
         duration_minutes: Number(form.duration_minutes),
         total_questions: Number(form.total_questions),
       };
@@ -209,7 +207,6 @@ export default function AdminMockTestsPage() {
       title: item.title || "",
       description: item.description || "",
       subject: item.subject || "",
-      grade: item.grade || 0,
       language: item.language || "uz",
       duration_minutes: item.duration_minutes || 60,
       total_questions: item.total_questions || 0,
@@ -262,19 +259,6 @@ export default function AdminMockTestsPage() {
           </Select>
         </div>
         <div>
-          <Label>Sinf</Label>
-          <Input
-            type="number"
-            value={form.grade}
-            onChange={(e) =>
-              setForm({ ...form, grade: Number(e.target.value) })
-            }
-            className="border-border"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
           <Label>Til</Label>
           <Select
             value={form.language}
@@ -290,6 +274,8 @@ export default function AdminMockTestsPage() {
             </SelectContent>
           </Select>
         </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <Label>Davomiyligi (min)</Label>
           <Input
@@ -301,28 +287,6 @@ export default function AdminMockTestsPage() {
             }
             className="border-border"
           />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>Baholash turi</Label>
-          <Select
-            value={form.scoring_type}
-            onValueChange={(v) =>
-              setForm({ ...form, scoring_type: v ?? "simple" })
-            }
-          >
-            <SelectTrigger className="border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {scoringTypes.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
         <div>
           <Label>Savollar soni</Label>
@@ -336,6 +300,26 @@ export default function AdminMockTestsPage() {
             className="border-border"
           />
         </div>
+      </div>
+      <div>
+        <Label>Baholash turi</Label>
+        <Select
+          value={form.scoring_type}
+          onValueChange={(v) =>
+            setForm({ ...form, scoring_type: v ?? "simple" })
+          }
+        >
+          <SelectTrigger className="border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {scoringTypes.map((s) => (
+              <SelectItem key={s.value} value={s.value}>
+                {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div>
         <Label>Status</Label>

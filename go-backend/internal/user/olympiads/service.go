@@ -173,10 +173,16 @@ func (s *Service) Join(userID, olympiadID uint) (*RegistrationResponse, error) {
 		return nil, err
 	}
 
+	// Agar admin tasdig'i kerak bo'lsa, status pending_approval bo'ladi
+	initialStatus := models.OlympiadRegStatusRegistered
+	if olympiad.AdminApproval {
+		initialStatus = models.OlympiadRegStatusPending
+	}
+
 	reg := &models.OlympiadRegistration{
 		UserID:     userID,
 		OlympiadID: olympiadID,
-		Status:     models.OlympiadRegStatusRegistered,
+		Status:     initialStatus,
 	}
 
 	if err := s.repo.CreateRegistration(reg); err != nil {

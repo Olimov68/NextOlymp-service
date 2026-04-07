@@ -170,17 +170,6 @@ const subjectLabels: Record<string, string> = Object.fromEntries(
   subjects.map((s) => [s.value, s.label])
 );
 
-const grades = [
-  { value: "0", label: "Belgilanmagan" },
-  { value: "5", label: "5-sinf" },
-  { value: "6", label: "6-sinf" },
-  { value: "7", label: "7-sinf" },
-  { value: "8", label: "8-sinf" },
-  { value: "9", label: "9-sinf" },
-  { value: "10", label: "10-sinf" },
-  { value: "11", label: "11-sinf" },
-];
-
 /* ------------------------------------------------------------------ */
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
@@ -240,9 +229,9 @@ export default function MockTestDetailPage() {
         title: mt.title || "",
         description: mt.description || "",
         subject: mt.subject || "matematika",
-        grade: mt.grade || 0,
         language: mt.language || "uz",
         scoring_type: mt.scoring_type || "simple",
+        scaling_formula_type: mt.scaling_formula_type || "none",
         is_paid: mt.is_paid ?? false,
         price: mt.price || 0,
         duration_minutes: mt.duration_minutes || 60,
@@ -381,7 +370,8 @@ export default function MockTestDetailPage() {
     try {
       await updateMockTest(mockTestId, {
         ...generalForm,
-        grade: Number(generalForm.grade) || 0,
+        grade: 0, // mock test sinf chegarasiga ega emas
+        scaling_formula_type: generalForm.scaling_formula_type || "none",
         price: generalForm.is_paid ? Number(generalForm.price) : 0,
         duration_minutes: Number(generalForm.duration_minutes),
         total_questions: Number(generalForm.total_questions),
@@ -632,7 +622,6 @@ export default function MockTestDetailPage() {
             </Badge>
             <span className="text-sm text-muted-foreground">
               {subjectLabels[mockTest.subject] || mockTest.subject}
-              {mockTest.grade ? ` | ${mockTest.grade}-sinf` : ""}
               {" | "}
               {mockTest.duration_minutes} daqiqa
               {" | "}
@@ -739,40 +728,22 @@ export default function MockTestDetailPage() {
               />
             </div>
 
-            {/* Grade & Language */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Sinf</Label>
-                <Select
-                  value={String(generalForm.grade || 0)}
-                  onValueChange={(v) => setGeneralForm({ ...generalForm, grade: Number(v) || 0 })}
-                >
-                  <SelectTrigger className="bg-muted border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {grades.map((g) => (
-                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Til</Label>
-                <Select
-                  value={generalForm.language}
-                  onValueChange={(v) => setGeneralForm({ ...generalForm, language: v })}
-                >
-                  <SelectTrigger className="bg-muted border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((l) => (
-                      <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Language — mock test sinf chegarasiga ega emas (hamma uchun ochiq) */}
+            <div className="space-y-1.5">
+              <Label>Til</Label>
+              <Select
+                value={generalForm.language}
+                onValueChange={(v) => setGeneralForm({ ...generalForm, language: v })}
+              >
+                <SelectTrigger className="bg-muted border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Scoring type & Status */}
@@ -792,6 +763,9 @@ export default function MockTestDetailPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Rasch — IRT modeli (T-ball, A+/A/B+/B/C+/C daraja). PDF mezoni asosida.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label>Status</Label>
@@ -810,6 +784,38 @@ export default function MockTestDetailPage() {
                 </Select>
               </div>
             </div>
+
+            {/* Scaling formula — faqat Rasch tanlanganda ko'rsatiladi */}
+            {generalForm.scoring_type === "rasch" && (
+              <div className="space-y-1.5">
+                <Label>Tabaqalashtirilgan ball formulasi</Label>
+                <Select
+                  value={generalForm.scaling_formula_type || "none"}
+                  onValueChange={(v) =>
+                    setGeneralForm({ ...generalForm, scaling_formula_type: v })
+                  }
+                >
+                  <SelectTrigger className="bg-muted border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Yo&apos;q (faqat T-ball)</SelectItem>
+                    <SelectItem value="prop_93_65">
+                      Mutaxassislik 1-fan (Ball × 93 / 65, max 93)
+                    </SelectItem>
+                    <SelectItem value="prop_63_65">
+                      Mutaxassislik 2-fan (Ball × 63 / 65, max 63)
+                    </SelectItem>
+                    <SelectItem value="lang_75">
+                      Til fanlari (75 ballik shkala)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  PDF baholash mezonidagi tabaqalashtirilgan ball formulalari.
+                </p>
+              </div>
+            )}
 
             {/* Paid & Price */}
             <div className="space-y-1.5">

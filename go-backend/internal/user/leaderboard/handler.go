@@ -22,18 +22,21 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // LeaderboardEntry — reyting jadvalidagi bitta yozuv
 type LeaderboardEntry struct {
-	Rank       int     `json:"rank"`
-	UserID     uint    `json:"user_id"`
-	Username   string  `json:"username"`
-	FirstName  string  `json:"first_name"`
-	LastName   string  `json:"last_name"`
-	FullName   string  `json:"full_name"`
-	Region     string  `json:"region"`
-	Score      float64 `json:"score"`
-	Correct    int     `json:"correct"`
-	Total      int     `json:"total"`
-	Percentage float64 `json:"percentage"`
-	Medal      string  `json:"medal"`
+	Rank           int     `json:"rank"`
+	UserID         uint    `json:"user_id"`
+	Username       string  `json:"username"`
+	FirstName      string  `json:"first_name"`
+	LastName       string  `json:"last_name"`
+	FullName       string  `json:"full_name"`
+	Region         string  `json:"region"`
+	Score          float64 `json:"score"`
+	Correct        int     `json:"correct"`
+	Total          int     `json:"total"`
+	Percentage     float64 `json:"percentage"`
+	Medal          string  `json:"medal"`
+	TotalXP        int64   `json:"total_xp,omitempty"`
+	Level          int     `json:"level,omitempty"`
+	TestsCompleted int     `json:"tests_completed,omitempty"`
 }
 
 // GetLeaderboard — reyting jadvali
@@ -63,9 +66,89 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 	switch leaderboardType {
 	case "olympiad":
 		h.getOlympiadLeaderboard(c, region, page, limit)
+	case "xp":
+		h.getXPLeaderboard(c, region, page, limit)
 	default:
 		h.getOverallLeaderboard(c, region, page, limit)
 	}
+}
+
+// getXPLeaderboard — XP/level bo'yicha umumiy reyting (profiles.total_xp)
+func (h *Handler) getXPLeaderboard(c *gin.Context, region string, page, limit int) {
+	baseQuery := h.db.Table("profile").
+		Select(`
+			profile.user_id,
+			users.username,
+			profile.first_name,
+			profile.last_name,
+			profile.region,
+			profile.total_xp,
+			profile.level,
+			profile.tests_completed,
+			profile.current_streak
+		`).
+		Joins("JOIN users ON users.id = profile.user_id").
+		Where("profile.total_xp > 0")
+
+	if region != "" {
+		baseQuery = baseQuery.Where("profile.region = ?", region)
+	}
+
+	var total int64
+	if err := h.db.Table("(?) as sub", baseQuery).Count(&total).Error; err != nil {
+		response.Error(c, http.StatusInternalServerError, "Leaderboard yuklanmadi")
+		return
+	}
+
+	offset := (page - 1) * limit
+
+	type xpEntry struct {
+		UserID         uint   `json:"user_id"`
+		Username       string `json:"username"`
+		FirstName      string `json:"first_name"`
+		LastName       string `json:"last_name"`
+		Region         string `json:"region"`
+		TotalXP        int64  `json:"total_xp"`
+		Level          int    `json:"level"`
+		TestsCompleted int    `json:"tests_completed"`
+		CurrentStreak  int    `json:"current_streak"`
+	}
+
+	var rawEntries []xpEntry
+	err := baseQuery.
+		Order("profile.total_xp DESC, profile.tests_completed DESC").
+		Offset(offset).Limit(limit).
+		Find(&rawEntries).Error
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Leaderboard yuklanmadi")
+		return
+	}
+
+	entries := make([]LeaderboardEntry, len(rawEntries))
+	for i, r := range rawEntries {
+		entries[i] = LeaderboardEntry{
+			Rank:           offset + i + 1,
+			UserID:         r.UserID,
+			Username:       r.Username,
+			FirstName:      r.FirstName,
+			LastName:       r.LastName,
+			FullName:       r.FirstName + " " + r.LastName,
+			Region:         r.Region,
+			Score:          float64(r.TotalXP),
+			TotalXP:        r.TotalXP,
+			Level:          r.Level,
+			TestsCompleted: r.TestsCompleted,
+			Medal:          medalForRank(offset + i + 1),
+		}
+	}
+
+	response.Success(c, http.StatusOK, "XP Leaderboard", gin.H{
+		"data":  entries,
+		"total": total,
+		"page":  page,
+		"limit": limit,
+		"type":  "xp",
+	})
 }
 
 // getOlympiadLeaderboard — muayyan olimpiada bo'yicha reyting
@@ -345,9 +428,66 @@ func (h *Handler) GetMyRank(c *gin.Context) {
 	switch leaderboardType {
 	case "olympiad":
 		h.getMyOlympiadRank(c, userID, region)
+	case "xp":
+		h.getMyXPRank(c, userID, region)
 	default:
 		h.getMyOverallRank(c, userID, region)
 	}
+}
+
+// getMyXPRank — XP/level reytingidagi joriy o'rin
+func (h *Handler) getMyXPRank(c *gin.Context, userID uint, region string) {
+	var profile models.Profile
+	if err := h.db.Where("user_id = ?", userID).First(&profile).Error; err != nil {
+		response.Success(c, http.StatusOK, "Mening reytingim", gin.H{
+			"rank":               0,
+			"total_xp":           0,
+			"level":              1,
+			"tests_completed":    0,
+			"current_streak":     0,
+			"total_participants": 0,
+			"message":            "Profile topilmadi",
+		})
+		return
+	}
+
+	rankQuery := h.db.Table("profile").
+		Where("total_xp > ?", profile.TotalXP)
+	if region != "" {
+		rankQuery = rankQuery.Where("region = ?", region)
+	}
+	var higher int64
+	rankQuery.Count(&higher)
+
+	totalQuery := h.db.Table("profile").Where("total_xp > 0")
+	if region != "" {
+		totalQuery = totalQuery.Where("region = ?", region)
+	}
+	var totalParticipants int64
+	totalQuery.Count(&totalParticipants)
+
+	var user models.User
+	h.db.First(&user, userID)
+
+	myRank := int(higher) + 1
+	if profile.TotalXP == 0 {
+		myRank = 0
+	}
+
+	response.Success(c, http.StatusOK, "Mening XP reytingim", gin.H{
+		"rank":               myRank,
+		"user_id":            userID,
+		"username":           user.Username,
+		"first_name":         profile.FirstName,
+		"last_name":          profile.LastName,
+		"region":             profile.Region,
+		"total_xp":           profile.TotalXP,
+		"level":              profile.Level,
+		"tests_completed":    profile.TestsCompleted,
+		"current_streak":     profile.CurrentStreak,
+		"best_streak":        profile.BestStreak,
+		"total_participants": totalParticipants,
+	})
 }
 
 // getMyOlympiadRank — foydalanuvchining muayyan olimpiadadagi o'rni

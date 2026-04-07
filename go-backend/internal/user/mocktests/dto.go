@@ -16,20 +16,21 @@ type ListParams struct {
 }
 
 type MockTestResponse struct {
-	ID             uint      `json:"id"`
-	Title          string    `json:"title"`
-	Slug           string    `json:"slug"`
-	Description    string    `json:"description"`
-	Subject        string    `json:"subject"`
-	Grade          int       `json:"grade"`
-	Language       string    `json:"language"`
-	DurationMins   int       `json:"duration_minutes"`
-	TotalQuestions int       `json:"total_questions"`
-	ScoringType    string    `json:"scoring_type"`
-	Status         string    `json:"status"`
-	IsPaid         bool      `json:"is_paid"`
-	Price          *float64  `json:"price,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID                 uint      `json:"id"`
+	Title              string    `json:"title"`
+	Slug               string    `json:"slug"`
+	Description        string    `json:"description"`
+	Subject            string    `json:"subject"`
+	Grade              int       `json:"grade"`
+	Language           string    `json:"language"`
+	DurationMins       int       `json:"duration_minutes"`
+	TotalQuestions     int       `json:"total_questions"`
+	ScoringType        string    `json:"scoring_type"`
+	ScalingFormulaType string    `json:"scaling_formula_type,omitempty"`
+	Status             string    `json:"status"`
+	IsPaid             bool      `json:"is_paid"`
+	Price              *float64  `json:"price,omitempty"`
+	CreatedAt          time.Time `json:"created_at"`
 }
 
 type PaginatedMockTests struct {
@@ -49,19 +50,20 @@ type RegistrationResponse struct {
 
 func ToMockTestResponse(m *models.MockTest) MockTestResponse {
 	return MockTestResponse{
-		ID:             m.ID,
-		Title:          m.Title,
-		Slug:           m.Slug,
-		Description:    m.Description,
-		Subject:        m.Subject,
-		Grade:          m.Grade,
-		Language:       m.Language,
-		DurationMins:   m.DurationMins,
-		TotalQuestions: m.TotalQuestions,
-		ScoringType:    m.ScoringType,
-		Status:         string(m.Status),
-		IsPaid:         m.IsPaid,
-		Price:          m.Price,
-		CreatedAt:      m.CreatedAt,
+		ID:                 m.ID,
+		Title:              m.Title,
+		Slug:               m.Slug,
+		Description:        m.Description,
+		Subject:            m.Subject,
+		Grade:              m.Grade,
+		Language:           m.Language,
+		DurationMins:       m.DurationMins,
+		TotalQuestions:     m.TotalQuestions,
+		ScoringType:        m.ScoringType,
+		ScalingFormulaType: m.ScalingFormulaType,
+		Status:             string(m.Status),
+		IsPaid:             m.IsPaid,
+		Price:              m.Price,
+		CreatedAt:          m.CreatedAt,
 	}
 }

@@ -117,6 +117,29 @@ export const getResult = (id: number, type: string) => get(`/results/${id}`, { t
 export const getOlympiadRanking = (olympiadId: number) => get(`/results/olympiad/${olympiadId}/ranking`);
 
 // ============================================
+// Leaderboard (XP / Level)
+// ============================================
+export interface SuperAdminLeaderboardEntry {
+  rank: number;
+  user_id: number;
+  username: string;
+  full_name: string;
+  region: string;
+  photo_url: string;
+  total_xp: number;
+  level: number;
+  tests_completed: number;
+  current_streak: number;
+  best_streak: number;
+}
+export const getSuperAdminLeaderboard = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  region?: string;
+}) => get("/leaderboard", params);
+
+// ============================================
 // News
 // ============================================
 export const getNewsList = (params?: Record<string, unknown>) => get("/news", params);

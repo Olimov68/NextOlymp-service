@@ -15,10 +15,12 @@ const (
 type OlympiadRegistrationStatus string
 
 const (
+	OlympiadRegStatusPending     OlympiadRegistrationStatus = "pending_approval" // admin tasdig'ini kutmoqda
 	OlympiadRegStatusRegistered  OlympiadRegistrationStatus = "registered"
 	OlympiadRegStatusParticipant OlympiadRegistrationStatus = "participant"
 	OlympiadRegStatusCompleted   OlympiadRegistrationStatus = "completed"
 	OlympiadRegStatusCancelled   OlympiadRegistrationStatus = "cancelled"
+	OlympiadRegStatusRejected    OlympiadRegistrationStatus = "rejected"
 )
 
 type Olympiad struct {

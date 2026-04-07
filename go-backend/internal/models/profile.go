@@ -24,8 +24,17 @@ type Profile struct {
 	Grade      int       `gorm:"not null" json:"grade"`
 	PhotoURL       string    `gorm:"size:500" json:"photo_url"`
 	FaceEmbedding  string    `gorm:"type:text" json:"-"` // JSON array of floats, hidden from API
-	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt  time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+
+	// XP / Level / Streak — har test uchun beriladigan ball tizimi
+	TotalXP        int64      `gorm:"default:0;index:idx_profile_total_xp" json:"total_xp"`
+	Level          int        `gorm:"default:1" json:"level"`
+	TestsCompleted int        `gorm:"default:0" json:"tests_completed"`
+	CurrentStreak  int        `gorm:"default:0" json:"current_streak"`
+	BestStreak     int        `gorm:"default:0" json:"best_streak"`
+	LastTestDate   *time.Time `gorm:"type:date" json:"last_test_date,omitempty"`
+
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 func (Profile) TableName() string { return "profile" }

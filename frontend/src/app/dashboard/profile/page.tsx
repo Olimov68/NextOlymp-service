@@ -10,18 +10,118 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Save, UserCircle, Camera, Loader2, Lock, Eye, EyeOff,
   Smartphone, Monitor, Tablet, LogOut, Shield, Wifi, WifiOff,
-  MapPin, Clock, ChevronRight,
+  MapPin, Clock, ChevronRight, Sparkles, Zap, Flame, Trophy,
 } from "lucide-react";
 import {
   changePassword,
   listDevices,
   logoutDevice,
   logoutAllOtherDevices,
+  getMyRank,
   type DeviceSession,
+  type MyRankInfo,
 } from "@/lib/user-api";
 import { regions, getDistricts } from "@/lib/regions";
 
 const grades = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
+
+// ─── XPCard ─────────────────────────────────────────────────────────────────
+// Profile sahifaning eng ustida foydalanuvchining XP/Level/Streak holatini ko'rsatadi.
+
+function XPCard() {
+  const [info, setInfo] = useState<MyRankInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMyRank({ type: "xp" })
+      .then((r) => {
+        if (!cancelled) setInfo(r);
+      })
+      .catch(() => {
+        if (!cancelled) setInfo(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading) {
+    return <div className="h-32 rounded-2xl bg-white/5 border border-white/10 animate-pulse mb-5" />;
+  }
+  if (!info) return null;
+
+  const totalXP = info.total_xp ?? 0;
+  const level = info.level ?? 1;
+  const xpInLevel = totalXP - (level - 1) * 100;
+  const progressPct = Math.min(100, Math.max(0, xpInLevel));
+  const streak = info.current_streak ?? 0;
+  const tests = info.tests_completed ?? 0;
+
+  return (
+    <div className="mb-5 rounded-2xl border border-white/10 bg-gradient-to-br from-purple-600/20 via-fuchsia-600/15 to-pink-600/10 p-5 overflow-hidden relative">
+      <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
+      <div className="relative">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-purple-300/70 font-medium">Level</p>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <Zap className="h-5 w-5 text-amber-400" />
+              <span className="text-3xl font-bold text-white">{level}</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs uppercase tracking-wider text-purple-300/70 font-medium">Reyting</p>
+            <div className="flex items-center gap-1.5 mt-0.5 justify-end">
+              <Trophy className="h-4 w-4 text-amber-400" />
+              <span className="text-lg font-bold text-white">
+                {info.rank > 0 ? `#${info.rank}` : "—"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div>
+          <div className="flex items-center justify-between text-[11px] mb-1.5">
+            <span className="flex items-center gap-1 text-purple-200">
+              <Sparkles className="h-3 w-3" />
+              {totalXP} XP jami
+            </span>
+            <span className="text-purple-300/60">{xpInLevel}/100 keyingi level</span>
+          </div>
+          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-purple-400 to-pink-400 transition-all duration-500"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-[11px] text-purple-300/70">
+              <Flame className="h-3 w-3 text-orange-400" />
+              Streak
+            </div>
+            <p className="text-base font-bold text-white mt-0.5">{streak} kun</p>
+          </div>
+          <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-[11px] text-purple-300/70">
+              <Trophy className="h-3 w-3 text-cyan-400" />
+              Testlar
+            </div>
+            <p className="text-base font-bold text-white mt-0.5">{tests}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Shared input styles ────────────────────────────────────────────────────
 
@@ -1091,6 +1191,8 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto py-2">
       <h1 className="text-xl font-bold text-white mb-5">{t("profile.title")}</h1>
+
+      <XPCard />
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="flex w-full mb-5 bg-white/5 border border-white/10 rounded-xl p-1 gap-1">

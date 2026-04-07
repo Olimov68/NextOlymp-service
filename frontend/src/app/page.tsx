@@ -485,18 +485,21 @@ export default function Home() {
                 {t("cta.desc")}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="https://play.google.com/store/apps/details?id=com.nextolymp" target="_blank" rel="noreferrer">
+                <a href="#" download>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
                     className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-10 py-4 text-lg font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-shadow cursor-pointer">
                     <Smartphone className="h-5 w-5" /> {t("cta.android")}
                   </motion.div>
                 </a>
-                <a href="https://nextolymp.uz/download/windows" target="_blank" rel="noreferrer">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-white/10 border border-white/10 text-white px-10 py-4 text-lg font-semibold hover:bg-white/15 transition-all cursor-pointer">
-                    {t("cta.windows")} <ArrowRight className="h-5 w-5" />
-                  </motion.div>
-                </a>
+                <div
+                  className="relative inline-flex items-center gap-2 rounded-2xl bg-white/5 border border-white/10 text-white/60 px-10 py-4 text-lg font-semibold cursor-not-allowed select-none"
+                  aria-disabled="true"
+                >
+                  {t("cta.windows")}
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[11px] font-medium text-amber-300">
+                    Tez orada
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -520,7 +523,7 @@ export default function Home() {
             <p className="text-gray-400 max-w-2xl mx-auto text-lg">{t("apps.desc")}</p>
           </motion.div>
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-10">
-            <a href="https://play.google.com/store/apps/details?id=com.nextolymp" target="_blank" rel="noreferrer"
+            <a href="#" download
               className="group flex items-center gap-4 rounded-2xl bg-white/5 border border-white/10 px-8 py-5 hover:bg-white/10 hover:border-white/20 transition-all w-full sm:w-auto">
               <svg className="h-10 w-10 text-green-400" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302a1 1 0 0 1 0 1.38l-2.302 2.302L15.396 12l2.302-2.492zM5.864 2.658L16.8 9.49l-2.302 2.302L5.864 2.658z"/></svg>
               <div className="text-left">
@@ -528,14 +531,19 @@ export default function Home() {
                 <p className="text-lg font-bold text-white">{t("apps.android")}</p>
               </div>
             </a>
-            <a href="https://nextolymp.uz/download/windows" target="_blank" rel="noreferrer"
-              className="group flex items-center gap-4 rounded-2xl bg-white/5 border border-white/10 px-8 py-5 hover:bg-white/10 hover:border-white/20 transition-all w-full sm:w-auto">
-              <svg className="h-10 w-10 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
-              <div className="text-left">
+            <div
+              className="relative flex items-center gap-4 rounded-2xl bg-white/[0.03] border border-white/10 px-8 py-5 w-full sm:w-auto cursor-not-allowed select-none"
+              aria-disabled="true"
+            >
+              <svg className="h-10 w-10 text-blue-400/60" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+              <div className="text-left flex-1">
                 <p className="text-xs text-gray-400">{t("apps.download")}</p>
-                <p className="text-lg font-bold text-white">{t("apps.windows")}</p>
+                <p className="text-lg font-bold text-white/70">{t("apps.windows")}</p>
               </div>
-            </a>
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 text-[11px] font-medium text-amber-300 whitespace-nowrap">
+                Tez orada
+              </span>
+            </div>
           </motion.div>
         </motion.div>
       </section>

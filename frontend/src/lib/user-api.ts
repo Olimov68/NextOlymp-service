@@ -324,6 +324,8 @@ export const applyPromoCode = (data: {
 
 // ─── Leaderboard ────────────────────────────────────────────────────────────
 
+export type LeaderboardType = "overall" | "olympiad" | "xp";
+
 export interface LeaderboardEntry {
   rank: number;
   user_id: number;
@@ -337,30 +339,43 @@ export interface LeaderboardEntry {
   total: number;
   percentage: number;
   medal: string;
+  total_xp?: number;
+  level?: number;
+  tests_completed?: number;
 }
 
 export interface MyRankInfo {
   rank: number;
-  score: number;
-  correct: number;
-  total: number;
-  percentage: number;
+  score?: number;
+  correct?: number;
+  total?: number;
+  percentage?: number;
+  total_score?: number;
+  total_xp?: number;
+  level?: number;
+  tests_completed?: number;
+  current_streak?: number;
+  best_streak?: number;
   total_participants: number;
 }
 
 export const getLeaderboard = (params?: {
+  type?: LeaderboardType;
   subject?: string;
   region?: string;
   period?: string;
+  source_id?: number;
   page?: number;
   limit?: number;
 }): Promise<{ data: LeaderboardEntry[]; total: number }> =>
   api.get("/user/leaderboard", { params }).then((r) => r.data.data ?? r.data);
 
 export const getMyRank = (params?: {
+  type?: LeaderboardType;
   subject?: string;
   region?: string;
   period?: string;
+  source_id?: number;
 }): Promise<MyRankInfo> =>
   api.get("/user/leaderboard/my-rank", { params }).then((r) => r.data.data ?? r.data);
 

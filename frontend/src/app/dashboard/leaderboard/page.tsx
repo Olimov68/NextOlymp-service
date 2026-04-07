@@ -20,17 +20,25 @@ import {
   MapPin,
   Target,
   Flame,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import {
   getLeaderboard,
   getMyRank,
   type LeaderboardEntry,
+  type LeaderboardType,
   type MyRankInfo,
 } from "@/lib/user-api";
 import { regions as allRegions } from "@/lib/regions";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
+
+const LB_TYPES: { value: LeaderboardType; label: string }[] = [
+  { value: "xp", label: "XP / Level" },
+  { value: "overall", label: "Umumiy ball" },
+];
 
 const PERIODS = [
   { value: "weekly", label: "Haftalik" },
@@ -75,8 +83,14 @@ function getMedalIcon(rank: number) {
 
 // ─── MyRankCard ─────────────────────────────────────────────────────────────
 
-function MyRankCard({ myRank }: { myRank: MyRankInfo | null }) {
-  if (!myRank) {
+function MyRankCard({
+  myRank,
+  type,
+}: {
+  myRank: MyRankInfo | null;
+  type: LeaderboardType;
+}) {
+  if (!myRank || (myRank.rank ?? 0) === 0) {
     return (
       <Card className="border-0 shadow-sm bg-muted/50">
         <CardContent className="p-6 text-center">
@@ -90,10 +104,26 @@ function MyRankCard({ myRank }: { myRank: MyRankInfo | null }) {
   }
 
   const isTop10 = myRank.rank <= 10;
+  const isXP = type === "xp";
+
+  // XP rejimi uchun stat'lar
+  const xpStats = isXP
+    ? {
+        primary: { icon: Sparkles, value: String(myRank.total_xp ?? 0), label: "Jami XP" },
+        secondary: { icon: Zap, value: `Lvl ${myRank.level ?? 1}`, label: "Level" },
+        tertiary: { icon: Flame, value: String(myRank.current_streak ?? 0), label: "Streak (kun)" },
+      }
+    : null;
 
   return (
     <Card className="border-0 shadow-lg overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6">
+      <div
+        className={`p-6 ${
+          isXP
+            ? "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600"
+            : "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600"
+        }`}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -108,7 +138,7 @@ function MyRankCard({ myRank }: { myRank: MyRankInfo | null }) {
             </div>
             <div>
               <h3 className="text-white font-bold text-lg">Sizning o&apos;rningiz</h3>
-              <p className="text-blue-100 text-sm">
+              <p className="text-white/80 text-sm">
                 {myRank.total_participants} ta ishtirokchidan
               </p>
             </div>
@@ -120,23 +150,43 @@ function MyRankCard({ myRank }: { myRank: MyRankInfo | null }) {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-            <Flame className="h-5 w-5 text-amber-300 mx-auto mb-1" />
-            <p className="text-white font-bold text-lg">{myRank.score}</p>
-            <p className="text-blue-200 text-xs">Umumiy ball</p>
+        {xpStats ? (
+          <div className="grid grid-cols-3 gap-4 mt-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <xpStats.primary.icon className="h-5 w-5 text-amber-300 mx-auto mb-1" />
+              <p className="text-white font-bold text-lg">{xpStats.primary.value}</p>
+              <p className="text-white/70 text-xs">{xpStats.primary.label}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <xpStats.secondary.icon className="h-5 w-5 text-cyan-300 mx-auto mb-1" />
+              <p className="text-white font-bold text-lg">{xpStats.secondary.value}</p>
+              <p className="text-white/70 text-xs">{xpStats.secondary.label}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <xpStats.tertiary.icon className="h-5 w-5 text-orange-300 mx-auto mb-1" />
+              <p className="text-white font-bold text-lg">{xpStats.tertiary.value}</p>
+              <p className="text-white/70 text-xs">{xpStats.tertiary.label}</p>
+            </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-            <Target className="h-5 w-5 text-green-300 mx-auto mb-1" />
-            <p className="text-white font-bold text-lg">{(myRank.percentage ?? 0).toFixed(1)}%</p>
-            <p className="text-blue-200 text-xs">Aniqlik</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-4 mt-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <Flame className="h-5 w-5 text-amber-300 mx-auto mb-1" />
+              <p className="text-white font-bold text-lg">{myRank.total_score ?? myRank.score ?? 0}</p>
+              <p className="text-blue-200 text-xs">Umumiy ball</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <Target className="h-5 w-5 text-green-300 mx-auto mb-1" />
+              <p className="text-white font-bold text-lg">{(myRank.percentage ?? 0).toFixed(1)}%</p>
+              <p className="text-blue-200 text-xs">Aniqlik</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
+              <Trophy className="h-5 w-5 text-purple-300 mx-auto mb-1" />
+              <p className="text-white font-bold text-lg">{myRank.correct ?? 0}/{myRank.total ?? 0}</p>
+              <p className="text-blue-200 text-xs">To&apos;g&apos;ri/Jami</p>
+            </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
-            <Trophy className="h-5 w-5 text-purple-300 mx-auto mb-1" />
-            <p className="text-white font-bold text-lg">{myRank.correct}/{myRank.total}</p>
-            <p className="text-blue-200 text-xs">To'g'ri/Jami</p>
-          </div>
-        </div>
+        )}
       </div>
     </Card>
   );
@@ -144,7 +194,7 @@ function MyRankCard({ myRank }: { myRank: MyRankInfo | null }) {
 
 // ─── TopPodium ──────────────────────────────────────────────────────────────
 
-function TopPodium({ entries }: { entries: LeaderboardEntry[] }) {
+function TopPodium({ entries, type }: { entries: LeaderboardEntry[]; type: LeaderboardType }) {
   const top3 = entries.slice(0, 3);
   if (top3.length < 3) return null;
 
@@ -211,10 +261,21 @@ function TopPodium({ entries }: { entries: LeaderboardEntry[] }) {
                 {cfg.entry.full_name || cfg.entry.username}
               </p>
 
-              {/* Score */}
-              <p className={`text-sm font-bold ${cfg.scoreColor}`}>
-                {cfg.entry.score} ball
-              </p>
+              {/* Score / XP */}
+              {type === "xp" ? (
+                <div className="flex flex-col items-center">
+                  <p className={`text-sm font-bold ${cfg.scoreColor}`}>
+                    {cfg.entry.total_xp ?? cfg.entry.score} XP
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Lvl {cfg.entry.level ?? 1}
+                  </p>
+                </div>
+              ) : (
+                <p className={`text-sm font-bold ${cfg.scoreColor}`}>
+                  {cfg.entry.score} ball
+                </p>
+              )}
 
               {/* Podium block */}
               <div
@@ -238,11 +299,14 @@ function LeaderboardTable({
   entries,
   page,
   myRank,
+  type,
 }: {
   entries: LeaderboardEntry[];
   page: number;
   myRank: MyRankInfo | null;
+  type: LeaderboardType;
 }) {
+  const isXP = type === "xp";
   const startIdx = page === 1 ? 3 : 0;
   const visibleEntries = page === 1 ? entries.slice(3) : entries;
 
@@ -270,13 +334,13 @@ function LeaderboardTable({
                 Viloyat
               </th>
               <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">
-                Ball
+                {isXP ? "XP" : "Ball"}
               </th>
               <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
-                Aniqlik
+                {isXP ? "Level" : "Aniqlik"}
               </th>
               <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
-                To'g'ri/Jami
+                {isXP ? "Testlar" : "To'g'ri/Jami"}
               </th>
               <th className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3 w-16">
                 Medal
@@ -342,17 +406,24 @@ function LeaderboardTable({
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className="text-sm font-semibold text-foreground">
-                      {entry.score}
+                      {isXP ? (entry.total_xp ?? entry.score) : entry.score}
+                      {isXP && <span className="text-muted-foreground ml-1 text-xs">XP</span>}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right hidden sm:table-cell">
-                    <span className="text-sm text-muted-foreground">
-                      {(entry.percentage ?? 0).toFixed(1)}%
-                    </span>
+                    {isXP ? (
+                      <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                        Lvl {entry.level ?? 1}
+                      </Badge>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        {(entry.percentage ?? 0).toFixed(1)}%
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right hidden sm:table-cell">
                     <span className="text-sm text-muted-foreground">
-                      {entry.correct}/{entry.total}
+                      {isXP ? (entry.tests_completed ?? 0) : `${entry.correct}/${entry.total}`}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -414,6 +485,7 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
 
   const [page, setPage] = useState(1);
+  const [lbType, setLbType] = useState<LeaderboardType>("xp");
   const [period, setPeriod] = useState("all");
   const [subject, setSubject] = useState("all");
   const [region, setRegion] = useState("all");
@@ -426,14 +498,14 @@ export default function LeaderboardPage() {
     async function fetchData() {
       setLoading(true);
 
-      const params: Record<string, any> = { page, limit: LIMIT };
-      if (period !== "all") params.period = period;
-      if (subject !== "all") params.subject = subject;
+      const params: Record<string, any> = { page, limit: LIMIT, type: lbType };
+      if (lbType !== "xp" && period !== "all") params.period = period;
+      if (lbType !== "xp" && subject !== "all") params.subject = subject;
       if (region !== "all") params.region = region;
 
-      const rankParams: Record<string, any> = {};
-      if (period !== "all") rankParams.period = period;
-      if (subject !== "all") rankParams.subject = subject;
+      const rankParams: Record<string, any> = { type: lbType };
+      if (lbType !== "xp" && period !== "all") rankParams.period = period;
+      if (lbType !== "xp" && subject !== "all") rankParams.subject = subject;
       if (region !== "all") rankParams.region = region;
 
       try {
@@ -472,12 +544,12 @@ export default function LeaderboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [page, period, subject, region]);
+  }, [page, lbType, period, subject, region]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [period, subject, region]);
+  }, [lbType, period, subject, region]);
 
   if (loading) {
     return <LeaderboardSkeleton />;
@@ -494,11 +566,24 @@ export default function LeaderboardPage() {
       </div>
 
       {/* My Rank Card */}
-      <MyRankCard myRank={myRank} />
+      <MyRankCard myRank={myRank} type={lbType} />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <Select value={period} onValueChange={(v) => setPeriod(v ?? "all")}>
+        <Select value={lbType} onValueChange={(v) => setLbType((v as LeaderboardType) ?? "xp")}>
+          <SelectTrigger className="w-[160px] bg-card border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LB_TYPES.map((t) => (
+              <SelectItem key={t.value} value={t.value}>
+                {t.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={period} onValueChange={(v) => setPeriod(v ?? "all")} disabled={lbType === "xp"}>
           <SelectTrigger className="w-[140px] bg-card border-border">
             <SelectValue />
           </SelectTrigger>
@@ -511,7 +596,7 @@ export default function LeaderboardPage() {
           </SelectContent>
         </Select>
 
-        <Select value={subject} onValueChange={(v) => setSubject(v ?? "")}>
+        <Select value={subject} onValueChange={(v) => setSubject(v ?? "")} disabled={lbType === "xp"}>
           <SelectTrigger className="w-[160px] bg-card border-border">
             <SelectValue />
           </SelectTrigger>
@@ -552,10 +637,10 @@ export default function LeaderboardPage() {
       ) : (
         <>
           {/* Top Podium (first page only) */}
-          {page === 1 && entries.length >= 3 && <TopPodium entries={entries} />}
+          {page === 1 && entries.length >= 3 && <TopPodium entries={entries} type={lbType} />}
 
           {/* Leaderboard Table */}
-          <LeaderboardTable entries={entries} page={page} myRank={myRank} />
+          <LeaderboardTable entries={entries} page={page} myRank={myRank} type={lbType} />
 
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} />
         </>

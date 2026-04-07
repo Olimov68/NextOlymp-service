@@ -123,10 +123,16 @@ func (s *Service) Join(userID, mockTestID uint) (*RegistrationResponse, error) {
 		return nil, err
 	}
 
+	// Agar admin tasdig'i kerak bo'lsa, status pending_approval bo'ladi
+	initialStatus := models.MockTestRegStatusRegistered
+	if mt.AdminApproval {
+		initialStatus = models.MockTestRegStatusPending
+	}
+
 	reg := &models.MockTestRegistration{
 		UserID:     userID,
 		MockTestID: mockTestID,
-		Status:     models.MockTestRegStatusRegistered,
+		Status:     initialStatus,
 	}
 
 	if err := s.repo.CreateRegistration(reg); err != nil {
